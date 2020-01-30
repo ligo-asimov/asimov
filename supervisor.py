@@ -45,20 +45,28 @@ if __name__ == "__main__":
                 try:
                     cluster_id = runs[issue.title]['cluster_id']
                 except:
-                    print(f"I can't find the cluster ID for {issue.title}.")
-                jobs = schedd.xquery(requirements="ClusterId == {}".format(cluster_id))
-                for job in jobs:
-                    if job['JobStatus'] == 2:
-                        # The job is still running
-                        pass
-                    elif job['JobStatus'] == 5:
-                        # The job is held.
-                        # Mark it as stuck
-                        issue.labels = issue.labels + ["C01::Stuck"]
-                        issue.notes.create({'body': 'This job was held at {}'.format(time.now())})
+                    cluster_id = None
+                    print(f"I need to know the cluster ID for {issue.title}")
+
+                if cluster_id:
+                    jobs = schedd.xquery(requirements="ClusterId == {}".format(cluster_id))
+                    for job in jobs:
+                        if job['JobStatus'] == 2:
+                            # The job is still running
+                            print(f"* {issue.title} is running.")
+                        elif job['JobStatus'] == 5:
+                            # The job is held.
+                            # Mark it as stuck
+                            issue.labels = issue.labels + ["C01::Stuck"]
+                            issue.notes.create({'body': 'This job was held at {}'.format(time.now())})
+
                 print(f"I need to check if the PSDs are ready for {issue.title}")
             elif "C01::Prod1 Running" in issue.labels:
                 print(f"I need to check if the jobs are finished for {issue.title}")
             else:
                 print(f"I need to check if {issue.title} is running")
+
+        with open("pe-robot.json", "w") as data:
+            json.dump(runs, data)
+
         time.sleep(300)
