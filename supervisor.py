@@ -17,7 +17,7 @@ import os
 
 import htcondor
 
-access_token = os.environ['GITLAB_TOKEN'] # "EpkyPPY3sWagoRCm9BxW"
+access_token = os.environ['GITLAB_TOKEN'] # 
 project_id = 3816
 uber_repo = "" # The repository which contains all of the submodularised event repositories.
 
