@@ -8,7 +8,7 @@ class MetaRepository(object):
     def __init__(self, directory):
         self.directory = directory
 
-        repos_list = glob.glob("*")
+        repos_list = glob.glob(os.path.join(directory, "*"))
         self.repos = {event: os.path.join(directory, event) for event in repos_list}
 
     def get_repo(self, event):

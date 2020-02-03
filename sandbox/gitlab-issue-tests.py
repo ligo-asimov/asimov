@@ -30,7 +30,7 @@ message += """|---|---|---|---|---|---|\n"""
 
 for event in events:
 
-    repo = uber_repository(event)
+    repo = uber_repository.get_repo(event)
     event_prods = repo.get_prods("C01_offline")
     
     prod_keys = [key for key in event.data.keys() if "Prod" in key[0:5]]
