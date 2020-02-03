@@ -40,6 +40,6 @@ for event in events:
         except ValueError:
             status = "Not running"
 
-        message += f"""| {event.title} | {cluster} | Prod0 | {status} |\n"""        
+        message += f"""|               | {cluster} | Prod1 | {status} |\n"""        
 
 mattermost.submit_payload(message)
