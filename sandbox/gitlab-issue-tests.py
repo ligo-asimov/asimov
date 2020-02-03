@@ -29,19 +29,14 @@ message += """|---|---|---|---|---|---|\n"""
 for event in events:
 
     prod_keys = [key for key in event.data.keys() if "Prod" in key[0:5]]
-
-    print(event.title)
-    print(event.state)
-    
     for prod in prod_keys:
- 
-        print(event.data[prod])
         cluster = event.data[prod]
         try:
             job = condor.CondorJob(event.data[prod])
             status = job.status
 
             if prod == "Prod0":
+                psds = ""
                 for det, psd in get_psds(job):
                     psds += f"{det}"
                 try:
@@ -49,11 +44,11 @@ for event in events:
                 except:
                     ifos = "Error" 
 
-        except ValueError:
+        except:
             status = "Not running"
             ifos = "Unknown"
 
-        message += f"""| {event.title} | {ifos} | {cluster} | {prod} | {status} | {psds} | \n"""
+        message += f"""| {event.title} | {event.state} | {ifos} | {cluster} | {prod} | {status} | {psds} | \n"""
  
 
 mattermost.submit_payload(message)
