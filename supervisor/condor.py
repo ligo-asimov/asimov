@@ -34,11 +34,14 @@ class CondorJob(object):
         return statuses[job_status]
         
     def get_data(self):
+        data = {}
         for schedd_ad in htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd):
             schedd = htcondor.Schedd(schedd_ad)
             jobs = schedd.xquery(requirements="ClusterId == {}".format(self.cluster))
             for job in jobs:
-                self.data = job
+                data = job
         if len(data.keys())==0:
             raise ValueError
-        return self.data
+        self.data = data
+        return data
+    
