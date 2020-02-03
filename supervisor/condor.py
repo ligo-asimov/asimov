@@ -35,8 +35,8 @@ class CondorJob(object):
         
     def get_data(self):
         for schedd_ad in htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd):
-        schedd = htcondor.Schedd(schedd_ad)
-        jobs = schedd.xquery(requirements="ClusterId == {}".format(self.cluster))
-        for job in jobs:
-            self.data = job
-    return self.data
+            schedd = htcondor.Schedd(schedd_ad)
+            jobs = schedd.xquery(requirements="ClusterId == {}".format(self.cluster))
+            for job in jobs:
+                self.data = job
+        return self.data
