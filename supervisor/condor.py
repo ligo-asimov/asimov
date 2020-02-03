@@ -1,6 +1,8 @@
 """
 Code for interacting with the condor scheduler.
 """
+import os
+from configparser import ConfigParser
 
 import htcondor
 
@@ -32,7 +34,37 @@ class CondorJob(object):
                     5: "Held",
                     6: "Submission error"}
         return statuses[job_status]
+
+    @property
+    def run_directory(self):
+        """
+        Find the run directory.
+        """
+        if not "Err" in self.data:
+            raise ValueError
+        error_file = self.data['Err']
+        rundir = "/".join(error_file.split("/")[:-1])
+        return rundir
+
+    def get_asset(self, path):
+        """
+        Find an asset related to this job.
+        """
+        pass
+
+    def get_config(self):
+        """
+        Open the configuration file for this job.
+        """
+        ini_location = os.path.join(self.run_directory,
+                                    "config.ini")
         
+        P = ConfigParser()
+        P.optionxform=str
+        P.read(ini_location)
+        return P
+        
+    
     def get_data(self):
         data = {}
         for schedd_ad in htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd):
