@@ -24,7 +24,10 @@ for event in events:
         try:
             job = condor.CondorJob(event.data['Prod0'])
             status = job.status
-            ifos = job.get_config().get("analysis", "ifos")
+            try:
+                ifos = job.get_config().get("analysis", "ifos")
+            except KeyError:
+                ifos = "Error"
 
         except ValueError:
             status = "Not running"
