@@ -40,7 +40,7 @@ class CondorJob(object):
             jobs = schedd.xquery(requirements="ClusterId == {}".format(self.cluster))
             for job in jobs:
                 data = job
-        if len(data.keys())==0:
+        if len(list(data.keys()))==0:
             raise ValueError
         self.data = data
         return data

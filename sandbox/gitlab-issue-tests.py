@@ -26,6 +26,20 @@ for event in events:
         except ValueError:
             status = "Not running"
 
+        message += f"""| {event.title} | {cluster} | Prod0 | {status} |\n"""
+
+    elif "Prod1" in event.data:
+        print(event.title)
+        print(event.state)
+        print(event.data['Prod1'])
+        cluster = event.data['Prod1']
+        try:
+            job = condor.CondorJob(event.data['Prod1'])
+            status = job.status
+
+        except ValueError:
+            status = "Not running"
+
         message += f"""| {event.title} | {cluster} | Prod0 | {status} |\n"""        
 
 mattermost.submit_payload(message)
