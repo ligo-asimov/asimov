@@ -19,9 +19,13 @@ for event in events:
         print(event.state)
         print(event.data['Prod0'])
         cluster = event.data['Prod0']
-        job = condor.CondorJob(event.data['Prod0'])
-        print(job.status)
+        try:
+            job = condor.CondorJob(event.data['Prod0'])
+            status = job.status
 
-        message += f"""| {event.title} | {cluster} | Prod0 | Running |\n"""        
+        except ValueError:
+            status = "Not running"
+
+        message += f"""| {event.title} | {cluster} | Prod0 | {status} |\n"""        
 
 mattermost.submit_payload(message)
