@@ -2,7 +2,7 @@ import ast
 
 from supervisor import gitlab, mattermost
 from supervisor import config
-from supervisor import condor
+from supervisor import condor, git
 
 server = gitlab.gitlab.Gitlab('https://git.ligo.org', private_token=config.get("gitlab", "token"))
 repository = server.projects.get(3816)
@@ -16,7 +16,7 @@ def get_psds(job):
         psds[det] = job.get_asset(asset)
     return psds
 
-uber_repository = "/home/daniel.williams/events/O3/o3a_catalog_events"
+uber_repository = git.MetaRepository("/home/daniel.williams/events/O3/o3a_catalog_events")
 
 events = gitlab.find_events(repository)
 
@@ -26,27 +26,37 @@ message = """# Run updates\n"""
 message += """| Event | IFOS | Cluster | Production | Status | PSDs |\n"""
 message += """|---|---|---|---|---|---|\n"""
 
+
+
 for event in events:
 
+    repo = uber_repository(event)
+    event_prods = repo.get_prods("C01_offline")
+    
     prod_keys = [key for key in event.data.keys() if "Prod" in key[0:5]]
-    for prod in prod_keys:
-        cluster = event.data[prod]
-        try:
-            job = condor.CondorJob(event.data[prod])
-            status = job.status
+    for prod in event_prods:
+        if prod in event.data:
+            cluster = event.data[prod]
+            try:
+                job = condor.CondorJob(event.data[prod])
+                status = job.status
 
-            if prod == "Prod0":
-                psds = ""
-                for det, psd in get_psds(job):
-                    psds += f"{det}"
-                try:
-                    ifos = job.get_config().get("analysis", "ifos")
-                except:
-                    ifos = "Error" 
+                if prod == "Prod0":
+                    psds = ""
+                    for det, psd in get_psds(job):
+                        psds += f"{det}"
+                    try:
+                        ifos = job.get_config().get("analysis", "ifos")
+                    except:
+                        ifos = "Error" 
 
-        except:
-            status = "Not running"
+            except:
+                status = "Not running"
+                ifos = "Unknown"
+        else:
+            status = "Not ready"
             ifos = "Unknown"
+            psds = ""
 
         message += f"""| {event.title} | {event.state} | {ifos} | {cluster} | {prod} | {status} | {psds} | \n"""
  
