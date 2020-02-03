@@ -32,8 +32,6 @@ access_token = os.environ['GITLAB_TOKEN'] #
 project_id = 3816
 uber_repo = "/home/daniel.williams/events/O3/o3a_catalog_events" # The repository which contains all of the submodularised event repositories.
 
-
-
 gl = gitlab.Gitlab('https://git.ligo.org', private_token=access_token)
 pe_catalogue = gl.projects.get(project_id)
 
@@ -250,6 +248,7 @@ def get_run_info(issue):
 
 if __name__ == "__main__":
     while True:
+        gl = gitlab.Gitlab('https://git.ligo.org', private_token=access_token)
         for issue in pe_catalogue.issues.list(labels=['trigger'], per_page=100):
             if not issue.title in runs.keys():
                 # This is an event we've not seen before
@@ -313,6 +312,7 @@ if __name__ == "__main__":
 
                     if cluster_p1:
                         print(f"Submitted to cluster {cluster_p1}")
+                        issue.labels.remove("C01::Prod0 Running")
                         issue.labels = issue.labels + ["C01::Prod1 Running"]
                         issue.notes.create({'body': f"# Run information\n\nProd1: {cluster_p1}"})
                         issue.assignee_ids = [246]
@@ -335,9 +335,9 @@ if __name__ == "__main__":
                     if not 'JobStatus' in job:
                         print(f"Something's weird with Prod1 for {issue.title}")
                         issue.labels.remove("C01::Prod1 Running")
-                        rundir = get_rundir_from_condor(job)
+                        #rundir = get_rundir_from_condor(job)
                         issue.labels +=  ["C01::Stuck"]
-                        issue.notes.create({'body': '# Run problem\nThe Prod1 job ran into an unknown error at {}\nThe job run directory is {}'.format(datetime.datetime.now(), rundir)})
+                        issue.notes.create({'body': '# Run problem\nThe Prod1 job ran into an unknown error at {}\n'.format(datetime.datetime.now())})
                         issue.save()
                     elif job['JobStatus'] == 2:
                         # The job is still running
