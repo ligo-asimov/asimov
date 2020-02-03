@@ -20,6 +20,7 @@ def find_events(repository):
 
     return [EventIssue(issue) for issue in issues]
 
+
 class EventIssue(object):
     """
     Use an issue on the gitlab issue tracker to 
@@ -46,8 +47,7 @@ class EventIssue(object):
         for label in self.issue_object.labels:
             if STATE_PREFIX in label:
                 return label[len(STATE_PREFIX):]
-            else:
-                return None
+        return None
 
     @state.setter
     def state(self, state):
