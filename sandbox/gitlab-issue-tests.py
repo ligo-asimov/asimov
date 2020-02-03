@@ -30,11 +30,23 @@ message += """|---|---|---|---|---|---|\n"""
 
 for event in events:
 
-    repo = uber_repository.get_repo(event)
-    event_prods = repo.get_prods("C01_offline")
+    try:
+        repo = uber_repository.get_repo(event.title)
+    except:
+        print(f"{event.title} missing from the uberrepo")
+        continue
+
+    try:
+        event_prods = repo.find_prods("C01_offline")
+    except:
+        print(f"No C01 runs in this repository")
+        continue
     
+    event_psds = set(["L1", "H1", "V1"])
+
     prod_keys = [key for key in event.data.keys() if "Prod" in key[0:5]]
     for prod in event_prods:
+        prod = prod.split("_")[0]
         if prod in event.data:
             cluster = event.data[prod]
             try:
@@ -43,12 +55,16 @@ for event in events:
 
                 if prod == "Prod0":
                     psds = ""
-                    for det, psd in get_psds(job):
+                    for det, psd in get_psds(job).items():
                         psds += f"{det}"
                     try:
                         ifos = job.get_config().get("analysis", "ifos")
                     except:
                         ifos = "Error" 
+
+                    event_psds = set(psds) - set(ifos)
+                else:
+                    status = status + " PSDs ready"
 
             except:
                 status = "Not running"
@@ -57,8 +73,9 @@ for event in events:
             status = "Not ready"
             ifos = "Unknown"
             psds = ""
+            cluster = ""
 
-        message += f"""| {event.title} | {event.state} | {ifos} | {cluster} | {prod} | {status} | {psds} | \n"""
+        message += f"""| {event.title} | {event.state} | {ifos} | {cluster} | {prod} | {status} | {event_psds} | \n"""
  
 
 mattermost.submit_payload(message)
