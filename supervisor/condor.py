@@ -50,7 +50,11 @@ class CondorJob(object):
         """
         Find an asset related to this job.
         """
-        pass
+        path = os.path.join(self.run_directory, path)
+        if os.path.exists(path):
+            return path
+        else:
+            return None
 
     def get_config(self):
         """
@@ -63,7 +67,6 @@ class CondorJob(object):
         P.optionxform=str
         P.read(ini_location)
         return P
-        
     
     def get_data(self):
         data = {}
