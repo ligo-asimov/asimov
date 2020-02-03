@@ -1,3 +1,5 @@
+import ast
+
 from supervisor import gitlab, mattermost
 from supervisor import config
 from supervisor import condor
@@ -25,43 +27,33 @@ message += """| Event | IFOS | Cluster | Production | Status | PSDs |\n"""
 message += """|---|---|---|---|---|---|\n"""
 
 for event in events:
-    if "Prod0" in event.data:
-        print(event.title)
-        print(event.state)
-        print(event.data['Prod0'])
-        cluster = event.data['Prod0']
+
+    prod_keys = [key for key in event.data.keys() if "Prod" in key[0:5]]
+
+    print(event.title)
+    print(event.state)
+    
+    for prod in prod_keys:
+ 
+        print(event.data[prod])
+        cluster = event.data[prod]
         try:
-            job = condor.CondorJob(event.data['Prod0'])
+            job = condor.CondorJob(event.data[prod])
             status = job.status
 
-            for det, psd in get_psds(job):
-                psds += f"{det}"
-            try:
-                ifos = job.get_config().get("analysis", "ifos")
-            except KeyError:
-                ifos = "Error"
-        
-        
-            
+            if prod == "Prod0":
+                for det, psd in get_psds(job):
+                    psds += f"{det}"
+                try:
+                    ifos = job.get_config().get("analysis", "ifos")
+                except:
+                    ifos = "Error" 
 
         except ValueError:
             status = "Not running"
             ifos = "Unknown"
 
-        message += f"""| {event.title} | {ifos} | {cluster} | Prod0 | {status} | {psds} | \n"""
-
-    elif "Prod1" in event.data:
-        print(event.title)
-        print(event.state)
-        print(event.data['Prod1'])
-        cluster = event.data['Prod1']
-        try:
-            job = condor.CondorJob(event.data['Prod1'])
-            status = job.status
-
-        except ValueError:
-            status = "Not running"
-
-        message += f"""| {event.title} | |  {cluster} | Prod1 | {status} |\n"""        
+        message += f"""| {event.title} | {ifos} | {cluster} | {prod} | {status} | {psds} | \n"""
+ 
 
 mattermost.submit_payload(message)
