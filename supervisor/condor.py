@@ -67,7 +67,7 @@ class CondorJob(object):
         P.optionxform=str
         P.read(ini_location)
         return P
-    
+
     def get_data(self):
         data = {}
         for schedd_ad in htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd):
