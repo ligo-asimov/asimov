@@ -1,7 +1,7 @@
 """
 Handle run configuration files.
 """
-from configparser import ConfigParser
+from configparser import ConfigParser, NoOptionError
 import os
 import getpass
 import ast
@@ -22,6 +22,23 @@ class RunConfiguration(object):
             raise ValueError("Could not open the ini file")
 
         self.ini = ini
+
+    def check_fakecache(self):
+        """
+        Check to see if this file contains a fake-cache.
+
+        Returns
+        -------
+        bool 
+           Returns true if a fake cache has been used for this file.
+        """
+        try:
+            if len(self.ini.get("lalinference", "fake-cache"))>0:
+                return True
+            else:
+                return False
+        except NoOptionError:
+            return False
 
     def set_lalinference(self, **kwargs):
         for key, value in kwargs:

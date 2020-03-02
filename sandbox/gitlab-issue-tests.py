@@ -50,8 +50,7 @@ for event in events:
     if "Special" in event.labels:
         continue
 
-
-    if "DAQ::Needs BW" in event.labels and not (event.state=="Ready to start"):
+    if "DAQ::Needs BW" in event.labels and not (event.state in ["Ready to start", "Productions running"]):
         continue
 
     try:
@@ -60,9 +59,9 @@ for event in events:
         print(f"{event.title} missing from the uberrepo")
         continue
 
-    #repo.repo.git.stash()
-    #repo.repo.git.checkout("master")
-    #repo.repo.git.pull()
+    repo.repo.git.stash()
+    repo.repo.git.checkout("master")
+    repo.repo.git.pull()
 
     try:
         event_prods = repo.find_prods("C01_offline")
@@ -93,6 +92,9 @@ for event in events:
             print(e)
             cluster = None
 
+    elif event.state == "Stuck":
+        status = "Stuck"
+
     elif event.state in ["Generating PSDs", "Productions running"]:
         psds_dict = {}
         prod_keys = [key for key in event.data.keys() if "Prod" in key[0:5]]
@@ -100,9 +102,14 @@ for event in events:
             prod = prod.split("_")[0]
             if prod in event.data:
                 cluster = event.data[prod]
-                if cluster.lower() == "finished": 
-                    status = "Finished"
+                # if cluster.lower() == "finished": 
+                #     status = "Finished"
+                #     continue
+                
+                if cluster.lower() == "blocked":
+                    status = "Blocked"
                     continue
+
                 if cluster.lower() == "restart":
                     status = "Restarting"
 
@@ -127,9 +134,23 @@ for event in events:
                         print(e)
                         cluster = None
 
-                   
-                if f"{gitlab.STATE_PREFIX}:{prod} finished" in event.labels:
-                    continue
+                print(f"{prod}")
+                if f"{gitlab.STATE_PREFIX}:{prod} finished" in event.labels or cluster.lower() == "finished":
+
+                   if not event.data[f"{prod}"].lower() == "uploaded"  and not event.data[f"{prod}"].lower() == "manualupload":
+                        # Upload the event data
+                        try:
+                            repo.upload_prod(prod, event.data[f"{prod}_rundir"])
+                        except ValueError as e:
+                            if "already in table" in str(e):
+                                pass
+                            else:
+                                status = "Upload error"
+                                continue
+                        event.data[f"{prod}"] = "Uploaded"
+                        event.update_data()
+                        event.status = "Uploaded"
+
                 try:
                     job = condor.CondorJob(event.data[prod])
                     status = job.status
@@ -137,14 +158,23 @@ for event in events:
                     # There seems to be a problem finding this job, let's mark it as stuck
                     
                     rundir = event.data[f"{prod}_rundir"]
-                    if len(glob.glob(f"{rundir}/posterior_samples/*.hdf5"))>0:
+                    if (event.data[f"{prod}"].lower() != "uploaded") and (event.data[f"{prod}"].lower() != "manualupload") and (len(glob.glob(f"{rundir}/posterior_samples/*.hdf5"))>0):
                         event.issue_object.labels += [f"{gitlab.STATE_PREFIX}:{prod} finished"]
                         event.data[f"{prod}"] = "Finished"
                         event.update_data()
                         continue
+                    
+                    elif event.data[f"{prod}"].lower() == "uploaded":
+                        continue
+
+                    elif event.data[f"{prod}"].lower() == "manualupload":
+                        continue
+
                     else:
                         print(f"Problem with {event.title} production {prod}")
                         event.state = "Stuck"
+                        if f"{gitlab.STATE_PREFIX}::Productions running" in event.issue_object.labels:
+                            event.issue_object.labels.remove(f"{gitlab.STATE_PREFIX}::Productions running")
                         event.issue_object.labels += [f"{gitlab.STATE_PREFIX}::Stuck"]
                         event.issue_object.notes.create({"body": f"An unknown error has been encountered with {prod}"})
                         event.issue_object.save()
@@ -152,6 +182,8 @@ for event in events:
                         status = "Not running"
                         ifos = "Unknown"
                         continue
+                except RuntimeError:
+                    pass
 
                 if status in ['Removed', 'Held', 'Submission error', 'Unexplained']:
                     event.state = "Stuck"

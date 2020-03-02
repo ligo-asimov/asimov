@@ -34,6 +34,25 @@ class EventRepo(object):
         prods = glob.glob("Prod*.ini")
         return prods
 
+    def upload_prod(self, production, rundir, category="C01_offline"):
+        os.chdir(os.path.join(self.directory, category))
+
+        dagman = subprocess.Popen(["/home/charlie.hoy/gitlab/pesummary-config/upload_to_event_repository.sh", 
+                                   "--event", self.event,
+                                   "--exp", production,
+                                   "--rundir", rundir,
+                                   "--edit_homepage_table"]
+                                   , stdout=subprocess.PIPE, 
+            stderr=subprocess.STDOUT   )
+        out, err = dagman.communicate()
+
+        if err or  not "master -> master" in str(out):
+            raise ValueError(f"Sample upload failed.\n{out}\n{err}")
+        else:
+            return out
+
+
+        
     def build_dag(self, category, production, psds=None):
         gps_file = glob.glob("*gps*.txt")[0]
         os.chdir(os.path.join(self.directory, category))
@@ -55,13 +74,20 @@ class EventRepo(object):
 
         ini.set("condor", "queue", "Priority_PE")
 
-        if psds and not production == "Prod0":
+        need_psds = False
+        try:
+            for det in psds.keys():
+                ini.get("engine", f"{det}-psd")
+        except:
+            need_psds =True
+
+        if psds and not production == "Prod0" and need_psds:
             for det, location in psds.items():
                 ini.set("engine", f"{det}-psd", location)
-        elif not production == "Prod0":
+        elif not production == "Prod0" and need_psds:
             raise ValueError("No PSD files were provided.")
 
-        web_path = os.path.join(os.path.expanduser("~"), "public_html", "LVC", "projects", "O3", "C01", self.event) # TODO Make this generic
+        web_path = os.path.join(os.path.expanduser("~"), "public_html", "LVC", "projects", "O3", "C01", self.event, production) # TODO Make this generic
         print("web-path is {}".format(web_path))
         ini.set("paths", "webdir", web_path)
 

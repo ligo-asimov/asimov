@@ -63,8 +63,17 @@ class EventIssue(object):
         """
         Store event data in the comments on the event repository.
         """
+
+        notes = self.issue_object.notes.list(per_page=200)
+        for note in reversed(notes):
+            if "# Run information" in note.body:
+                try:
+                    note.delete()
+                except:
+                    pass
+
         message = ""
-        header = "# Run information\n```\n"
+        header = "# Run information\nAdded by the run supervising robot :robot:.\n```\n"
         for key, val in self.data.items():
             message += f"{key}: {val}\n"
         footer = "```"
@@ -83,7 +92,7 @@ class EventIssue(object):
         """
         data = {}
         keyval = r"([\w]+):[\s]*([\w\/\.-]+)"
-        notes = self.issue_object.notes.list()
+        notes = self.issue_object.notes.list(per_page=200)
         for note in reversed(notes):
             if "# Run information" in note.body:
                 for match in re.finditer(keyval, note.body):
