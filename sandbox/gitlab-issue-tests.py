@@ -137,7 +137,8 @@ for event in events:
                                 continue
                         event.data[f"{prod}"] = "Uploaded"
                         event.update_data()
-                        event.status = "Uploaded"
+                        mattermost.send_message(f":mega: {event.title} {prod} has been uploaded. :robot:", "o3a-catalog-paper")
+                        mattermost.send_message(f":mega: {event.title} {prod} has been uploaded. :robot:")
 
                 try:
                     job = condor.CondorJob(event.data[prod])
@@ -164,6 +165,7 @@ for event in events:
                         print(f"Problem with {event.title} production {prod}")
                         event.state = "Stuck"
                         event.add_note(f"An unknown error has been encountered with {prod}")
+                        mattermost.send_message(f":mega: I've run into a problem with {event.title} {prod}. :robot:")
 
                         status = "Not running"
                         ifos = "Unknown"
