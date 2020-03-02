@@ -7,6 +7,8 @@ from supervisor.ini import RunConfiguration
 
 import os, glob
 
+import otter
+
 server = gitlab.gitlab.Gitlab('https://git.ligo.org', private_token=config.get("gitlab", "token"))
 repository = server.projects.get(3816)
 
@@ -27,6 +29,8 @@ mattermost = mattermost.Mattermost()
 
 mattermost.send_message(":mega: The run supervising robot is running. :robot:", "@daniel-williams")
 
+report = otter.Otter(filename="/home/daniel.williams/public_html/LVC/projects/O3/C01/summary.html")
+
 message = """# Run updates\n"""
 message += """| Event | IFOS | Cluster | Production | Status | PSDs |\n"""
 message += """|---|---|---|---|---|---|\n"""
@@ -35,6 +39,10 @@ message += """|---|---|---|---|---|---|\n"""
 
 for event in events:
     print(event.title)
+
+    with report:
+        report + f"#{event.title}"
+    
     if event.state == None:
         continue
     if "Special" in event.labels:
@@ -123,6 +131,10 @@ for event in events:
                         cluster = None
 
                 print(f"{prod}")
+
+                with report:
+                    report + f"| {event.title} | {prod} | {status} | {cluster} |"
+                
                 if f"{gitlab.STATE_PREFIX}:{prod} finished" in event.labels or cluster.lower() == "finished":
 
                    if not event.data[f"{prod}"].lower() == "uploaded"  and not event.data[f"{prod}"].lower() == "manualupload":
