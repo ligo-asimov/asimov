@@ -10,10 +10,36 @@ class Mattermost(object):
         else:
             self.url = url
 
-    def send_message(self, message, channel):
+    def send_message(self, message, channel=None):
+        """
+        Send a message to a chat channel.
+        
+        Parameters
+        ----------
+        message : str 
+           The text of the message.
+        channel : str, optional
+           The name of the channel.
+           To send a direct message to a person prefix their username with
+           an @ sign. Defaults to the default channel set in mattermost
+           for the webhook.
+        """
         self.submit_payload(message, channel)
             
     def submit_payload(self, message, channel=None):
+        """
+        Send a payload (normally a message) to a chat channel.
+
+        Parameters
+        ----------
+        message : str 
+           The text of the message.
+        channel : str, optional
+           The name of the channel.
+           To send a direct message to a person prefix their username with
+           an @ sign. Defaults to the default channel set in mattermost
+           for the webhook.
+        """
         data = {"text": message}
 
         if channel:
