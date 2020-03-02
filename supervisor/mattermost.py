@@ -10,9 +10,15 @@ class Mattermost(object):
         else:
             self.url = url
 
-    def submit_payload(self, message):
+    def send_message(self, message, channel):
+        self.submit_payload(message, channel)
+            
+    def submit_payload(self, message, channel=None):
         data = {"text": message}
-    
+
+        if channel:
+            data['channel'] = channel
+        
         response = requests.post(self.url, data=json.dumps(data),
                                  headers={"Content-Type": "application/json"})
 

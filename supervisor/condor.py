@@ -6,6 +6,8 @@ from configparser import ConfigParser
 
 import htcondor
 
+from . import ini
+
 class CondorJob(object):
     """
     An object to represent a running condor job.
@@ -62,10 +64,8 @@ class CondorJob(object):
         """
         ini_location = os.path.join(self.run_directory,
                                     "config.ini")
-        
-        P = ConfigParser()
-        P.optionxform=str
-        P.read(ini_location)
+
+        P = ini.RunConfiguration(ini_location)
         return P
 
     def get_data(self):

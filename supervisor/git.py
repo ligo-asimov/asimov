@@ -2,10 +2,11 @@ import os
 import glob
 import subprocess
 import re
-from configparser import ConfigParser
 import getpass
 
 import git
+
+from . import ini
 
 
 class MetaRepository(object):
@@ -25,16 +26,47 @@ class MetaRepository(object):
 class EventRepo(object):
 
     def __init__(self, directory):
+        """
+        Read a git repository containing event PE information.
+
+        Parameters
+        ----------
+        directory : str 
+           The path to the git repository on the filesystem.
+        """
         self.event = directory.split("/")[-1]
         self.directory = directory
         self.repo = git.Repo(directory)
     
     def find_prods(self, category="C01_offline"):
+        """
+        Find all of the productions for a relevant category of runs
+        in the event repository.
+
+        Parameters
+        ----------
+        category : str, optional
+           The category of run. Defaults to "C01_offline".
+        """
+        
         os.chdir(os.path.join(self.directory, category))
         prods = glob.glob("Prod*.ini")
         return prods
 
     def upload_prod(self, production, rundir, category="C01_offline"):
+        """
+        Upload the results of a PE job to the event repostory.
+
+        Parameters
+        ----------
+        category : str, optional
+           The category of the job.
+           Defaults to "C01_offline".
+        production : str
+           The production name.
+        rundir : str 
+           The run directory of the PE job.
+        """
         os.chdir(os.path.join(self.directory, category))
 
         dagman = subprocess.Popen(["/home/charlie.hoy/gitlab/pesummary-config/upload_to_event_repository.sh", 
@@ -51,48 +83,51 @@ class EventRepo(object):
         else:
             return out
 
+    def update(self, stash=False, branch="master"):
+        """
+        Pull the latest updates to the repository.
+
+        Parameters
+        ----------
+        stash : bool, optional
+           If true any changes which are in the local version
+           of the repository are first stashed.
+           Default is False.
+        branch : str, optional
+           The branch which should be checked-out.
+           Default is master.
+        """
+        if stash:
+            self.repo.git.stash()
+
+        self.repo.git.checkout(branch)
+        self.repo.git.pull()
 
         
-    def build_dag(self, category, production, psds=None):
+        
+    def build_dag(self, category, production, psds=None, user = None):
         gps_file = glob.glob("*gps*.txt")[0]
         os.chdir(os.path.join(self.directory, category))
         ini_loc = glob.glob(f"*{production}*.ini")[0]
 
-        ini = ConfigParser()
-        ini.optionxform=str
-
         try: 
-            ini.read(ini_loc)
-        except:
+            ini = ini.RunConfiguration(ini_loc)
+        except ValueError:
             raise ValueError("Could not open the ini file")
 
-        #try:
-        user = getpass.getuser()
-        ini.set("condor", "accounting_group_user", user)
-        #except:
-        #    pass
+        ini.update_accounting(user)
 
-        ini.set("condor", "queue", "Priority_PE")
+        ini.set_queue("Priority_PE")
 
-        need_psds = False
-        try:
-            for det in psds.keys():
-                ini.get("engine", f"{det}-psd")
-        except:
-            need_psds =True
+        if psds:
+            ini.update_psds(psds, clobber=False)
+            ini.run_bayeswave(False)
+        else:
+            # Need to generate PSDs as part of this job.
+            ini.run_bayeswave(True)
 
-        if psds and not production == "Prod0" and need_psds:
-            for det, location in psds.items():
-                ini.set("engine", f"{det}-psd", location)
-        elif not production == "Prod0" and need_psds:
-            raise ValueError("No PSD files were provided.")
-
-        web_path = os.path.join(os.path.expanduser("~"), "public_html", "LVC", "projects", "O3", "C01", self.event, production) # TODO Make this generic
-        print("web-path is {}".format(web_path))
-        ini.set("paths", "webdir", web_path)
-
-        with open(ini_loc, "w") as fp:
-            ini.write(fp)
+        ini.update_webdir(self.event, production)
+        ini.save()
 
         pipe = subprocess.Popen(["lalinference_pipe", "-g", f"{gps_file}", "-r", production, ini_loc],
                                 stdout=subprocess.PIPE,

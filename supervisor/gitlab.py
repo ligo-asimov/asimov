@@ -56,9 +56,39 @@ class EventIssue(object):
         """
         Set the event state.
         """
+        for label in self.issue_object.labels:
+            if f"{STATE_PREFIX}::" in label:
+                # Need to remove all of the other scoped labels first.
+                self.issue_object.labels.remove(label)
         self.issue_object.labels += ["{}::{}".format(STATE_PREFIX, state)]
         self.issue_object.save()
 
+    def add_note(self, text):
+        """
+        Add a comment to the event issue.
+        A footer will be added to identify this as being created by the 
+        supervisor and not the user.
+        """
+        
+        header = """"""
+        footer = """
+        Added by the run supervision robot :robot:.
+        """
+        self.issue_object.notes.create({"body": header+text+footer})
+        self.issue_object.save()
+
+    def add_label(self, label):
+        """
+        Add a new label to an event issue.
+
+        Parameters
+        ----------
+        label : str 
+           The name of the label.
+        """
+        self.issue_object.labels += [f"{STATE_PREFIX}:{label}"]
+        self.issue_object.save()
+        
     def update_data(self):
         """
         Store event data in the comments on the event repository.

@@ -10,18 +10,6 @@ import os, glob
 server = gitlab.gitlab.Gitlab('https://git.ligo.org', private_token=config.get("gitlab", "token"))
 repository = server.projects.get(3816)
 
-def get_psds(job):
-    config = job.get_config()
-    try:
-        dets = ast.literal_eval(config.get("analysis", "ifos"))
-    except:
-        print("Could not find the ini file for this event.")
-    psds = {}
-    for det in dets:
-        asset = f"ROQdata/0/BayesWave_PSD_{det}/post/clean/glitch_median_PSD_forLI_{det}.dat"
-        psds[det] = job.get_asset(asset)
-    return psds
-
 def get_psds_rundir(rundir):
     psds = {}
     dets = ['L1', 'H1', 'V1']
@@ -36,6 +24,8 @@ uber_repository = git.MetaRepository("/home/daniel.williams/events/O3/o3a_catalo
 events = gitlab.find_events(repository, milestone="PE: C01 Reruns")
 
 mattermost = mattermost.Mattermost()
+
+mattermost.send_message(":mega: The run supervising robot is running. :robot:", "@daniel-williams")
 
 message = """# Run updates\n"""
 message += """| Event | IFOS | Cluster | Production | Status | PSDs |\n"""
@@ -59,9 +49,7 @@ for event in events:
         print(f"{event.title} missing from the uberrepo")
         continue
 
-    repo.repo.git.stash()
-    repo.repo.git.checkout("master")
-    repo.repo.git.pull()
+    repo.update()
 
     try:
         event_prods = repo.find_prods("C01_offline")
@@ -159,7 +147,9 @@ for event in events:
                     
                     rundir = event.data[f"{prod}_rundir"]
                     if (event.data[f"{prod}"].lower() != "uploaded") and (event.data[f"{prod}"].lower() != "manualupload") and (len(glob.glob(f"{rundir}/posterior_samples/*.hdf5"))>0):
-                        event.issue_object.labels += [f"{gitlab.STATE_PREFIX}:{prod} finished"]
+
+                        event.add_label(f"{prod} finished")
+                        
                         event.data[f"{prod}"] = "Finished"
                         event.update_data()
                         continue
@@ -173,11 +163,7 @@ for event in events:
                     else:
                         print(f"Problem with {event.title} production {prod}")
                         event.state = "Stuck"
-                        if f"{gitlab.STATE_PREFIX}::Productions running" in event.issue_object.labels:
-                            event.issue_object.labels.remove(f"{gitlab.STATE_PREFIX}::Productions running")
-                        event.issue_object.labels += [f"{gitlab.STATE_PREFIX}::Stuck"]
-                        event.issue_object.notes.create({"body": f"An unknown error has been encountered with {prod}"})
-                        event.issue_object.save()
+                        event.add_note(f"An unknown error has been encountered with {prod}")
 
                         status = "Not running"
                         ifos = "Unknown"
