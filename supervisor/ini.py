@@ -44,6 +44,21 @@ class RunConfiguration(object):
         for key, value in kwargs:
             self.ini.set("lalinference", key, value)
 
+
+    def get_psds(self):
+        """
+        Check if PSDs have been set in the ini file,
+        and return them if they have.
+        """
+        psds = {}
+        for det in self.get_ifos():
+            try:
+                psds[det] = self.ini.get("engine", f"{det}-psd")
+            except:
+                pass
+        return psds
+
+
     def update_psds(self, psds, clobber=False):
         """
         Update the locations of the PSDs in the ini file.
@@ -56,6 +71,7 @@ class RunConfiguration(object):
         for det, location in psds.items():
             try:
                 self.ini.get("engine", f"{det}-psd")
+                needs_psd = False
             except:
                 needs_psd = True
         if needs_psd or clobber:
@@ -79,7 +95,12 @@ class RunConfiguration(object):
                 self.ini.remove_option("condor", "bayeswave")
             except:
                 pass
-        
+
+    def get_engine(self):
+        """
+        Fetch all of the Lalinference engine data.
+        """
+        return dict(self.ini.items("engine"))
             
     def get_ifos(self):
         return ast.literal_eval(self.ini.get("analysis", "ifos"))

@@ -6,7 +6,7 @@ import getpass
 
 import git
 
-from . import ini
+from .ini import RunConfiguration
 
 
 class MetaRepository(object):
@@ -53,7 +53,7 @@ class EventRepo(object):
         prods = glob.glob("Prod*.ini")
         return prods
 
-    def upload_prod(self, production, rundir, category="C01_offline"):
+    def upload_prod(self, production, rundir, preferred=False, category="C01_offline", rootdir="public_html/LVC/projects/O3/C01/", rename = False):
         """
         Upload the results of a PE job to the event repostory.
 
@@ -68,12 +68,21 @@ class EventRepo(object):
            The run directory of the PE job.
         """
         os.chdir(os.path.join(self.directory, category))
-
-        dagman = subprocess.Popen(["/home/charlie.hoy/gitlab/pesummary-config/upload_to_event_repository.sh", 
+        preferred_list = ["--preferred", "--append_preferred"]
+        web_path = os.path.join(os.path.expanduser("~"), *rootdir.split("/"), self.event, production) # TODO Make this generic
+        if rename:
+            prod_name = rename
+        else:
+            prod_name = production
+        command = ["/home/charlie.hoy/gitlab/pesummary-config/upload_to_event_repository.sh", 
                                    "--event", self.event,
-                                   "--exp", production,
+                                   "--exp", prod_name,
                                    "--rundir", rundir,
+                                   "--webdir", web_path,
                                    "--edit_homepage_table"]
+        if preferred: 
+            command.append(preferred_list)
+        dagman = subprocess.Popen(command
                                    , stdout=subprocess.PIPE, 
             stderr=subprocess.STDOUT   )
         out, err = dagman.communicate()
@@ -82,6 +91,37 @@ class EventRepo(object):
             raise ValueError(f"Sample upload failed.\n{out}\n{err}")
         else:
             return out
+
+        def upload_prod_preferred(self, productions, rundir, category="C01_offline"):
+            """
+            Upload the results of a PE job to the event repostory.
+
+            Parameters
+            ----------
+            category : str, optional
+               The category of the job.
+               Defaults to "C01_offline".
+            production : list
+               The list of production names.
+            rundir : str 
+               The run directory of the PE job.
+            """
+            os.chdir(os.path.join(self.directory, category))
+
+            dagman = subprocess.Popen(["/home/charlie.hoy/gitlab/pesummary-config/upload_to_event_repository.sh", 
+                                       "--event", self.event,
+                                       "--exp", production,
+                                       "--rundir", rundir,
+                                       "--edit_homepage_table"]
+                                       , stdout=subprocess.PIPE, 
+                stderr=subprocess.STDOUT   )
+            out, err = dagman.communicate()
+
+            if err or  not "master -> master" in str(out):
+                raise ValueError(f"Sample upload failed.\n{out}\n{err}")
+            else:
+                return out
+
 
     def update(self, stash=False, branch="master"):
         """
@@ -111,7 +151,7 @@ class EventRepo(object):
         ini_loc = glob.glob(f"*{production}*.ini")[0]
 
         try: 
-            ini = ini.RunConfiguration(ini_loc)
+            ini = RunConfiguration(ini_loc)
         except ValueError:
             raise ValueError("Could not open the ini file")
 
