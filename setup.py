@@ -14,7 +14,7 @@ test_requirements = [
 ]
 
 setup(
-    name='pe-supervisor',
+    name='ligo-asimov',
     use_scm_version=True,
     setup_requires=['setuptools_scm'],
     description="""A Python package for managing and interacting with data analysis jobs.""",
@@ -22,18 +22,18 @@ setup(
     author="Daniel Williams",
     author_email='daniel.williams@ligo.org',
     url='https://github.com/transientlunatic/supervisor',
-    packages=['supervisor'],
-    package_dir={'supervisor': 'supervisor'},
-    # entry_points={
-    #     'console_scripts': [
-    #         'supervisor=supervisor.cli:main'
-    #     ]
-    # },
+    packages=['asimov'],
+    package_dir={'asimov': 'asimov'},
+    entry_points={
+        'console_scripts': [
+            'olivaw=asimov.olivaw:main'
+        ]
+    },
     include_package_data=True,
     install_requires=requirements,
     license="MIT license",
     zip_safe=True,
-    keywords='supervisor, pe, ligo',
+    keywords='supervisor, pe, ligo, asimov',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
