@@ -28,6 +28,69 @@ $ olivaw
 
 on the command line. Note that this is expected to change in the near future as the package develops, however.
 
+#### Job status
+
+Olivaw keeps track of the status of PE jobs using the LIGO gitlab issue tracker.
+To do this it uses a combination of issue tags and comments on the issue.
+
+Issue tags are used to track the high-level status of the PE on an entire event.
+For example, that the event is "Running" or "Ready to Run" or "Stuck".
+This allows the broad behaviour of the PE on this event to be tracked through the issue boards interface on gitlab.
+
+The current sequence of tags supported by `Olivaw` are
+```
+Ready to Run --> Generating PSDs --> Productions running --> Runs complete
+                \                       \
+             	 -------------------------------------------> Stuck
+```
+
+Each of these states is implemented as a *scoped label* in gitlab, so each state is prefixed with e.g. `C01::` in order to prevent multiple tags from this sequence being applied simultaneously.
+
++ The `Ready to Run` tag should be applied once the bot should start running this event. This state must be applied manually to begin job submission.
++ The `Generating PSDs` state will be applied by the bot while the `Prod0` job is running Bayeswave to produce the PSDs for the analysis.
++ The `Productions running` state will be applied once the PSDs have been generated.
++ The `Runs complete` state is applied once all of the productions have completed.
+In addition to these standard states
++ The `Stuck` state will be applied if the bot detects a problem with one of the running productions.
+
+Each production is tracked using a comment which is added to the gitlab issue.
+This comment will have the general form of
+```
+# Run information
+Some text about the robot tracking here.
+
+Prod0: State
+Prod0_rundir: /home/albert.einstein/S980000a/C01_offline/Prod0/
+```
+with the last two lines repeated for each production which is due to be run by the bot.
+
+The `ProdN_rundir` line simply records the location of the run directory on the cluster's file system.
+
+The `ProdN` line tracks the state of the job. 
+The sequence of these states is
+```
+Start --> <job id> --> Finished --> Uploaded (--> Finalised)*
+
+* The finalised step is only reached if the run is manually marked as preferred, see below for details.
+```
+
++ `Start` : This job should be started automatically. This state must be applied manually.
++ `Blocked` : Do not start this job automatically. (Deprecated; the bot now only starts productions which are labelled with the `Start` state)
++ `Preferred` : This production is the preferred run; Upload it as the preferred run. Must be applied manually to runs which have been marked as `uploaded`.
++ `Stopped` : This run has been manually stopped; stop tracking it. Must be applied manually. 
++ `Stuck` : A problem has been discovered with this run, and needs manual intervention.
++ `Uploaded` : This event has been uploaded to the event repository.
++ `Restart` : This job should be restarted by Olivaw. Must be applied manually.
++ `Manualupload` : The results of this run should not be uploaded by the bot. Must be applied manually.
++ `Finised` : This job has finished running and the results are ready to be uploaded on the next bot check.
++ `Finalised` : This job has been uploaded as the preferred job and is therefore finalised.
+
+In addition to these string states, the bot will apply an integer state which indicates the condor job number of a running job.
+
+Some states can be combined, and separated with a comma: for example, preferred should always be applied to a job which has been marked as "uploaded", so should appear as "uploaded, preferred" in order for Olivaw to attempt to finalise this run.
+
+
+
 #### Configuration
 
 In order to run you should ensure that the `asimov` config file has the following values set:
