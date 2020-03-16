@@ -10,7 +10,7 @@ import os, glob, datetime
 import otter
 
 server = gitlab.gitlab.Gitlab('https://git.ligo.org', private_token=config.get("gitlab", "token"))
-repository = server.projects.get(3816)
+repository = server.projects.get(config.get("olivaw", "tracking_repository"))
 
 def get_psds_rundir(rundir):
     psds = {}
@@ -54,7 +54,7 @@ def start_dag(event, repo, prod, psd_prod="Prod0"):
         cluster = repo.submit_dag("C01_offline", prod)
         job = condor.CondorJob(cluster)
         event.data[prod] = cluster
-        event.data[f"{prod}_rundir"] = f"/home/daniel.williams/events/O3/o3a_catalog/{event.title}/C01_offline/"+job.run_directory
+        event.data[f"{prod}_rundir"] = f"{config.get('olivaw', 'metarepository')}/{event.title}/C01_offline/"+job.run_directory
         event.update_data()
         event.state = "Productions running"
     except ValueError as e:
@@ -64,9 +64,9 @@ def start_dag(event, repo, prod, psd_prod="Prod0"):
         job = None
     return cluster, status, job
 
-uber_repository = git.MetaRepository("/home/daniel.williams/events/O3/o3a_catalog_events")
+uber_repository = git.MetaRepository(config.get("olivaw", "metarepository"))
 
-events = gitlab.find_events(repository, milestone="PE: C01 Reruns")
+events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"))
 
 mattermost = mattermost.Mattermost()
 
@@ -76,7 +76,7 @@ def main():
 
     mattermost.send_message(":mega: The run supervising robot is running. :robot:", "@daniel-williams")
 
-    report = otter.Otter(filename="/home/daniel.williams/public_html/LVC/projects/O3/C01/summary.html", 
+    report = otter.Otter(filename=config.get("olivaw", "summary_report"), 
                          author="R. Daniel Williams",
                          title="Asimov/Olivaw : Event supervision report"
     )
@@ -118,9 +118,9 @@ def main():
 
 
         try:
-            event_prods = repo.find_prods("C01_offline")
+            event_prods = repo.find_prods(config.get("olivaw", "run_category"))
         except:
-            print(f"No C01 runs in this repository")
+            print(f"No runs in this repository")
             continue
 
         event_psds = set(["L1", "H1", "V1"])
