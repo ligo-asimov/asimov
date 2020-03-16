@@ -92,36 +92,6 @@ class EventRepo(object):
         else:
             return out
 
-        def upload_prod_preferred(self, productions, rundir, category="C01_offline"):
-            """
-            Upload the results of a PE job to the event repostory.
-
-            Parameters
-            ----------
-            category : str, optional
-               The category of the job.
-               Defaults to "C01_offline".
-            production : list
-               The list of production names.
-            rundir : str 
-               The run directory of the PE job.
-            """
-            os.chdir(os.path.join(self.directory, category))
-
-            dagman = subprocess.Popen(["/home/charlie.hoy/gitlab/pesummary-config/upload_to_event_repository.sh", 
-                                       "--event", self.event,
-                                       "--exp", production,
-                                       "--rundir", rundir,
-                                       "--edit_homepage_table"]
-                                       , stdout=subprocess.PIPE, 
-                stderr=subprocess.STDOUT   )
-            out, err = dagman.communicate()
-
-            if err or  not "master -> master" in str(out):
-                raise ValueError(f"Sample upload failed.\n{out}\n{err}")
-            else:
-                return out
-
 
     def update(self, stash=False, branch="master"):
         """

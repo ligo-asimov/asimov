@@ -164,7 +164,6 @@ def main():
                             ifos = "Unknown"
                             psds = ""
 
-
                     elif "blocked" not in cluster.lower():
                         run_ini = os.path.join(event.data[f"{prod}_rundir"], "config.ini")
                         actual_config = RunConfiguration(run_ini)
@@ -186,9 +185,11 @@ def main():
                             n_productions -= 1
                         else:
                             continue
+                        
+                    elif "finalised" in cluster.lower():
+                        continue
 
-
-                    if "stopped" in cluster.lower():
+                    elif "stopped" in cluster.lower():
                         n_productions -= 1
                         status = "Manually cancelled"
                         continue
