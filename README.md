@@ -22,14 +22,15 @@ Please look at the defaults which are set in the sample `.ini` file in this repo
 Olivaw is the bot which was written to manage parameter estimation jobs for the O3a catalogue paper.
 Once this package is installed it can be run as 
 
-```$ olivaw```
+```
+$ olivaw 
+```
 
 on the command line. Note that this is expected to change in the near future as the package develops, however.
 
 #### Configuration
 
 In order to run you should ensure that the `asimov` config file has the following values set:
-```
 
 ```
 [gitlab]
@@ -39,7 +40,7 @@ In order to run you should ensure that the `asimov` config file has the followin
 # account
 token = 
 # Set the event_label to the label which is used to indicate that an issue on the tracker represents an
-# event, e.g. `trigger`
+# event, e.g. trigger
 event_label = trigger
 
 [mattermost]
