@@ -1,9 +1,9 @@
 import ast
 
-from supervisor import gitlab, mattermost
-from supervisor import config
-from supervisor import condor, git
-from supervisor.ini import RunConfiguration
+from asimov import gitlab, mattermost
+from asimov import config
+from asimov import condor, git
+from asimov.ini import RunConfiguration
 
 import os, glob, datetime
 
@@ -23,7 +23,7 @@ def get_psds_rundir(rundir):
 
 def upload_results(repo, event, prod, preferred=False, rename=None):
     try:
-        repo.upload_prod(prod, event.data[f"{prod}_rundir"], preferred, rename)
+        repo.upload_prod(prod, event.data[f"{prod}_rundir"], preferred=preferred, rename=rename)
     except ValueError as e:
         if "already in table" in str(e):
             print("Already uploaded.")

@@ -67,13 +67,15 @@ class EventRepo(object):
         rundir : str 
            The run directory of the PE job.
         """
-        os.chdir(os.path.join(self.directory, category))
+        
+        #os.chdir(os.path.join(self.directory, category))
         preferred_list = ["--preferred", "--append_preferred"]
         web_path = os.path.join(os.path.expanduser("~"), *rootdir.split("/"), self.event, production) # TODO Make this generic
         if rename:
             prod_name = rename
         else:
             prod_name = production
+
         command = ["/home/charlie.hoy/gitlab/pesummary-config/upload_to_event_repository.sh", 
                                    "--event", self.event,
                                    "--exp", prod_name,
@@ -82,9 +84,7 @@ class EventRepo(object):
                                    "--edit_homepage_table"]
         if preferred: 
             command.append(preferred_list)
-        dagman = subprocess.Popen(command
-                                   , stdout=subprocess.PIPE, 
-            stderr=subprocess.STDOUT   )
+        dagman = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         out, err = dagman.communicate()
 
         if err or  not "master -> master" in str(out):
