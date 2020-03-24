@@ -9,6 +9,8 @@ from setuptools import setup
 with open("requirements.txt") as requires_file:
     requirements = requires_file.read().split("\n")
 
+requirements = [requirement for requirement in requirements if not ("+" in requirement)]
+    
 test_requirements = [
     # TODO: put package test requirements here
 ]
