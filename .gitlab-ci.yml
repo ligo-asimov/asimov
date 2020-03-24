@@ -31,6 +31,7 @@ pages:
   stage: build
   script:
   - pip install sphinx numpydoc
+  - pip install -r requirements.txt
   - pip install .
   - cd docs && make html
   - mv docs/build/html/ public/
