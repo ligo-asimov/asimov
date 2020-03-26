@@ -83,7 +83,7 @@ class EventRepo(object):
                                    "--webdir", web_path,
                                    "--edit_homepage_table"]
         if preferred: 
-            command.append(preferred_list)
+            command += preferred_list
         dagman = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         out, err = dagman.communicate()
 

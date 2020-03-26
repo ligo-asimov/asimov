@@ -16,10 +16,15 @@ class RunConfiguration(object):
         ini = ConfigParser()
         ini.optionxform=str
 
-        try: 
-            ini.read(path)
-        except:
-            raise ValueError("Could not open the ini file")
+        if type(path) == dict:
+            ini.read_dict(path)
+        else:
+
+
+            try: 
+                ini.read(path)
+            except:
+                raise ValueError("Could not open the ini file")
 
         self.ini = ini
 
