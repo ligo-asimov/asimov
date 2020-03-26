@@ -31,6 +31,15 @@ Pre-built Bot scripts
    olivaw
 
 
+Module documentation
+====================
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Modules
+
+   api/git
+	     
 Indices and tables
 ==================
 

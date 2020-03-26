@@ -23,7 +23,10 @@ def get_psds_rundir(rundir):
 
 def upload_results(repo, event, prod, preferred=False, rename=None):
     try:
-        repo.upload_prod(prod, event.data[f"{prod}_rundir"], preferred=preferred, rename=rename)
+        if preferred:
+            repo.upload_preferred(self, event, prod)
+        else:
+            repo.upload_prod(prod, event.data[f"{prod}_rundir"], preferred=preferred, rename=rename)
     except ValueError as e:
         if "already in table" in str(e):
             print("Already uploaded.")

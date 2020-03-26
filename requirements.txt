@@ -3,3 +3,4 @@ git+https://github.com/transientlunatic/sphinx-daniel-theme.git
 sphinx
 python-git
 otter-report
+htcondor
