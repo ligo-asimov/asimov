@@ -77,7 +77,9 @@ mattermost = mattermost.Mattermost()
 
 def main():
 
-    mattermost.send_message(":mega: The run supervising robot is running. :robot:", "@daniel-williams")
+    print("Olivaw is supervising")
+
+    mattermost.send_message(":mega: The run supervising robot is running. :robot:")
 
     report = otter.Otter(filename=config.get("olivaw", "summary_report"), 
                          author="R. Daniel Williams",
@@ -183,10 +185,15 @@ def main():
                         event_psds_l.append([prod,psds])
                         table.append([event.title, prod, cluster, engine_data['approx'], flow, ifos, datatypes, datasource])
 
+                    print(f"\t{cluster.lower()}")
+
                     if "preferred" in cluster.lower():
+                        print(f"{prod} is the preferred production")
                         if upload_results(repo, event, prod, preferred=True, rename = f"C01:{engine_data['approx']}"):
                             n_productions -= 1
+                            continue
                         else:
+                            print("Preferred upload failed")
                             continue
                         
                     elif "finalised" in cluster.lower():
@@ -201,22 +208,19 @@ def main():
                         status = "Stuck"
                         continue
 
-                    elif cluster.lower() == "blocked":
+                    elif "blocked" in cluster.lower():
                         status = "Blocked"
                         continue
 
-                    elif cluster.lower() == "uploaded":
+                    elif "uploaded" in cluster.lower():
                         status = "Uploaded"
                         n_productions -= 1
 
-                    elif cluster.lower() == "restart":
+                    elif "restart" in cluster.lower():
                         status = "Restarting"
                         cluster, status, job = start_dag(event, repo, prod)
 
-                    elif cluster.lower() == "manualupload":
-                        continue
-
-                    elif cluster.lower() == "finished":
+                    elif "finished" in cluster.lower():
                         # Upload the event data
                         if upload_results(repo, event, prod):
                             n_productions -= 1

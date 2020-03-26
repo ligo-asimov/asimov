@@ -20,7 +20,7 @@ def find_events(repository, milestone=None):
                                     milestone=milestone,
                                     per_page=1000)
 
-    return [EventIssue(issue) for issue in issues]
+    return [EventIssue(issue, repository) for issue in issues]
 
 
 class EventIssue(object):
@@ -34,12 +34,16 @@ class EventIssue(object):
        The issue which represents the event.
     """
 
-    def __init__(self, issue):
+    def __init__(self, issue, repository):
         self.issue_object = issue
         self.title = issue.title
         self.issue_id = issue.id
         self.labels = issue.labels
         self.data = self.parse_notes()
+        self.repository = repository
+
+    def _refresh(self):
+        self.issue_object = self.repository.issues.get(self.issue_object.iid)
 
     @property
     def state(self):
@@ -56,6 +60,7 @@ class EventIssue(object):
         """
         Set the event state.
         """
+        self._refresh()
         for label in self.issue_object.labels:
             if f"{STATE_PREFIX}::" in label:
                 # Need to remove all of the other scoped labels first.
@@ -69,7 +74,7 @@ class EventIssue(object):
         A footer will be added to identify this as being created by the 
         supervisor and not the user.
         """
-        
+        self._refresh()
         header = """"""
         footer = """
         Added by the run supervision robot :robot:.
@@ -86,6 +91,7 @@ class EventIssue(object):
         label : str 
            The name of the label.
         """
+        self._refresh()
         self.issue_object.labels += [f"{STATE_PREFIX}:{label}"]
         self.issue_object.save()
         
@@ -93,7 +99,7 @@ class EventIssue(object):
         """
         Store event data in the comments on the event repository.
         """
-
+        self._refresh()
         notes = self.issue_object.notes.list(per_page=200)
         for note in reversed(notes):
             if "# Run information" in note.body:
@@ -121,7 +127,7 @@ class EventIssue(object):
         will be parsed.
         """
         data = {}
-        keyval = r"([\w]+):[\s]*([\w\/\.-]+)"
+        keyval = r"([\w]+):[\s]*([ \w\#\/\,\.-]+)"
         notes = self.issue_object.notes.list(per_page=200)
         for note in reversed(notes):
             if "# Run information" in note.body:
