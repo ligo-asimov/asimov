@@ -1,5 +1,9 @@
 """
 Handle run configuration files.
+
+This module is inteded to read and manipulate the run configuration files which are used by ``LALInferencePipe`` to design a parameter estimation run.
+
+
 """
 from configparser import ConfigParser, NoOptionError
 import os
@@ -7,10 +11,16 @@ import getpass
 import ast
 
 class RunConfiguration(object):
-
+    """A class to represent a run configuration."""
+    
     def __init__(self, path):
         """
         Open the run configuration file.
+
+        Parameters
+        ----------
+        path : str
+           The path to a run configuration ini file.
         """
         self.ini_loc = path
         ini = ConfigParser()
@@ -32,6 +42,9 @@ class RunConfiguration(object):
         """
         Check to see if this file contains a fake-cache.
 
+        This can be used to determine whether the ini file sets up a configuration which 
+        uses e.g. deglitched frames.
+
         Returns
         -------
         bool 
@@ -46,6 +59,15 @@ class RunConfiguration(object):
             return False
 
     def set_lalinference(self, **kwargs):
+        """
+        Set the values of LALInference configuration variables.
+
+        Parameters
+        ----------
+        kwargs :
+           Set a variety of parameters.
+           
+        """
         for key, value in kwargs:
             self.ini.set("lalinference", key, value)
 

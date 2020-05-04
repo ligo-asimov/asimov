@@ -68,7 +68,6 @@ class EventRepo(object):
            The run directory of the PE job.
         """
         
-        #os.chdir(os.path.join(self.directory, category))
         preferred_list = ["--preferred", "--append_preferred"]
         web_path = os.path.join(os.path.expanduser("~"), *rootdir.split("/"), self.event, production) # TODO Make this generic
         if rename:
@@ -91,6 +90,61 @@ class EventRepo(object):
             raise ValueError(f"Sample upload failed.\n{out}\n{err}")
         else:
             return out
+
+    def upload_preferred(self, event, prods):
+        """
+        Prepare the preferred PESummary file by combining all of the productions for an event which are
+        marked as `Preferred` or `Finalised`.
+
+        Parameters
+        ----------
+        event : `asimov.gitlab.EventIssue`
+           The event which the preferred upload is being prepared for.
+        prods : list
+           A list of all of the productions which should be included in the preferred file.
+        """
+
+        samples = []
+        labels = []
+        configs = []
+
+        for prod in prods:
+            samples.append(glob.glob(str(os.path.join(event.data[f"{prod}_rundir"], "posterior_samples"),)+"/*.hdf5")[0])
+            run_ini = os.path.join(event.data[f"{prod}_rundir"], "config.ini")
+            actual_config = RunConfiguration(run_ini)
+            engine_data = actual_config.get_engine()
+            labels.append(f"C01:{engine_data['approx']}")
+            configs.append(str(os.path.join(event.data[f"{prod}_rundir"], "config.ini")))
+
+
+        os.chdir(os.path.join(self.directory, "Preferred", "PESummary_metafile"))
+
+        command = ["summarycombine",
+                   "--webdir", f"/home/daniel.williams/public_html/LVC/projects/O3/preferred/{event.title}",
+                   "--samples", ]
+        command += samples
+        command += ["--labels"]
+        command += labels
+        command += ["--config"]
+        command += configs
+        command += ["--gw"]
+
+        dagman = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        out, err = dagman.communicate()
+
+        print(out)
+        print(err)
+
+        copy(f"/home/daniel.williams/public_html/LVC/projects/O3/preferred/{event.title}/samples/posterior_samples.h5", os.path.join(self.directory, "Preferred", "PESummary_metafile"))
+        self.repo.git.add("Preferred/PESummary_metafile/posterior_samples.h5")
+        self.repo.git.commit("-m", "Updated the preferred sample metafile.")
+        self.repo.git.push()
+
+        event.labels += ["Preferred cleaned"]
+        event.issue_object.save()
+
+        return True
+
 
 
     def update(self, stash=False, branch="master"):
@@ -116,6 +170,21 @@ class EventRepo(object):
         
         
     def build_dag(self, category, production, psds=None, user = None):
+        """
+        Construct a DAG file in order to submit a production to the condor cluster using LALInferencePipe.
+
+        Parameters
+        ----------
+        category : str, optional
+           The category of the job.
+           Defaults to "C01_offline".
+        production : str
+           The production name.
+        psds : dict, optional
+           The PSDs which should be used for this DAG. If no PSDs are provided the PSD files specified in the ini file will be used instead.
+        user : str
+           The user accounting tag which should be used to run the job.
+        """
         gps_file = glob.glob("*gps*.txt")[0]
         os.chdir(os.path.join(self.directory, category))
         ini_loc = glob.glob(f"*{production}*.ini")[0]
@@ -150,6 +219,23 @@ class EventRepo(object):
             return out
 
     def submit_dag(self, category, production):
+        """
+        Submit a DAG file to the condor cluster.
+        
+
+        Parameters
+        ----------
+        category : str, optional
+           The category of the job.
+           Defaults to "C01_offline".
+        production : str
+           The production name.
+
+        Returns
+        -------
+        int
+           The cluster ID assigned to the running DAG file.
+        """
         os.chdir(os.path.join(self.directory, category))
         dagman = subprocess.Popen(["condor_submit_dag", os.path.join(production, "multidag.dag")], stdout=subprocess.PIPE, 
             stderr=subprocess.STDOUT   )
