@@ -21,18 +21,41 @@ events = gitlab.find_events(repository, milestone=config.get("olivaw", "mileston
 mattermost = mattermost.Mattermost()
 from pesummary.gw.file.read import read
 
+def get_psds_rundir(rundir):
+    psds = {}
+    dets = ['L1', 'H1', 'V1']
+    for det in dets:
+        asset = f"{rundir}/ROQdata/0/BayesWave_PSD_{det}/post/clean/glitch_median_PSD_forLI_{det}.dat"
+        if os.path.exists(asset):
+            psds[det] = asset
+    return psds
 
-def upload_results(repo, event, prods):
+
+def upload_results(repo, event, prods, report):
+
+
+    print("*"*15)
+    print(f"Adding {prods} to the preferred summary file.")
+    print("*"*15)
 
     samples = []
     labels = []
     configs = []
+    
+    calibration = []
     for prod in prods:
-        samples.append(glob.glob(str(os.path.join(event.data[f"{prod}_rundir"], "posterior_samples"),)+"/*.hdf5")[0])
+        rundir = event.data[f"{prod}_rundir"]
+        samples.append(glob.glob(str(os.path.join(rundir, "posterior_samples"),)+"/*.hdf5")[0])
+
         run_ini = os.path.join(event.data[f"{prod}_rundir"], "config.ini")
         actual_config = RunConfiguration(run_ini)
         engine_data = actual_config.get_engine()
-        labels.append(f"C01:{engine_data['approx']}")
+        psds = actual_config.get_psds()
+        if len(psds) == 0:
+            psds = get_psds_rundir(rundir)
+        calib = actual_config.get_calibration()
+        run_name = engine_data['approx'].replace('pseudoFourPN','')
+        labels.append(f"C01:{run_name}")
         configs.append(str(os.path.join(event.data[f"{prod}_rundir"], "config.ini")))
 
 
@@ -46,7 +69,19 @@ def upload_results(repo, event, prods):
     command += labels
     command += ["--config"]
     command += configs
+    command += ["--calibration"]
+    command += [f"{key}:{value}" for key, value in calib.items()]
+    command += ["--psd"]
+    command += [f"{key}:{value}" for key, value in psds.items()]
+    command += ["--gracedb"]
+    command += [event.title]
+    command += ["--redshift_method",  "exact"]
+    command += ["--cosmology", "Planck15_lal"]
     command += ["--gw"]
+
+    print(command)
+    with report:
+        report + f"```\n {command}```"
 
     dagman = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     out, err = dagman.communicate()
@@ -85,7 +120,7 @@ def main():
         if "Special" in event.labels:
            continue
         if "Preferred cleaned" in event.labels:
-            continue
+           continue
 
         try:
             repo = uber_repository.get_repo(event.title)
@@ -139,7 +174,8 @@ def main():
                         print(f"{prod} is the preferred production")
                         pref_prod.append(prod)
             try:
-                upload_results(repo, event, pref_prod)
+                if len(pref_prod)==0: continue
+                upload_results(repo, event, pref_prod, report=report)
             except FileNotFoundError as e:
                 print(e)
 

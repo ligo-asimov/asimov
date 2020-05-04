@@ -25,10 +25,15 @@ repository = server.projects.get(3816)
 
 events = gitlab.find_events(repository, milestone="PE: C01 Reruns")
 
+
+
+
 for event in events:
-    if event.title in ["S190413ac", "S190503bf", "S190513bm",
-                       "S190514n", "S190701ah", "S190720", "S190727h", 
-                       "S190828l", "S190910s", "S190924h", "S190929d"]
+    # if event.title in ["S190413ac", "S190503bf", "S190513bm",
+    #                    "S190514n", "S190701ah", "S190720", "S190727h", 
+    #                    "S190828l", "S190910s", "S190924h", "S190929d"]:
+    #     continue
+
     if "Special" in event.labels:
         continue
     print(event.title)
@@ -47,15 +52,34 @@ for event in events:
     except:
         continue
 
-    for ini in inis:
-        if "nospin" in ini: continue
+    #for ini in inis:
+    #    if "nospin" in ini or "nonspin" in : continue
 
-    prods = [int(re.search("Prod([\d]+)", str(ini.split("_"))).groups()[0]) for ini in inis]
+    nospin = None
+    for prod in inis:
+        configuration = RunConfiguration(prod)
+        if configuration.check_fakecache():
+            copy_prod = prod
+        else:
+            copy_prod = [ini for ini in inis if "Prod0" in ini][0]
+        try:
+            configuration.ini.get("engine", "disable-spin")
+            nospin = True
+        except:
+            nospin = False
+    if not nospin:
+        print(event.title, copy_prod)
+    else: 
+        print(event.title, " This event already has a corrected production.")
+        continue
 
-    new_prod = (max(prods))+1
+    prods = {ini: int(re.search("Prod([\d]+)", str(ini.split("_"))).groups()[0]) for ini in inis}
 
-    prod0_ini = RunConfiguration([ini for ini in inis if "Prod0" in ini][0])
-    run_dir = event.data['Prod0_rundir']
+    new_prod = (max(prods.values()))+1
+
+    # I know this isn't always using Prod0 any more, cut me some slack, it's been a hectic month, future Daniel.
+    prod0_ini = RunConfiguration(copy_prod)
+    run_dir = event.data['Prod{}_rundir'.format(prods[copy_prod])]
     print(run_dir)
     psds = get_psds_rundir(run_dir)
 
@@ -80,7 +104,7 @@ for event in events:
     new_ini.update_psds(psds)
     new_ini.update_accounting()
 
-    new_ini.ini.set("lalinference", "disable-spin", "")
+    new_ini.ini.set("engine", "disable-spin", "")
 
     new_ini.save()
 

@@ -40,6 +40,81 @@ def upload_results(repo, event, prod, preferred=False, rename=None):
     mattermost.send_message(f":mega: {event.title} {prod} has been uploaded. :robot:")
     return True
 
+def upload_preferred_results(repo, event):
+
+    prods = []
+    for prod, value in event.data.items():
+        if "preferred" in value.lower(): prods += [prod]
+
+
+    print("*"*15)
+    print(f"Adding {prods} to the preferred summary file.")
+    print("*"*15)
+
+    samples = []
+    labels = []
+    configs = []
+    
+    calibration = []
+    for prod in prods:
+
+        rundir = event.data[f"{prod}_rundir"]
+        samples.append(glob.glob(str(os.path.join(rundir, "posterior_samples"),)+"/*.hdf5")[0])
+
+        run_ini = os.path.join(event.data[f"{prod}_rundir"], "config.ini")
+        actual_config = RunConfiguration(run_ini)
+        engine_data = actual_config.get_engine()
+        psds = actual_config.get_psds()
+        if len(psds) == 0:
+            psds = get_psds_rundir(rundir)
+        calib = actual_config.get_calibration()
+        run_name = engine_data['approx'].replace('pseudoFourPN','')
+        labels.append(f"C01:{run_name}")
+        configs.append(str(os.path.join(event.data[f"{prod}_rundir"], "config.ini")))
+
+
+    os.chdir(os.path.join(repo.directory, "Preferred", "PESummary_metafile"))
+
+    command = ["summarycombine",
+               "--webdir", f"/home/daniel.williams/public_html/LVC/projects/O3/preferred/{event.title}",
+               "--samples", ]
+    command += samples
+    command += ["--labels"]
+    command += labels
+    command += ["--config"]
+    command += configs
+    command += ["--calibration"]
+    command += [f"{key}:{value}" for key, value in calib.items()]
+    command += ["--psd"]
+    command += [f"{key}:{value}" for key, value in psds.items()]
+    command += ["--gracedb"]
+    command += [event.title]
+    command += ["--redshift_method",  "exact"]
+    command += ["--cosmology" "Planck15_lal"]
+    command += ["--gw"]
+
+    print(command)
+    with report:
+        report + f"```\n {command}```"
+
+    dagman = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    out, err = dagman.communicate()
+
+    print(out)
+    print(err)
+
+    copy(f"/home/daniel.williams/public_html/LVC/projects/O3/preferred/{event.title}/samples/posterior_samples.h5", os.path.join(repo.directory, "Preferred", "PESummary_metafile"))
+    repo.repo.git.add("Preferred/PESummary_metafile/posterior_samples.h5")
+    repo.repo.git.commit("-m", "Updated the preferred sample metafile.")
+    repo.repo.git.push()
+
+    event.labels += ["Preferred cleaned"]
+    event.issue_object.save()
+
+    return True
+
+
+
 def start_dag(event, repo, prod, psd_prod="Prod0"):
     psds_dict = get_psds_rundir(event.data[f'{psd_prod}_rundir'])
 
@@ -186,7 +261,7 @@ def main():
 
                     if "preferred" in cluster.lower():
                         print(f"{prod} is the preferred production")
-                        if upload_results(repo, event, prod, preferred=True, rename = f"C01:{engine_data['approx']}"):
+                        if upload_results(repo, event, prod, preferred=True, rename = f"C01:{engine_data['approx']}".replace('pseudoFourPN','')):
                             n_productions -= 1
                             continue
                         else:
@@ -273,7 +348,7 @@ def main():
                         if (set(ifos)==set(psds)) and event.state != "Stuck":
                             event.state = "Productions running"
                         else:
-                            status = status + " waiting on PSDs {}".format(event_psds)
+                            status = " waiting on PSDs {}".format(event_psds)
 
                 message += f"""| {event.title} | {event.state} | {cluster} | {prod} | {engine_data['approx']} | {sampler} | {status} | \n"""
 

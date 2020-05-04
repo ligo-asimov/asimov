@@ -63,6 +63,18 @@ class RunConfiguration(object):
                 pass
         return psds
 
+    def get_calibration(self):
+        """
+        Retrieve the calibration envelope locations.
+        """
+        calibration = {}
+        for det in self.get_ifos():
+            try:
+                calibration[det] = self.ini.get("engine", f"{det}-spcal-envelope")
+            except:
+                pass
+        return calibration
+
 
     def update_psds(self, psds, clobber=False):
         """
