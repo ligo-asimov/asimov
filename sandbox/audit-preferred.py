@@ -10,6 +10,8 @@ import os, glob, datetime
 
 import otter
 
+import click
+
 server = gitlab.gitlab.Gitlab('https://git.ligo.org', private_token=config.get("gitlab", "token"))
 repository = server.projects.get(config.get("olivaw", "tracking_repository"))
 
@@ -99,8 +101,11 @@ def upload_results(repo, event, prods, report):
 
     return True
 
+import click
 
-def main():
+@click.command()
+@click.option('--event', "eventflag", default=None, help='The event to rebuild')
+def main(eventflag):
 
     report = otter.Otter(filename="/home/daniel.williams/public_html/LVC/projects/O3/C01/audit_current.html", 
                          author="R. Daniel Williams",
@@ -111,16 +116,21 @@ def main():
         report + "This report contains the latest updates on the run status of the various PE runs ongoing at CIT."
         report + "Supervisor last checked these events at " + str(datetime.datetime.now())
 
+    global events
+
+
+    if eventflag:
+        events = [event for event in events if event.title == eventflag]
 
     for event in events:
         print(event.title)
 
-        if event.state == None:
-            continue
-        if "Special" in event.labels:
-           continue
-        if "Preferred cleaned" in event.labels:
-           continue
+        # if event.state == None:
+        #     continue
+        # if "Special" in event.labels:
+        #    continue
+        # if "Preferred cleaned" in event.labels:
+        #    continue
 
         try:
             repo = uber_repository.get_repo(event.title)
@@ -179,5 +189,6 @@ def main():
             except FileNotFoundError as e:
                 print(e)
 
+if __name__ == "__main__":
 
-main()
+   main()

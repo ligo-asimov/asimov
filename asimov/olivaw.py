@@ -7,6 +7,8 @@ from asimov.ini import RunConfiguration
 
 import os, glob, datetime
 
+import click
+
 import otter
 
 server = gitlab.gitlab.Gitlab('https://git.ligo.org', private_token=config.get("gitlab", "token"))
@@ -149,8 +151,9 @@ events = gitlab.find_events(repository, milestone=config.get("olivaw", "mileston
 mattermost = mattermost.Mattermost()
 
 
-
-def main():
+@click.command()
+@click.option('--event', "eventflag", default=None, help='The event to rebuild')
+def main(eventflag):
 
     print("Olivaw is supervising")
 
@@ -168,6 +171,10 @@ def main():
     message = """# Run updates\n"""
     message += """| Event | Gitlab State | Run state | Production | Approx | Sampler | Status |\n"""
     message += """|---|---|---|---|---|---|\n"""
+
+    global events
+    if eventflag:
+        events = [event for event in events if event.title == eventflag]
 
 
     for event in events:
@@ -263,13 +270,14 @@ def main():
                     print(f"\t{cluster.lower()}")
 
                     if "preferred" in cluster.lower():
-                        print(f"{prod} is the preferred production")
-                        if upload_results(repo, event, prod, preferred=True, rename = f"C01:{engine_data['approx']}".replace('pseudoFourPN','')):
-                            n_productions -= 1
-                            continue
-                        else:
-                            print("Preferred upload failed")
-                            continue
+                        continue
+                        # print(f"{prod} is the preferred production")
+                        # if upload_results(repo, event, prod, preferred=True, rename = f"C01:{engine_data['approx']}".replace('pseudoFourPN','')):
+                        #     n_productions -= 1
+                        #     continue
+                        # else:
+                        #     print("Preferred upload failed")
+                        #     continue
                         
                     elif "finalised" in cluster.lower():
                         continue

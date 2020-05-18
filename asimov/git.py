@@ -81,6 +81,7 @@ class EventRepo(object):
                                    "--rundir", rundir,
                                    "--webdir", web_path,
                                    "--edit_homepage_table"]
+        print(command)
         if preferred: 
             command += preferred_list
         dagman = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
