@@ -4,3 +4,4 @@ sphinx
 python-git
 otter-report
 htcondor
+click
