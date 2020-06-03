@@ -1,7 +1,7 @@
 python-gitlab
 git+https://github.com/transientlunatic/sphinx-daniel-theme.git
 sphinx
-python-git
+gitpython
 otter-report
 htcondor
 click
