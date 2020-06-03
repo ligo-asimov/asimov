@@ -14,7 +14,6 @@ test-python-36:
     - python setup.py install
     - coverage run -m unittest -v
     - coverage report -m
-  allow_failure: true
 
 test-python-37:
   stage: test
@@ -25,7 +24,6 @@ test-python-37:
     - python setup.py install
     - coverage run -m unittest -v
     - coverage report -m
-  allow_failure: true
 
 test-python-38:
   stage: test
@@ -36,7 +34,6 @@ test-python-38:
     - python setup.py install
     - coverage run -m unittest -v
     - coverage report -m
-  allow_failure: true
 
 pages:
   stage: build
