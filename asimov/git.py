@@ -186,8 +186,9 @@ class EventRepo(object):
         user : str
            The user accounting tag which should be used to run the job.
         """
-        gps_file = glob.glob("*gps*.txt")[0]
+        
         os.chdir(os.path.join(self.directory, category))
+        gps_file = glob.glob("*gps*.txt")[0]
         ini_loc = glob.glob(f"*{production}*.ini")[0]
 
         try: 
