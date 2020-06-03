@@ -12,7 +12,7 @@ test-python-36:
     - pip install -r requirements.txt
     - pip install coverage
     - python setup.py install
-    - coverage run python -m unittest -v
+    - coverage run -m unittest -v
     - coverage report -m
   allow_failure: true
 
@@ -23,7 +23,7 @@ test-python-37:
     - pip install -r requirements.txt
     - pip install coverage
     - python setup.py install
-    - coverage run python -m unittest -v
+    - coverage run -m unittest -v
     - coverage report -m
   allow_failure: true
 
@@ -34,7 +34,7 @@ test-python-38:
     - pip install -r requirements.txt
     - pip install coverage
     - python setup.py install
-    - coverage run python -m unittest -v
+    - coverage run -m unittest -v
     - coverage report -m
   allow_failure: true
 
