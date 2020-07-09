@@ -108,13 +108,15 @@ class RunConfiguration(object):
            A dictionary of the various PSDs.
         """
         for det, location in psds.items():
+            needs_psd = True
             try:
                 self.ini.get("engine", f"{det}-psd")
                 needs_psd = False
-            except:
+            except NoOptionError:
                 needs_psd = True
-        if needs_psd or clobber:
-            self.ini.set("engine", f"{det}-psd", location)
+
+            if needs_psd or clobber:
+                self.ini.set("engine", f"{det}-psd", location)
 
     def run_bayeswave(self, status=True):
         """

@@ -168,9 +168,7 @@ class EventRepo(object):
         self.repo.git.checkout(branch)
         self.repo.git.pull()
 
-        
-        
-    def build_dag(self, category, production, psds=None, user = None):
+    def build_dag(self, category, production, psds=None, user = None, clobber_psd=False):
         """
         Construct a DAG file in order to submit a production to the condor cluster using LALInferencePipe.
 
@@ -201,7 +199,7 @@ class EventRepo(object):
         ini.set_queue("Priority_PE")
 
         if psds:
-            ini.update_psds(psds, clobber=False)
+            ini.update_psds(psds, clobber=clobber_psd)
             ini.run_bayeswave(False)
         else:
             # Need to generate PSDs as part of this job.

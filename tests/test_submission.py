@@ -6,6 +6,10 @@ import shutil, os
 from configparser import ConfigParser, NoOptionError
 import git
 import asimov.git
+from asimov.olivaw import get_psds_rundir
+
+PSD_LIST = {"L1": "tests/test_data/s000000xx/C01_offline/Prod0/ROQdata/0/BayesWave_PSD_L1/post/clean/glitch_median_PSD_forLI_L1.dat",
+            "H1": "tests/test_data/s000000xx/C01_offline/Prod0/ROQdata/0/BayesWave_PSD_H1/post/clean/glitch_median_PSD_forLI_H1.dat",}
 
 class LALInferenceTests(unittest.TestCase):
     """Test lalinference_pipe related jobs."""
@@ -13,20 +17,20 @@ class LALInferenceTests(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cwd = os.getcwd()
-        git.Repo.init("test_data/s000000xx/")
+        git.Repo.init(self.cwd+"/tests/test_data/s000000xx/")
 
 
     @classmethod
     def tearDownClass(self):
         """Destroy all the products of this test."""
-        shutil.rmtree("test_data/s000000xx/.git")
+        shutil.rmtree(self.cwd+"/tests/test_data/s000000xx/.git")
 
 
     def setUp(self):
-        self.repo = repo = asimov.git.EventRepo("test_data/s000000xx")
-        self.sample_hashes = {
-            "lalinference_dag": self._get_hash("test_data/sample_files/lalinference_1248617392-1248617397.dag")
-            }
+        self.repo = repo = asimov.git.EventRepo(self.cwd+"/tests/test_data/s000000xx")
+        # self.sample_hashes = {
+        #     "lalinference_dag": self._get_hash("test_data/sample_files/lalinference_1248617392-1248617397.dag")
+        #     }
         self.repo.build_dag("C01_offline", "Prod0")
         os.chdir(self.cwd)
 
@@ -38,7 +42,7 @@ class LALInferenceTests(unittest.TestCase):
         """Fetch the generated config.ini file."""
         ini = ConfigParser()
         ini.optionxform=str
-        ini.read(self.cwd+"/test_data/s000000xx/C01_offline/Prod0/config.ini")
+        ini.read(self.cwd+"/tests/test_data/s000000xx/C01_offline/Prod0/config.ini")
         return ini
     
     # def test_lalinference_dag(self):
@@ -51,7 +55,7 @@ class LALInferenceTests(unittest.TestCase):
         ini = self._get_config_ini()
         start = float(ini.get("input", "gps-start-time"))
         end = float(ini.get("input", "gps-end-time"))
-        with open("test_data/s000000xx/C01_offline/s000000xx_gpsTime.txt", "r") as f:
+        with open("tests/test_data/s000000xx/C01_offline/s000000xx_gpsTime.txt", "r") as f:
             event_time = float(f.read())
 
         assert(start < event_time)
@@ -61,8 +65,39 @@ class LALInferenceTests(unittest.TestCase):
         """Check that the paths are set correctly."""
         ini = self._get_config_ini()
         basedir = ini.get("paths", "basedir")
-        self.assertEqual(basedir, self.cwd+"/test_data/s000000xx/C01_offline/Prod0")
+        self.assertEqual(basedir, self.cwd+"/tests/test_data/s000000xx/C01_offline/Prod0")
 
+    def test_psd_fetch(self):
+        """Check that PSDs can be found correctly."""
+        from pathlib import Path
+        
+        for psd in PSD_LIST.values():
+            Path(self.cwd+"/"+'/'.join(psd.split('/')[:-1])).mkdir(parents=True)
+            with open(f"{self.cwd}/{psd}", "w") as f:
+                f.write("")
+        
+        ini = self._get_config_ini()
+        psds_dict = get_psds_rundir(self.cwd+"/tests/test_data/s000000xx/C01_offline/Prod0")
+        for det, psd in psds_dict.items():
+            self.assertEqual(psd, f"{self.cwd}/{PSD_LIST[det]}")
+
+    def test_psd_insertion(self):
+        """Check that PSDs are inserted into the ini file correctly."""
+        from pathlib import Path
+        for psd in PSD_LIST.values():
+            Path(self.cwd+"/"+'/'.join(psd.split('/')[:-1])).mkdir(parents=True)
+            Path(self.cwd+"/"+psd).touch()
+        ini = self._get_config_ini()
+        psds = get_psds_rundir(self.cwd+"/tests/test_data/s000000xx/C01_offline/Prod0")
+        
+        self.repo.build_dag("C01_offline", "Prod0", psds=psds, clobber_psd=True)
+        os.chdir(self.cwd)
+        ini = self._get_config_ini()
+
+        for det, psd in psds.items():
+            self.assertEqual(ini.get("engine", f"{det}-psd"), f"{self.cwd}/{PSD_LIST[det]}")
+
+        
     def test_webdir(self):
         """Check that the web paths are set correctly."""
         ini = self._get_config_ini()
@@ -78,16 +113,14 @@ class LALInferenceTests(unittest.TestCase):
 
     def test_bayeswave_disabled(self):
         """Check that Bayeswave is correctly disabled when PSDs provided."""
-        shutil.rmtree("test_data/s000000xx/C01_offline/Prod0/")
         psds = {"L1": "fake.txt", "H1": "fake.txt"}
-        self.repo.build_dag("C01_offline", "Prod0", psds=psds)
+        self.repo.build_dag("C01_offline", "Prod0", psds=psds, clobber_psd=True)
         os.chdir(self.cwd)
         ini = self._get_config_ini()
         assert(not ini.has_option("condor", "bayeswave"))
 
     def test_change_user(self):
         """Check that the ini is built for a specified accounting user."""
-        shutil.rmtree("test_data/s000000xx/C01_offline/Prod0/")
         self.repo.build_dag("C01_offline", "Prod0", user = "hermann.minkowski")
         os.chdir(self.cwd)
         ini = self._get_config_ini()
@@ -100,5 +133,5 @@ class LALInferenceTests(unittest.TestCase):
 
         
     def tearDown(self):
-        shutil.rmtree("test_data/s000000xx/C01_offline/Prod0/")
+        shutil.rmtree("tests/test_data/s000000xx/C01_offline/Prod0/")
         
