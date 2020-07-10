@@ -42,7 +42,7 @@ pages:
   - pip install -r requirements.txt
   - pip install .
   - cd docs && make html
-  - mv build/html/ public/
+  - mv build/html/* public/
   artifacts:
     paths:
     - public
