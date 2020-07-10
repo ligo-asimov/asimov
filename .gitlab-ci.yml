@@ -41,7 +41,7 @@ pages:
   - pip install sphinx numpydoc
   - pip install -r requirements.txt
   - pip install .
-  - cd docs && sphinx-build -b html . public
+  - sphinx-build -b html docs/source public
   artifacts:
     paths:
     - public
