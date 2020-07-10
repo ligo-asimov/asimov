@@ -45,10 +45,9 @@ class LALInferenceTests(unittest.TestCase):
         ini.read(self.cwd+"/tests/test_data/s000000xx/C01_offline/Prod0/config.ini")
         return ini
     
-    # def test_lalinference_dag(self):
-    #     """Check that the generated lalinference DAG is correct."""
-    #     self.assertEqual(self.sample_hashes["lalinference_dag"],
-    #                      self._get_hash("test_data/s000000xx/C01_offline/Prod0/lalinference_1248617392-1248617397.dag"))
+    def test_lalinference_dag(self):
+        """Check that a DAG is produced."""
+        self.assertEqual(os.path.exists(self.cwd+"/tests/test_data/s000000xx/C01_offline/Prod0/lalinference_1248617392-1248617397.dag"), 1)
 
     def test_gpstime_insertion(self):
         """Check that the GPS time is picked-up from the time file."""
