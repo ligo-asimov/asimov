@@ -2,6 +2,7 @@
 Code for interacting with a gitlab instance.
 """
 
+from .event import Event
 from . import config
 import gitlab
 
@@ -37,14 +38,23 @@ class EventIssue(object):
     def __init__(self, issue, repository):
         self.issue_object = issue
         self.title = issue.title
+        self.text = issue.description
         self.issue_id = issue.id
         self.labels = issue.labels
         self.data = self.parse_notes()
         self.repository = repository
 
+        self.event_object = Event.from_issue(self)
+
     def _refresh(self):
         self.issue_object = self.repository.issues.get(self.issue_object.iid)
+        self.event_object.text = self.issue_object.description.split("---")
 
+    @property
+    def productions(self):
+        """List the productions on this event."""
+        return self.event_object.productions
+        
     @property
     def state(self):
         """
@@ -100,20 +110,9 @@ class EventIssue(object):
         Store event data in the comments on the event repository.
         """
         self._refresh()
-        notes = self.issue_object.notes.list(per_page=200)
-        for note in reversed(notes):
-            if "# Run information" in note.body:
-                try:
-                    note.delete()
-                except:
-                    pass
 
-        message = ""
-        header = "# Run information\nAdded by the run supervising robot :robot:.\n```\n"
-        for key, val in self.data.items():
-            message += f"{key}: {val}\n"
-        footer = "```"
-        self.issue_object.notes.create({"body": header+message+footer})
+        self.issue_object.description = self.event_object.to_issue()
+
         self.issue_object.save()
 
     def parse_notes(self):
