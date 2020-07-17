@@ -4,6 +4,34 @@ Trigger handling code.
 
 import yaml
 
+class DescriptionException(Exception):
+    def __init__(self, message, issue, production):
+        super(DescriptionException, self).__init__(message)
+        self.message = message
+        self.issue = issue
+        self.production = production
+
+    def __repr__(self):
+        text = f"""
+An error was detected with the YAML markup in this issue.
+Please fix the error and then remove the `yaml-error` label from this issue.
+<p>
+  <details>
+     <summary>Click for details of the error</summary>
+     <p><b>Production</b>: {self.production}</p>
+     <p>{self.message}</p>
+  </details>
+</p>
+
+- [ ] Resolved
+"""
+        return text
+
+    def submit_comment(self):
+        if self.issue:
+            self.issue.add_label("yaml-error", state=False)
+            self.issue.add_note(self.__repr__())
+    
 class Event:
     """
     A specific gravitational wave event or trigger.
@@ -36,11 +64,12 @@ class Event:
         
         event = cls(data['name'], data['repository'])
         event.text = text
+        event.issue_object = issue
         for production in data['productions']:
             try:
-                event.add_production(Production.from_dict(production, event=event))
-            except KeyError:
-                pass
+                event.add_production(Production.from_dict(production, event=event, issue=issue))
+            except DescriptionException as e:
+                e.submit_comment()
         
         return event
     
@@ -93,11 +122,11 @@ class Production:
         return output
         
     @classmethod
-    def from_dict(cls, parameters, event):
+    def from_dict(cls, parameters, event, issue=None):
         name, pars = list(parameters.items())[0]
         # Check all of the required parameters are included
         if not {"status", "pipeline"} <= pars.keys():
-            raise KeyError
+            raise DescriptionException(f"Some of the required parameters are missing from {name}", issue, name)
         if not "comment" in pars:
             pars['comment'] = None
         return cls(event, name, pars['status'], pars['pipeline'], pars['comment'])
