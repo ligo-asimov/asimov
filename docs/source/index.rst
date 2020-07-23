@@ -39,6 +39,7 @@ Module documentation
 
    api/git
    yamlformat
+   pipelines
 	     
 Indices and tables
 ------------------

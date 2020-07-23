@@ -3,8 +3,13 @@ Trigger handling code.
 """
 
 import yaml
+import os
+
+from .ini import RunConfiguration
+from .git import EventRepo
 
 class DescriptionException(Exception):
+    """Exception for event description problems."""
     def __init__(self, message, issue=None, production=None):
         super(DescriptionException, self).__init__(message)
         self.message = message
@@ -28,6 +33,10 @@ Please fix the error and then remove the `yaml-error` label from this issue.
         return text
 
     def submit_comment(self):
+        """
+        Submit this exception as a comment on the gitlab
+        issue for the event.
+        """
         if self.issue:
             self.issue.add_label("yaml-error", state=False)
             self.issue.add_note(self.__repr__())
@@ -40,16 +49,33 @@ class Event:
 
     def __init__(self, name, repository, **kwargs):
         self.name = name
-        self.repository = repository
+        if "working_directory" in kwargs:
+            self.work_dir = kwargs['working_directory']
+        else:
+            self.work_dir = None
+        self.repository = EventRepo.from_url(repository,
+                                             self.name,
+                                             self.work_dir)
         self.productions = []
         self.meta = kwargs
 
+    @property
+    def webdir(self):
+        """
+        Get the web directory for this event.
+        """
+        if "webdir" in self.meta:
+            return self.meta['webdir']
+        else:
+            return None
+        
+        
     def add_production(self, production):
         """
         Add an additional production to this event.
         """
         self.productions.append(production)
-
+        
     def __repr__(self):
         return f"<Event {self.name}>"
 
@@ -73,7 +99,7 @@ class Event:
         data = yaml.load(data)
         if not {"name", "repository"} <= data.keys():
             raise DescriptionException(f"Some of the required parameters are missing from this issue.")
-        event = cls(data['name'], data['repository'])
+        event = cls(**data)
         for production in data['productions']:
             try:
                 event.add_production(
@@ -130,20 +156,127 @@ class Production:
     comment : str
         A comment on this production.
     """
-    def __init__(self, event, name, status, pipeline, comment=None):
+    def __init__(self, event, name, status, pipeline, comment=None, **kwargs):
         self.event = event
         self.name = name
-        self.status = status.lower()
+        self.status_str = status.lower()
         self.pipeline = pipeline.lower()
         self.comment = comment
+        self.meta = kwargs
 
+        if "Prod" in self.name:
+            self.category = "C01_offline"
+        else:
+            self.category = "online"
+
+    def get_meta(self, key):
+        """
+        Get the value of a metadata attribute, or return None if it doesn't
+        exist.
+        """
+        if key in self.meta:
+            return self.meta[key]
+        else:
+            return None
+
+    def set_meta(self, key, value):
+        """
+        Set a metadata attribute which doesn't currently exist.
+        """
+        if key not in self.meta:
+            self.meta[key] = value
+            self.event.issue_object.update_data()
+        else:
+            raise ValueError
+
+    @property
+    def status(self):
+        return self.status_str.lower()
+
+    @status.setter
+    def status(self, value):
+        self.status_str = value.lower()
+        self.event.issue_object.update_data()
+
+    @property
+    def job_id(self):
+        if "job id" in self.meta:
+            return self.meta['job id']
+        else:
+            return None
+
+    @job_id.setter
+    def job_id(self, value):
+        if "job id" not in self.meta:
+            self.meta["job id"] = value
+            self.event.issue_object.update_data()
+        else:
+            raise ValueError
+        
     def to_dict(self):
         output = {self.name: {}}
-        output[self.name]['status'] = self.status.lower()
+        output[self.name]['status'] = self.status
         output[self.name]['pipeline'] = self.pipeline.lower()
         output[self.name]['comment'] = self.comment
+        for key, value in self.meta.iteritems():
+            output[self.name][key] = value
         return output
-        
+
+    @property
+    def rundir(self):
+        """
+        Return the run directory for this event.
+        """
+        if "rundir" in self.meta:
+            return self.meta['rundir']
+        elif "rundir" in self.event.meta:
+            value = os.path.join(self.event.meta['rundir'], self.name)
+            self.meta["rundir"] = value
+            self.event.issue_object.update_data()
+            return value
+        else:
+            return None
+
+    @rundir.setter
+    def rundir(self, value):
+        """
+        Set the run directory.
+        """
+        if "rundir" not in self.meta:
+            self.meta["rundir"] = value
+            self.event.issue_object.update_data()
+        else:
+            raise ValueError
+
+    def get_timefile(self):
+        """
+        Find this event's time file.
+
+        Returns
+        -------
+        str
+           The location of the time file.
+        """
+        return self.event.repository.find_timefile(self.category)
+
+    def get_configuration(self):
+        """
+        Get the configuration file contents for this event.
+        """
+        if "ini" in self.meta:
+            ini_loc = self.meta['ini']
+        else:
+            # We'll need to search the repository for it.
+
+            ini_loc = self.event.repository.find_prods(self.name,
+                                                       self.category)[0]
+        try:
+            ini = RunConfiguration(ini_loc)
+        except ValueError:
+            raise ValueError("Could not open the ini file")
+
+        return ini
+
     @classmethod
     def from_dict(cls, parameters, event, issue=None):
         name, pars = list(parameters.items())[0]

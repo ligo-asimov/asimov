@@ -1,7 +1,7 @@
 import os
 import glob
 import subprocess
-import re
+import pathlib
 import getpass
 
 import git
@@ -9,7 +9,7 @@ import git
 from .ini import RunConfiguration
 
 
-class MetaRepository(object):
+class MetaRepository():
 
     def __init__(self, directory):
         self.directory = directory
@@ -19,32 +19,66 @@ class MetaRepository(object):
 
     def get_repo(self, event):
         return EventRepo(self.repos[event])
-        
 
 
+class EventRepo():
+    """
+    Read a git repository containing event PE information.
 
-class EventRepo(object):
+    Parameters
+    ----------
+    directory : str 
+       The path to the git repository on the filesystem.
+    url : str
+       The URL of the git repository
+    """
 
-    def __init__(self, directory):
-        """
-        Read a git repository containing event PE information.
-
-        Parameters
-        ----------
-        directory : str 
-           The path to the git repository on the filesystem.
-        """
+    def __init__(self, directory, url=None):
         self.event = directory.split("/")[-1]
         self.directory = directory
         self.repo = git.Repo(directory)
-    
-    def find_prods(self, category="C01_offline"):
+
+    @classmethod
+    def from_url(cls, url, name, directory=None):
+        """
+        Clone a git repository into a working directory,
+        then create an EventRepo object for it.
+
+        Parameters
+        ----------
+        url : str
+           The URL of the git repository
+        name : str
+           The name for the git repository (probably the event name)
+        directory : str, optional
+           The location to store the cloned repository.
+           If this value isn't provided the repository is
+           cloned into the /tmp directory.
+        """
+        if not directory:
+            directory = f"/tmp/{name}"
+            pathlib.Path(directory).mkdir(parents=True, exist_ok=True)
+        git.Repo.clone_from(url, directory)
+        return cls(directory, url)
+
+    def find_timefile(self, category="C01_offline"):
+        """
+        Find the time file in this repository.
+        """
+        os.chdir(os.path.join(self.directory, category))
+        gps_file = glob.glob("*gps*.txt")[0]
+        return gps_file[0]
+
+    def find_prods(self, name=None, category="C01_offline"):
         """
         Find all of the productions for a relevant category of runs
         in the event repository.
 
         Parameters
         ----------
+        name : str, optional
+           The name of the production. 
+           If omitted then all production ini files are returned.
         category : str, optional
            The category of run. Defaults to "C01_offline".
         """
@@ -69,20 +103,22 @@ class EventRepo(object):
         """
         
         preferred_list = ["--preferred", "--append_preferred"]
-        web_path = os.path.join(os.path.expanduser("~"), *rootdir.split("/"), self.event, production) # TODO Make this generic
+        web_path = os.path.join(os.path.expanduser("~"),
+                                *rootdir.split("/"),
+                                self.event,
+                                production) # TODO Make this generic
         if rename:
             prod_name = rename
         else:
             prod_name = production
 
-        command = ["/home/charlie.hoy/gitlab/pesummary-config/upload_to_event_repository.sh", 
-                                   "--event", self.event,
-                                   "--exp", prod_name,
-                                   "--rundir", rundir,
-                                   "--webdir", web_path,
-                                   "--edit_homepage_table"]
-        print(command)
-        if preferred: 
+        command = ["/home/charlie.hoy/gitlab/pesummary-config/upload_to_event_repository.sh",
+                   "--event", self.event,
+                   "--exp", prod_name,
+                   "--rundir", rundir,
+                   "--webdir", web_path,
+                   "--edit_homepage_table"]
+        if preferred:
             command += preferred_list
         dagman = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         out, err = dagman.communicate()
@@ -94,8 +130,9 @@ class EventRepo(object):
 
     def upload_preferred(self, event, prods):
         """
-        Prepare the preferred PESummary file by combining all of the productions for an event which are
-        marked as `Preferred` or `Finalised`.
+        Prepare the preferred PESummary file by combining all of the
+        productions for an event which are marked as `Preferred`
+        or `Finalised`.
 
         Parameters
         ----------
@@ -146,8 +183,6 @@ class EventRepo(object):
 
         return True
 
-
-
     def update(self, stash=False, branch="master"):
         """
         Pull the latest updates to the repository.
@@ -167,84 +202,3 @@ class EventRepo(object):
 
         self.repo.git.checkout(branch)
         self.repo.git.pull()
-
-    def build_dag(self, category, production, psds=None, user = None, clobber_psd=False):
-        """
-        Construct a DAG file in order to submit a production to the condor cluster using LALInferencePipe.
-
-        Parameters
-        ----------
-        category : str, optional
-           The category of the job.
-           Defaults to "C01_offline".
-        production : str
-           The production name.
-        psds : dict, optional
-           The PSDs which should be used for this DAG. If no PSDs are provided the PSD files specified in the ini file will be used instead.
-        user : str
-           The user accounting tag which should be used to run the job.
-        """
-        
-        os.chdir(os.path.join(self.directory, category))
-        gps_file = glob.glob("*gps*.txt")[0]
-        ini_loc = glob.glob(f"*{production}*.ini")[0]
-
-        try: 
-            ini = RunConfiguration(ini_loc)
-        except ValueError:
-            raise ValueError("Could not open the ini file")
-
-        ini.update_accounting(user)
-
-        ini.set_queue("Priority_PE")
-
-        if psds:
-            ini.update_psds(psds, clobber=clobber_psd)
-            ini.run_bayeswave(False)
-        else:
-            # Need to generate PSDs as part of this job.
-            ini.run_bayeswave(True)
-
-        ini.update_webdir(self.event, production)
-        ini.save()
-
-        pipe = subprocess.Popen(["lalinference_pipe", "-g", f"{gps_file}", "-r", production, ini_loc],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
-        out, err = pipe.communicate()
-        
-        if err or  not "Successfully created DAG file." in str(out):
-            raise ValueError(f"DAG file could not be created. {out} {err}")
-        else:
-            return out
-
-    def submit_dag(self, category, production):
-        """
-        Submit a DAG file to the condor cluster.
-        
-
-        Parameters
-        ----------
-        category : str, optional
-           The category of the job.
-           Defaults to "C01_offline".
-        production : str
-           The production name.
-
-        Returns
-        -------
-        int
-           The cluster ID assigned to the running DAG file.
-        """
-        os.chdir(os.path.join(self.directory, category))
-        dagman = subprocess.Popen(["condor_submit_dag", os.path.join(production, "multidag.dag")], stdout=subprocess.PIPE, 
-            stderr=subprocess.STDOUT   )
-        stdout,stderr = dagman.communicate()
-
-        if "submitted to cluster" in str(stdout):
-            cluster = re.search("submitted to cluster ([\d]+)", str(stdout)).groups()[0]
-            return cluster
-        else:
-            raise ValueError(f"The DAG file could not be submitted. {stdout} {stderr}")
-
-        

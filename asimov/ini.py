@@ -164,10 +164,10 @@ class RunConfiguration(object):
         
         Parameters
         ----------
-        user : str 
+        user : str
            The accounting user to be added to the ini file.
         """
-        
+
         if not user:
             user = self._get_user()
         self.ini.set("condor", "accounting_group_user", user)
