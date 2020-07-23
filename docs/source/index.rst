@@ -10,7 +10,6 @@ Asimov : The bot framework
 
 .. warning::
    This documentation is currently being written, so there may be places where it is somewhat defficient.
-   Please bare with me while I get the (robotic) house in order.
 
 .. toctree::
    :maxdepth: 2
@@ -22,26 +21,27 @@ Asimov : The bot framework
    api
 
 Pre-built Bot scripts
-=====================
+---------------------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Scripts
 
    olivaw
 
 
 Module documentation
-====================
+--------------------
 
 .. toctree::
    :maxdepth: 1
    :caption: Modules
 
    api/git
+   yamlformat
 	     
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`
