@@ -1,0 +1,20 @@
+```
+---
+name: s000000x
+repository: git.test.com/mock.git
+
+productions:
+  - Prod0:
+      status: wait
+      pipeline: bayeswave
+      comment: PSD production
+  - Prod1:
+      status: Wait
+      pipeline: lalsuite
+      comment: IMRPhenomD
+  - Prod2:
+      pipeline: bilby
+      comment: Designed to fail
+---
+```
+This is some freeform text.

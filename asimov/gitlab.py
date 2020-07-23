@@ -2,10 +2,12 @@
 Code for interacting with a gitlab instance.
 """
 
+from .event import Event
 from . import config
 import gitlab
 
 import re
+import datetime
 
 STATE_PREFIX = "C01"
 
@@ -36,15 +38,28 @@ class EventIssue(object):
 
     def __init__(self, issue, repository):
         self.issue_object = issue
+        
         self.title = issue.title
+        self.text = issue.description
+        
         self.issue_id = issue.id
         self.labels = issue.labels
         self.data = self.parse_notes()
         self.repository = repository
+        self.event_object=None
+        self.event_object = Event.from_issue(self)
+        
 
     def _refresh(self):
         self.issue_object = self.repository.issues.get(self.issue_object.iid)
+        if self.event_object:
+            self.event_object.text = self.issue_object.description.split("---")
 
+    @property
+    def productions(self):
+        """List the productions on this event."""
+        return self.event_object.productions
+        
     @property
     def state(self):
         """
@@ -75,14 +90,13 @@ class EventIssue(object):
         supervisor and not the user.
         """
         self._refresh()
+        now = datetime.datetime.now()
         header = """"""
-        footer = """
-        Added by the run supervision robot :robot:.
-        """
+        footer = f"""\nAdded at {now:%H}:{now:%M}, {now:%Y}-{now:%m}-{now:%d} by the run supervision robot :robot:."""
         self.issue_object.notes.create({"body": header+text+footer})
         self.issue_object.save()
 
-    def add_label(self, label):
+    def add_label(self, label, state=True):
         """
         Add a new label to an event issue.
 
@@ -92,7 +106,11 @@ class EventIssue(object):
            The name of the label.
         """
         self._refresh()
-        self.issue_object.labels += [f"{STATE_PREFIX}:{label}"]
+        if state:
+            self.issue_object.labels += [f"{STATE_PREFIX}:{label}"]
+        else:
+            self.issue_object.labels += [f"{label}"]
+            
         self.issue_object.save()
         
     def update_data(self):
@@ -100,20 +118,9 @@ class EventIssue(object):
         Store event data in the comments on the event repository.
         """
         self._refresh()
-        notes = self.issue_object.notes.list(per_page=200)
-        for note in reversed(notes):
-            if "# Run information" in note.body:
-                try:
-                    note.delete()
-                except:
-                    pass
 
-        message = ""
-        header = "# Run information\nAdded by the run supervising robot :robot:.\n```\n"
-        for key, val in self.data.items():
-            message += f"{key}: {val}\n"
-        footer = "```"
-        self.issue_object.notes.create({"body": header+message+footer})
+        self.issue_object.description = self.event_object.to_issue()
+
         self.issue_object.save()
 
     def parse_notes(self):
