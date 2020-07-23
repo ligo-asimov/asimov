@@ -53,20 +53,38 @@ Each of these states is implemented as a *scoped label* in gitlab, so each state
 In addition to these standard states
 + The `Stuck` state will be applied if the bot detects a problem with one of the running productions.
 
-Each production is tracked using a comment which is added to the gitlab issue.
-This comment will have the general form of
+Each production is tracked using the description on a git issue for the event.
+This data will have the general form of
 ```
 # Run information
 Some text about the robot tracking here.
+---
+name: S200311bg
+repository: https://git.ligo.org/pe/O3/S200311bg
 
-Prod0: State
-Prod0_rundir: /home/albert.einstein/S980000a/C01_offline/Prod0/
+productions:
+	- Prod0: 
+		- status: Wait
+		- pipeline: bayeswave
+		- comment: PSD production
+	- Prod1:
+		- status: Wait
+		- pipeline: lalinference
+		- comment: IMRPhenomD
+	- Prod2:
+		- status: Wait
+		- pipeline: bilby
+		- comment: NRSur
+---
 ```
-with the last two lines repeated for each production which is due to be run by the bot.
+where it's essential that at least the name and the repository for the event are specified.
 
-The `ProdN_rundir` line simply records the location of the run directory on the cluster's file system.
+The full specification for this format can be found in the documentation for the package.
 
-The `ProdN` line tracks the state of the job. 
+For each production:
+The `rundir` line simply records the location of the run directory on the cluster's file system.
+
+The `status` line tracks the state of the job. 
 The sequence of these states is
 ```
 Start --> <job id> --> Finished --> Uploaded (--> Finalised)*
