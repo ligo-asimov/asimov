@@ -196,7 +196,8 @@ class Production:
     @status.setter
     def status(self, value):
         self.status_str = value.lower()
-        self.event.issue_object.update_data()
+        if hasattr(self.event, "issue_object"):
+            self.event.issue_object.update_data()
 
     @property
     def job_id(self):
@@ -230,7 +231,7 @@ class Production:
         if "rundir" in self.meta:
             return self.meta['rundir']
         elif "rundir" in self.event.meta:
-            value = os.path.join(self.event.meta['rundir'], self.name)
+            value = os.path.join(self.event.meta['working_directory'], self.name)
             self.meta["rundir"] = value
             self.event.issue_object.update_data()
             return value
@@ -244,7 +245,8 @@ class Production:
         """
         if "rundir" not in self.meta:
             self.meta["rundir"] = value
-            self.event.issue_object.update_data()
+            if hasattr(self.event, "issue_object"):
+                self.event.issue_object.update_data()
         else:
             raise ValueError
 
@@ -288,7 +290,7 @@ class Production:
             raise DescriptionException(f"Some of the required parameters are missing from {name}", issue, name)
         if not "comment" in pars:
             pars['comment'] = None
-        return cls(event, name, pars['status'], pars['pipeline'], pars['comment'])
+        return cls(event, name, **pars)
     
     def __repr__(self):
         return f"<Production {self.name} for {self.event} | status: {self.status}>"

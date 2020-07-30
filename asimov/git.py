@@ -58,7 +58,11 @@ class EventRepo():
         if not directory:
             directory = f"/tmp/{name}"
             pathlib.Path(directory).mkdir(parents=True, exist_ok=True)
-        git.Repo.clone_from(url, directory)
+        try:
+            git.Repo.clone_from(url, directory)
+        except git.GitCommandError:
+            repo = git.Repo(directory)
+            repo.remotes[0].pull()
         return cls(directory, url)
 
     def find_timefile(self, category="C01_offline"):
@@ -67,7 +71,7 @@ class EventRepo():
         """
         os.chdir(os.path.join(self.directory, category))
         gps_file = glob.glob("*gps*.txt")[0]
-        return gps_file[0]
+        return gps_file
 
     def find_prods(self, name=None, category="C01_offline"):
         """
