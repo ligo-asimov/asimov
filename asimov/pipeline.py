@@ -38,6 +38,36 @@ Please fix the error and then remove the `pipeline-error` label from this issue.
             self.issue.add_note(self.__repr__())
 
 
+class PipelineLogger():
+    """Log things for pipelines."""
+    def __init__(self, message, issue=None, production=None):
+        self.message = message.decode()
+        self.issue = issue
+        self.production = production
+
+    def __repr__(self):
+        text = f"""
+One of the productions ({self.production}) produced a log message.
+It is copied below.
+<p>
+  <details>
+     <summary>Click for details of the message</summary>
+     <p><b>Production</b>: {self.production}</p>
+     <p>{self.message}</p>
+  </details>
+</p>
+"""
+        return text
+
+    def submit_comment(self):
+        """
+        Submit this exception as a comment on the gitlab
+        issue for the event.
+        """
+        if self.issue:
+            self.issue.add_note(self.__repr__())
+
+
 class Pipeline():
     """
     Factory class for pipeline specification.
@@ -58,6 +88,11 @@ class Pipeline():
         """
         Detect if the job has completed normally.
         Looks to see if posterior sample files have been produced.
+
+        Returns
+        -------
+        bool
+           Returns True if the completion criteria are fulfilled for this job.
         """
         if len(glob.glob(f"{self.production.rundir}/posterior_samples/*hdf5")) > 0:
             return True
@@ -80,19 +115,32 @@ class Pipeline():
         -------
         int
            The cluster ID assigned to the running DAG file.
+        PipelineLogger
+           The pipeline logger message.
+
+        Raises
+        ------
+        PipelineException
+           This will be raised if the pipeline fails to submit the job.
         """
         os.chdir(self.production.rundir)
-        dagman = subprocess.Popen(["condor_submit_dag",
-                                   os.path.join(self.production.rundir, "multidag.dag")],
+        try:
+            command = ["condor_submit_dag",
+                                   os.path.join(self.production.rundir, "multidag.dag")]
+            dagman = subprocess.Popen(command,
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.STDOUT)
+        except FileNotFoundError as error:
+            raise PipelineException("It looks like condor isn't installed on this system.\n"
+                                    f"""I wanted to run {" ".join(command)}.""")
+
         stdout, stderr = dagman.communicate()
 
         if "submitted to cluster" in str(stdout):
             cluster = re.search("submitted to cluster ([\d]+)", str(stdout)).groups()[0]
             self.production.status = "running"
             self.production.job_id = cluster
-            return cluster
+            return cluster, PipelineLogger(stdout)
         else:
             raise PipelineException(f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
                                     issue=self.production.event.issue_object,

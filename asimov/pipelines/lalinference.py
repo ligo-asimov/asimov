@@ -4,7 +4,7 @@
 import os
 import glob
 import subprocess
-from ..pipeline import Pipeline, PipelineException
+from ..pipeline import Pipeline, PipelineException, PipelineLogger
 from ..ini import RunConfiguration
 
 
@@ -91,18 +91,30 @@ class LALInference(Pipeline):
                                   self.production.name)
             self.production.rundir = rundir
 
-        pipe = subprocess.Popen(["lalinference_pipe",
-                                 "-g", f"{gps_file}",
-                                 "-r", self.production.rundir,
-                                 ini.ini_loc],
+        command = ["lalinference_pipe",
+                   "-g", f"{gps_file}",
+                   "-r", self.production.rundir,
+                   ini.ini_loc
+        ]
+            
+        pipe = subprocess.Popen(command, 
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
         out, err = pipe.communicate()
-
         if err or "Successfully created DAG file." not in str(out):
             self.production.status = "stuck"
-            raise PipelineException(f"DAG file could not be created.\n\n{out}\n\n{err}",
-                                    issue=self.production.event.issue_object,
-                                    production=self.production.name)
+            if hasattr(self.production.event, "issue_object"):
+                raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
+                                            issue=self.production.event.issue_object,
+                                            production=self.production.name)
+            else:
+                raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
+                                        production=self.production.name)
         else:
-            return out
+            if hasattr(self.production.event, "issue_object"):
+                return PipelineLogger(message=out,
+                                      issue=self.production.event.issue_object,
+                                      production=self.production.name)
+            else:
+                return PipelineLogger(message=out,
+                                      production=self.production.name)
