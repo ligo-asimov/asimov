@@ -11,6 +11,7 @@ from asimov.olivaw import get_psds_rundir
 PSD_LIST = {"L1": "tests/test_data/s000000xx/C01_offline/Prod0/ROQdata/0/BayesWave_PSD_L1/post/clean/glitch_median_PSD_forLI_L1.dat",
             "H1": "tests/test_data/s000000xx/C01_offline/Prod0/ROQdata/0/BayesWave_PSD_H1/post/clean/glitch_median_PSD_forLI_H1.dat",}
 
+@unittest.skip("Deprecated class")
 class LALInferenceTests(unittest.TestCase):
     """Test lalinference_pipe related jobs."""
 
@@ -44,7 +45,7 @@ class LALInferenceTests(unittest.TestCase):
         ini.optionxform=str
         ini.read(self.cwd+"/tests/test_data/s000000xx/C01_offline/Prod0/config.ini")
         return ini
-    
+
     def test_lalinference_dag(self):
         """Check that a DAG is produced."""
         self.assertEqual(os.path.exists(self.cwd+"/tests/test_data/s000000xx/C01_offline/Prod0/lalinference_1248617392-1248617397.dag"), 1)
