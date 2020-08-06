@@ -63,6 +63,8 @@ class Event:
 
         self.graph = nx.DiGraph()
 
+        
+
     @property
     def webdir(self):
         """
@@ -163,55 +165,11 @@ class Event:
         self.text[1] = "\n"+self.to_yaml()
         return "---".join(self.text)
 
-
-    def _get_ancestors(self, route, production):
+    def draw_dag(self):
         """
-        Get the ancestors of a production.
-
-        Parameters
-        ----------
-        route : list
-           A list representing the route.
-        production : ``asimov.Production``
-           One of the event's productions.
-
-        Returns
-        -------
-        list 
-           A list of productions in a branch from the
-           provided production.
+        Draw the dependency graph for this event.
         """
-        route.append(production)
-        if self.graph.in_degree(production)==0:
-            return None
-        else:
-            precursors = list(self.graph.predecessors(production))
-            return self._get_ancestors(route, precursors[0])
-
-    def _find_latest(self, production):
-        """
-        Find the job furthest down a branch which has not yet
-        finished.
-
-        Parameters
-        ----------
-        production : ``asimov.Production``
-           The asimov production at the bottom of this branch.
-
-        Returns
-        -------
-        production
-           The first unfinished job along the branch.
-        """
-        route = []
-        self._get_ancestors(route, production)
-        route.reverse()
-
-        for job in route:
-            if job.status=="finished": 
-                continue
-            else: 
-                return job
+        return nx.draw(self.graph, labelled=True)
 
     def get_all_latest(self):
         """
@@ -223,11 +181,10 @@ class Event:
         set
             A set of independent jobs which are not finished execution.
         """
-        ends = [x for x in self.graph.nodes() if self.graph.out_degree(x)==0]
-        waits = []
-        for end in ends:
-            waits.append(self._find_latest(end))
-        return set(waits) # only want to return one version of each production!
+        unfinished = self.graph.subgraph([production for production in self.productions
+                                          if production.finished == False])
+        ends = [x for x in unfinished.reverse().nodes() if unfinished.reverse().out_degree(x)==0]
+        return set(ends) # only want to return one version of each production!
 
     
 class Production:
@@ -291,6 +248,11 @@ class Production:
         else:
             raise ValueError
 
+    @property
+    def finished(self):
+        finished_states = ["finished"]
+        return self.status in finished_states
+        
     @property
     def status(self):
         return self.status_str.lower()
