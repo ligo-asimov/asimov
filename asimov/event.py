@@ -5,6 +5,8 @@ Trigger handling code.
 import yaml
 import os
 
+import networkx as nx
+
 from .ini import RunConfiguration
 from .git import EventRepo
 
@@ -59,6 +61,8 @@ class Event:
         self.productions = []
         self.meta = kwargs
 
+        self.graph = nx.DiGraph()
+
     @property
     def webdir(self):
         """
@@ -75,6 +79,14 @@ class Event:
         Add an additional production to this event.
         """
         self.productions.append(production)
+        self.graph.add_node(production)
+
+        if production.dependencies:
+            dependencies = production.dependencies
+            dependencies = [production for production in self.productions
+                            if production.name in dependencies]
+            for dependency in dependencies:
+                self.graph.add_edge(dependency, production)
         
     def __repr__(self):
         return f"<Event {self.name}>"
@@ -122,6 +134,18 @@ class Event:
 
         return event
 
+    # def production_dag(self):
+    #     """
+    #     Attempt to assemble the execution DAG for this event's productions.
+        
+    #     Note
+    #     ----
+    #     This DAG is NOT a condor DAG.
+    #     """
+    #     for production in self.productions:
+            
+        
+    
     def to_yaml(self):
         """Serialise this object as yaml"""
         data = {}
@@ -139,6 +163,73 @@ class Event:
         self.text[1] = "\n"+self.to_yaml()
         return "---".join(self.text)
 
+
+    def _get_ancestors(self, route, production):
+        """
+        Get the ancestors of a production.
+
+        Parameters
+        ----------
+        route : list
+           A list representing the route.
+        production : ``asimov.Production``
+           One of the event's productions.
+
+        Returns
+        -------
+        list 
+           A list of productions in a branch from the
+           provided production.
+        """
+        route.append(production)
+        if self.graph.in_degree(production)==0:
+            return None
+        else:
+            precursors = list(self.graph.predecessors(production))
+            return self._get_ancestors(route, precursors[0])
+
+    def _find_latest(self, production):
+        """
+        Find the job furthest down a branch which has not yet
+        finished.
+
+        Parameters
+        ----------
+        production : ``asimov.Production``
+           The asimov production at the bottom of this branch.
+
+        Returns
+        -------
+        production
+           The first unfinished job along the branch.
+        """
+        route = []
+        self._get_ancestors(route, production)
+        route.reverse()
+
+        for job in route:
+            if job.status=="finished": 
+                continue
+            else: 
+                return job
+
+    def get_all_latest(self):
+        """
+        Get all of the jobs which are not blocked by an unfinished job
+        further back in their history.
+
+        Returns
+        -------
+        set
+            A set of independent jobs which are not finished execution.
+        """
+        ends = [x for x in self.graph.nodes() if self.graph.out_degree(x)==0]
+        waits = []
+        for end in ends:
+            waits.append(self._find_latest(end))
+        return set(waits) # only want to return one version of each production!
+
+    
 class Production:
     """
     A specific production run.
@@ -168,6 +259,17 @@ class Production:
             self.category = "C01_offline"
         else:
             self.category = "online"
+
+        if "needs" in self.meta:
+            self.dependencies = self._process_dependencies(self.meta['needs'])
+        else:
+            self.dependencies = None
+
+    def _process_dependencies(self, needs):
+        """
+        Process the dependencies list for this production.
+        """
+        return needs
 
     def get_meta(self, key):
         """
