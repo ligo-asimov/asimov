@@ -57,6 +57,8 @@ For example:
 		- status: Wait
 		- pipeline: bilby
 		- comment: NRSur
+		- needs:
+		  - Prod0
 
 
 Production format
@@ -73,9 +75,12 @@ The basic format of each production is
    - <NAME>:
          - status: <STATUS>
 	 - pipeline: <PIPELINE>
-	 - ...
+	 - needs: <PRODUCTION NAME>
 
 The value of ``pipeline`` MUST be one of the analysis pipelines supported by asimov.
 A list of these can be found on the :ref:`Supported Pipelines` page.
 
 The value of ``status`` MAY either be one of the values listed on the :ref:`Standard Statuses` page, or may be specific to a given pipeline. The value of this field will be updated by the monitoring script as the job runs, but may also be changed to affect the behaviour of the analysis process.
+
+Dependencies for jobs can be specified using the value of ``needs``. This field is optional.
+If a production, or list of productions is provided, a directed acyclic graph (DAG) will be constructed to prevent the execution of jobs before their dependency jobs have been marked as finished.
