@@ -5,6 +5,8 @@ Trigger handling code.
 import yaml
 import os
 
+import networkx as nx
+
 from .ini import RunConfiguration
 from .git import EventRepo
 
@@ -59,6 +61,10 @@ class Event:
         self.productions = []
         self.meta = kwargs
 
+        self.graph = nx.DiGraph()
+
+        
+
     @property
     def webdir(self):
         """
@@ -75,6 +81,14 @@ class Event:
         Add an additional production to this event.
         """
         self.productions.append(production)
+        self.graph.add_node(production)
+
+        if production.dependencies:
+            dependencies = production.dependencies
+            dependencies = [production for production in self.productions
+                            if production.name in dependencies]
+            for dependency in dependencies:
+                self.graph.add_edge(dependency, production)
         
     def __repr__(self):
         return f"<Event {self.name}>"
@@ -122,6 +136,18 @@ class Event:
 
         return event
 
+    # def production_dag(self):
+    #     """
+    #     Attempt to assemble the execution DAG for this event's productions.
+        
+    #     Note
+    #     ----
+    #     This DAG is NOT a condor DAG.
+    #     """
+    #     for production in self.productions:
+            
+        
+    
     def to_yaml(self):
         """Serialise this object as yaml"""
         data = {}
@@ -139,6 +165,28 @@ class Event:
         self.text[1] = "\n"+self.to_yaml()
         return "---".join(self.text)
 
+    def draw_dag(self):
+        """
+        Draw the dependency graph for this event.
+        """
+        return nx.draw(self.graph, labelled=True)
+
+    def get_all_latest(self):
+        """
+        Get all of the jobs which are not blocked by an unfinished job
+        further back in their history.
+
+        Returns
+        -------
+        set
+            A set of independent jobs which are not finished execution.
+        """
+        unfinished = self.graph.subgraph([production for production in self.productions
+                                          if production.finished == False])
+        ends = [x for x in unfinished.reverse().nodes() if unfinished.reverse().out_degree(x)==0]
+        return set(ends) # only want to return one version of each production!
+
+    
 class Production:
     """
     A specific production run.
@@ -169,6 +217,17 @@ class Production:
         else:
             self.category = "online"
 
+        if "needs" in self.meta:
+            self.dependencies = self._process_dependencies(self.meta['needs'])
+        else:
+            self.dependencies = None
+
+    def _process_dependencies(self, needs):
+        """
+        Process the dependencies list for this production.
+        """
+        return needs
+
     def get_meta(self, key):
         """
         Get the value of a metadata attribute, or return None if it doesn't
@@ -189,6 +248,11 @@ class Production:
         else:
             raise ValueError
 
+    @property
+    def finished(self):
+        finished_states = ["finished"]
+        return self.status in finished_states
+        
     @property
     def status(self):
         return self.status_str.lower()
