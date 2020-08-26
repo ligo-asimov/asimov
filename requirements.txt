@@ -1,5 +1,5 @@
 python-gitlab
-git+https://github.com/transientlunatic/sphinx-daniel-theme.git
+kentigern
 sphinx
 gitpython
 otter-report
