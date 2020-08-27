@@ -23,7 +23,7 @@ Supported Pipelines
 The following pipelines currently have support bundled with asimov:
 
 + ``LALInference``
-
++ ``BayesWave``
 
 
 LALInference interface
@@ -88,3 +88,14 @@ The following values will be added to the production meta data by asimov as a pr
 
 ``job id``
    The JobID for this event on the condor cluster.
+
+
+BayesWave interface
+-------------------
+
+The BayesWave interface can be used to submit jobs to condor clusters which use bayeswave as the inference engine.
+BayesWave jobs must be specified by an appropriately formatted ``ini`` file.
+
+.. todo::
+
+   This needs full documentation once it's clear what the overall requirements of the BW interface will be.
