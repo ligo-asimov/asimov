@@ -99,3 +99,13 @@ BayesWave jobs must be specified by an appropriately formatted ``ini`` file.
 .. todo::
 
    This needs full documentation once it's clear what the overall requirements of the BW interface will be.
+
+
+RIFT interface
+--------------
+
+Production metadata
+~~~~~~~~~~~~~~~~~~~
+
+``approximant``
+    The approximant which should be used for this RIFT run.
