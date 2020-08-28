@@ -86,6 +86,9 @@ class Rift(Pipeline):
                                   self.production.name)
             self.production.rundir = rundir
 
+        # FIXME what is lmax?
+        lmax = None
+            
         # TODO The main command-line for RIFT-pseudo-pipe takes a $@ from its script, so this may be missing some things!
         command = ["util_RIFT_pseudo_pipe.py",
                    "--use-coinc", f"{coinc_file}",

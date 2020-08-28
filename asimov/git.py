@@ -9,6 +9,9 @@ import git
 from .ini import RunConfiguration
 
 
+class FileNotFound(Exception):
+    pass
+
 class MetaRepository():
 
     def __init__(self, directory):
@@ -72,6 +75,17 @@ class EventRepo():
         os.chdir(os.path.join(self.directory, category))
         gps_file = glob.glob("*gps*.txt")[0]
         return gps_file
+
+    def find_coincfile(self, category="C01_offline"):
+        """
+        Find the coinc file for this calibration category in this repository.
+        """
+        os.chdir(os.path.join(self.directory, category))
+        coinc_file = glob.glob("*coinc*.xml")
+        if len(coinc_file)>0:
+            return coinc_file[0]
+        else:
+            raise FileNotFound
 
     def find_prods(self, name=None, category="C01_offline"):
         """

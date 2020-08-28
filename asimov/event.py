@@ -325,6 +325,23 @@ class Production:
         """
         return self.event.repository.find_timefile(self.category)
 
+    def get_coincfile(self):
+        """
+        Find this event's coinc.xml file.
+
+        Returns
+        -------
+        str
+           The location of the time file.
+        """
+        try:
+            self.event.repository.find_timefile(self.category)
+        except FileNotFound:
+            # TODO Need code to fetch the coinc file from GDB
+            # command to do this seems to be gracedb_legacy download ${my_gid} coinc.xml
+            
+            pass
+    
     def get_configuration(self):
         """
         Get the configuration file contents for this event.
