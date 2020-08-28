@@ -3,5 +3,6 @@ kentigern
 sphinx
 gitpython
 otter-report
-htcondor
 click
+networkx
+htcondor
