@@ -58,6 +58,15 @@ class EventRepo():
         if not directory:
             directory = f"/tmp/{name}"
             pathlib.Path(directory).mkdir(parents=True, exist_ok=True)
+
+        # Replace an https address with an ssh address
+        if "https" in url:
+            url = url.replace("https://", "git@")
+            final = "/".join(url.split("/")[1:])
+            start = url.split("/")[0]
+
+            url = f"{start}:{final}"
+            
         try:
             git.Repo.clone_from(url, directory)
         except git.GitCommandError:
