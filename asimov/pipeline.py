@@ -99,6 +99,24 @@ class Pipeline():
         else:
             return False
 
+    def before_submit(self):
+        """
+        Define a hook to run before the DAG file is generated and submitted.
+
+        Note, this method should take no arguments, and should be over-written in the 
+        specific pipeline implementation if required.
+        """
+        pass
+
+    def after_completion(self):
+        """
+        Define a hook to run after the DAG has completed execution successfully.
+
+        Note, this method should take no arguments, and should be over-written in the 
+        specific pipeline implementation if required.
+        """
+        pass
+
     def submit_dag(self):
         """
         Submit a DAG file to the condor cluster.
@@ -124,6 +142,9 @@ class Pipeline():
            This will be raised if the pipeline fails to submit the job.
         """
         os.chdir(self.production.rundir)
+
+        self.before_submit()
+        
         try:
             command = ["condor_submit_dag",
                                    os.path.join(self.production.rundir, "multidag.dag")]

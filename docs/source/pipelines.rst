@@ -8,7 +8,6 @@ An interface for any pipeline can be constructed, provided that pipeline can be 
 
 The ``asimov.pipeline`` module defines the factory classes for these interfaces, and individual interfaces can be found in the ``asimov.pipelines`` module.
 
-
 Adding new pipelines
 --------------------
 
@@ -16,6 +15,22 @@ New pipelines can be added to asimov by overloading the various methods in the :
 The most important of these is the ``build_dag`` method, which is used by the asimov framework to construct the DAG file to be submitted to the condor scheduler.
 
 An example of a complete pipeline interface can be seen in the code for :class:``asimov.pipelines.lalinference.LALinference``.
+
+
+Pipeline hooks
+--------------
+
+It is possible to customise the run process of the asimov pipeline runner using hooks.
+By overloading the hook methods (listed below) inherited from the ``asimov.pipeline.Pipeline`` class additional operations can
+be conducted during the processing workflow.
+Hooks should take no arguments.
+
+Implemented hooks are:
+
+::
+
+   before_submit()    --- Executed immediately before the DAG file for a pipeline is generated.
+   after_completion() --- Executed once execution has successfully completed.
 
 Supported Pipelines
 -------------------
