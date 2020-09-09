@@ -62,10 +62,16 @@ class Event:
                                              self.name,
                                              self.work_dir)
         self.productions = []
+        if "psds" in kwargs:
+            self.psds = kwargs.pop("psds")
+        else:
+            self.psds = {}
+            
         self.meta = kwargs
 
         self._check_required()
         self._check_calibration()
+        #self._check_psds()
 
         self.graph = nx.DiGraph()
 
@@ -87,6 +93,15 @@ class Event:
             pass
         else:
             raise DescriptionException(f"Some of the required calibration envelopes are missing from this issue. {set(self.meta['interferometers']) - set(self.meta['calibration'].keys())}")
+
+    def _check_psds(self):
+        """
+        Find the psd locations.
+        """
+        if ("calibration" in self.meta) and (set(self.meta['interferometers']) == set(self.psds.keys())):
+            pass
+        else:
+            raise DescriptionException(f"Some of the required psds are missing from this issue. {set(self.meta['interferometers']) - set(self.meta['calibration'].keys())}")
 
     @property
     def webdir(self):
@@ -234,6 +249,10 @@ class Production:
         self.comment = comment
         self.meta = self.event.meta
         self.meta.update(kwargs)
+
+        self.psds = self.event.psds
+        if 'psds' in kwargs:
+            self.psds.update(kwargs['psds'])
 
         if "Prod" in self.name:
             self.category = "C01_offline"
