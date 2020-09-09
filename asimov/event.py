@@ -9,6 +9,9 @@ import networkx as nx
 
 from .ini import RunConfiguration
 from .git import EventRepo
+from asimov import config
+
+from liquid import Liquid
 
 class DescriptionException(Exception):
     """Exception for event description problems."""
@@ -59,11 +62,46 @@ class Event:
                                              self.name,
                                              self.work_dir)
         self.productions = []
+        if "psds" in kwargs:
+            self.psds = kwargs.pop("psds")
+        else:
+            self.psds = {}
+            
         self.meta = kwargs
+
+        self._check_required()
+        self._check_calibration()
+        #self._check_psds()
 
         self.graph = nx.DiGraph()
 
+    def _check_required(self):
+        """
+        Find all of the required metadata is provided.
+        """
+        required = {"interferometers"}
+        if not (required <= self.meta.keys()):
+            raise DescriptionException(f"Some of the required parameters are missing from this issue. {required-self.meta.keys()}")
+        else:
+            return True
         
+    def _check_calibration(self):
+        """
+        Find the calibration envelope locations.
+        """
+        if ("calibration" in self.meta) and (set(self.meta['interferometers']) == set(self.meta['calibration'].keys())):
+            pass
+        else:
+            raise DescriptionException(f"Some of the required calibration envelopes are missing from this issue. {set(self.meta['interferometers']) - set(self.meta['calibration'].keys())}")
+
+    def _check_psds(self):
+        """
+        Find the psd locations.
+        """
+        if ("calibration" in self.meta) and (set(self.meta['interferometers']) == set(self.psds.keys())):
+            pass
+        else:
+            raise DescriptionException(f"Some of the required psds are missing from this issue. {set(self.meta['interferometers']) - set(self.meta['calibration'].keys())}")
 
     @property
     def webdir(self):
@@ -74,7 +112,6 @@ class Event:
             return self.meta['webdir']
         else:
             return None
-        
         
     def add_production(self, production):
         """
@@ -210,7 +247,12 @@ class Production:
         self.status_str = status.lower()
         self.pipeline = pipeline.lower()
         self.comment = comment
-        self.meta = kwargs
+        self.meta = self.event.meta
+        self.meta.update(kwargs)
+
+        self.psds = self.event.psds
+        if 'psds' in kwargs:
+            self.psds.update(kwargs['psds'])
 
         if "Prod" in self.name:
             self.category = "C01_offline"
@@ -358,3 +400,31 @@ class Production:
     
     def __repr__(self):
         return f"<Production {self.name} for {self.event} | status: {self.status}>"
+
+
+    def make_config(self, filename, template_directory=None):
+        """
+        Make the configuration file for this production.
+
+        Parameters
+        ----------
+        filename : str
+           The location at which the config file should be saved.
+        template_directory : str, optional
+           The path to the directory containing the pipeline config templates.
+           Defaults to the directory specified in the asimov configuration file.
+        """
+
+        if not template_directory:
+            template_directory = config.get("templating", "directory")
+
+        try:
+            with open(f"{template_directory}/{self.pipeline}.ini", "r") as template_file:
+                liq = Liquid(template_file.read())
+                rendered = liq.render(production=self)
+        except:
+            raise DescriptionException("There was a problem writing the configuration file.",
+                                       production=self)
+
+        with open(filename, "w") as output_file:
+            output_file.write(rendered)
