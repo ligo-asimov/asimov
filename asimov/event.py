@@ -75,7 +75,6 @@ class Event:
         else:
             return None
         
-        
     def add_production(self, production):
         """
         Add an additional production to this event.
@@ -210,7 +209,8 @@ class Production:
         self.status_str = status.lower()
         self.pipeline = pipeline.lower()
         self.comment = comment
-        self.meta = kwargs
+        self.meta = self.event.meta
+        self.meta.update(kwargs)
 
         if "Prod" in self.name:
             self.category = "C01_offline"
