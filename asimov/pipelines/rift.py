@@ -1,4 +1,4 @@
-"""BayesWave Pipeline specification."""
+"""RIFT Pipeline specification."""
 
 
 import os
@@ -105,7 +105,7 @@ class Rift(Pipeline):
     def build_dag(self, user=None):
         """
         Construct a DAG file in order to submit a production to the
-        condor scheduler using bayeswave_pipe
+        condor scheduler using util_RIFT_pseudo_pipe.py
 
         Parameters
         ----------
@@ -118,6 +118,26 @@ class Rift(Pipeline):
         ------
         PipelineException
            Raised if the construction of the DAG fails.
+
+        Notes
+        -----
+
+        In order to assemble the pipeline the RIFT runner requires additional
+        production metadata: at least the l_max value.
+        An example RIFT production specification would then look something like:
+        
+        ::
+           
+           - Prod0:
+               rundir: {0}/tests/tmp/s000000xx/Prod0
+               pipeline: rift
+               approximant: IMRPhenomPv3
+               lmax: 2
+               cip jobs: 5 # This is optional, and will default to 3
+               comment: RIFT production run.
+               status: wait
+
+        
         """
 
         self._activate_environment()
@@ -127,7 +147,6 @@ class Rift(Pipeline):
         gps_file = self.production.get_timefile()
         coinc_file = self.production.get_coincfile()
         
-        # FIXME currently no distinction between bayeswave and lalinference ini files
         ini = self.production.get_configuration()
 
         if not user:
@@ -161,8 +180,14 @@ class Rift(Pipeline):
                                   self.production.name)
             self.production.rundir = rundir
 
-        # FIXME what is lmax?
-        lmax = None
+        # TODO lmax needs to be determined for each waveform (it's the maximum harmonic order)
+        # for now it will be fetched from the production metadata
+        lmax = self.production.meta['lmax']
+        
+        if "cip jobs" in self.production.meta:
+            cip = self.production.meta['cip jobs']
+        else:
+            cip = 3
             
         # TODO The main command-line for RIFT-pseudo-pipe takes a $@ from its script, so this may be missing some things!
         command = ["util_RIFT_pseudo_pipe.py",
@@ -172,8 +197,9 @@ class Rift(Pipeline):
                    "--add-extrinsic",
                    "--archive-pesummary-label", "{calibration}:{approximant}",
                    "--archive-pesummary-event-label", "{calibration}:{approximant}",
+                   "--cip-explode-jobs", cip,
                    "--use-rundir", self.production.rundir,
-                   ini.ini_loc
+                   "--use-ini", ini.ini_loc
         ]
             
         pipe = subprocess.Popen(command, 
