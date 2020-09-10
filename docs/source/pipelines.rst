@@ -124,3 +124,10 @@ Production metadata
 
 ``approximant``
     The approximant which should be used for this RIFT run.
+
+``cip jobs``, optional
+    Used to specify the number of independent sampler jobs which should be run.
+    Defaults to 3 if a value is not supplied.
+
+``lmax``
+    The highest order of harmonic to be included in the analysis.
