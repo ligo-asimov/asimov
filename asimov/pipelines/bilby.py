@@ -26,9 +26,33 @@ class Bilby(Pipeline):
     def __init__(self, production, category=None):
         super(LALInference, self).__init__(production, category)
 
-        if not production.pipeline.lower() == "lalinference":
+        if not production.pipeline.lower() == "bilby":
             raise PipelineException
 
+
+    def _activate_environment(self):
+        """
+        Activate the python virtual environment for the pipeline.
+        """
+        env = config.get("bilby", "environment")
+        command = ["source", f"{env}/bin/activate"]
+
+        pipe = subprocess.Popen(command, 
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT)
+        out, err = pipe.communicate()
+
+        if err:
+            self.production.status = "stuck"
+            if hasattr(self.production.event, "issue_object"):
+                raise PipelineException(f"The virtual environment could not be initiated.\n{command}\n{out}\n\n{err}",
+                                            issue=self.production.event.issue_object,
+                                            production=self.production.name)
+            else:
+                raise PipelineException(f"The virtual environment could not be initiated.\n{command}\n{out}\n\n{err}",
+                                        production=self.production.name)
+
+        
     def build_dag(self, psds=None, user=None, clobber_psd=False):
         """
         Construct a DAG file in order to submit a production to the
@@ -50,6 +74,9 @@ class Bilby(Pipeline):
         PipelineException
            Raised if the construction of the DAG fails.
         """
+
+        self._activate_environment()
+        
         os.chdir(os.path.join(self.production.event.repository.directory,
                               self.category))
         gps_file = self.production.get_timefile()

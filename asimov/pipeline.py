@@ -84,6 +84,15 @@ class Pipeline():
         else:
             self.category = category
 
+    def _activate_environment(self):
+        """
+        Activate the virtual environment for this pipeline.
+        If no specific environment is required to build DAG files
+        or run scripts in this runner then this method can be 
+        left without overloading.
+        """
+        pass
+            
     def detect_completion(self):
         """
         Detect if the job has completed normally.
