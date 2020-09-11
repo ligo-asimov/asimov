@@ -117,6 +117,17 @@ class Pipeline():
         """
         pass
 
+    def collect_assets(self):
+        """
+        Add the various analysis assets from the run directory to the git repository.
+        """
+
+        assets = self.assets
+        repo = self.production.event.repository
+
+        for asset in self.assets:
+            repo.add_file(asset[0], asset[1])
+
     def submit_dag(self):
         """
         Submit a DAG file to the condor cluster.
