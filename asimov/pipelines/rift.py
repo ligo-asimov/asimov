@@ -25,11 +25,14 @@ class Rift(Pipeline):
 
     STATUS = {"wait", "stuck", "stopped", "running", "finished"}
 
-    def __init__(self, production, category=None):
+    def __init__(self, production, category=None,bootstrap=False):
         super(BayesWave, self).__init__(production, category)
 
         if not production.pipeline.lower() == "rift":
             raise PipelineException
+        
+        if bootstrap:
+            self.bootstrap = True
 
     def _activate_environment(self):
         """
@@ -201,7 +204,28 @@ class Rift(Pipeline):
                    "--use-rundir", self.production.rundir,
                    "--use-ini", ini.ini_loc
         ]
-            
+           
+        #Placeholder LI grid bootstrapping; conditional on it existing and location specification
+        if self.bootstrap:
+            # TODO correct naming and repo structure
+            shutil.copy(f"{event.repository.directory}/{category}/LI_output/posterior_samples.dat",os.getcwd()+"/LI_samples.dat")
+            convcmd = ["convert_output_format_inferance2ile","--posterior-samples","LI_samples.dat","--output-xml","bootstrap-grid.xml.gz","--fmin","20"] # is 20 always appropriate?
+            pipe = subprocess.Popen(convcmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+            out,err = pipe.communicate()
+            if err:
+                self.production.status = "stuck"
+                if hasattr(self.production.event, "issue_object"):
+                    raise PipelineException(f"Unable to convert LI posterior into ILE starting grid.\n{convcmd}\n{out}\n\n{err}",
+                                            issue=self.production.event.issue_object,
+                                            production=self.production.name)
+                else:
+                    raise PipelineException(f"Unable to convert LI posterior into ILE starting grid.\n{convcmd}\n{out}\n\n{err}",
+                                        production=self.production.name)
+            else:
+                command += ["--manual-initial-grid",os.path.join(os.getcwd(),"bootstrap-grid.xml.gz")]
+        
+
+ 
         pipe = subprocess.Popen(command, 
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
@@ -223,3 +247,4 @@ class Rift(Pipeline):
             else:
                 return PipelineLogger(message=out,
                                       production=self.production.name)
+    
