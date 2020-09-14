@@ -5,8 +5,11 @@ import os
 import glob
 import subprocess
 from ..pipeline import Pipeline, PipelineException, PipelineLogger
+from .lalinference import LALInference
 from ..ini import RunConfiguration
+from .. import config
 
+import re
 
 class Bilby(Pipeline):
     """
@@ -183,8 +186,10 @@ class Bilby(Pipeline):
         try:
             # to do: Check that this is the correct name of the output DAG file for billby (it
             # probably isn't)
+            job_label = "job_label"
+            dag_filename = f"dag_{job_label}.submit"
             command = ["condor_submit_dag",
-                                   os.path.join(self.production.rundir, "submit", "multidag.dag")]
+                                   os.path.join(self.production.rundir, "submit", dag_filename)]
             dagman = subprocess.Popen(command,
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.STDOUT)
