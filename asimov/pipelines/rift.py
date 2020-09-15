@@ -26,7 +26,7 @@ class Rift(Pipeline):
     STATUS = {"wait", "stuck", "stopped", "running", "finished"}
 
     def __init__(self, production, category=None):
-        super(BayesWave, self).__init__(production, category)
+        super(Rift, self).__init__(production, category)
 
         if not production.pipeline.lower() == "rift":
             raise PipelineException

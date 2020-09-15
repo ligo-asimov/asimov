@@ -9,7 +9,7 @@ import git
 from .ini import RunConfiguration
 
 
-class FileNotFound(Exception):
+class AsimovFileNotFound(FileNotFoundError):
     pass
 
 class MetaRepository():
@@ -85,7 +85,7 @@ class EventRepo():
         if len(coinc_file)>0:
             return coinc_file[0]
         else:
-            raise FileNotFound
+            raise AsimovFileNotFound
 
     def find_prods(self, name=None, category="C01_offline"):
         """

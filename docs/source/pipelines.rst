@@ -39,6 +39,7 @@ The following pipelines currently have support bundled with asimov:
 
 + ``LALInference``
 + ``BayesWave``
++ ``RIFT``
 
 
 LALInference interface
