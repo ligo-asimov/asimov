@@ -5,7 +5,6 @@ import os
 import glob
 import subprocess
 from ..pipeline import Pipeline, PipelineException, PipelineLogger
-from .lalinference import LALInference
 from ..ini import RunConfiguration
 from .. import config
 
@@ -27,7 +26,7 @@ class Bilby(Pipeline):
     STATUS = {"wait", "stuck", "stopped", "running", "finished"}
 
     def __init__(self, production, category=None):
-        super(LALInference, self).__init__(production, category)
+        super(Bilby, self).__init__(production, category)
 
         if not production.pipeline.lower() == "bilby":
             raise PipelineException
@@ -121,8 +120,14 @@ class Bilby(Pipeline):
                                   self.production.name)
             self.production.rundir = rundir
 
+        if "job label" in self.production.meta:
+            job_label = self.production.meta['job label']
+        else:
+            job_label = "job_label"
+
         # TODO: Check if bilby supports loading a gps time file
         command = ["bilby_pipe",
+                   "--label", job_label,
                    "--outdir", self.production.rundir,
                    ini.ini_loc
         ]
@@ -186,7 +191,10 @@ class Bilby(Pipeline):
         try:
             # to do: Check that this is the correct name of the output DAG file for billby (it
             # probably isn't)
-            job_label = "job_label"
+            if "job label" in self.production.meta:
+                job_label = self.production.meta['job label']
+            else:
+                job_label = "job_label"
             dag_filename = f"dag_{job_label}.submit"
             command = ["condor_submit_dag",
                                    os.path.join(self.production.rundir, "submit", dag_filename)]

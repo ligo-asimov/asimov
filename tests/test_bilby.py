@@ -15,8 +15,8 @@ repository: {0}/tests/test_data/s000000xx/
 working_directory: {0}/tests/tmp/s000000xx/
 webdir: ''
 productions:
-- Prod0:
-    rundir: {0}/tests/tmp/s000000xx/C01_offline/Prod0
+- Prod3:
+    rundir: {0}/tests/tmp/s000000xx/C01_offline/Prod3
     pipeline: bilby
     comment: PSD production
     status: wait
@@ -32,7 +32,7 @@ class BilbyTests(unittest.TestCase):
         cls.cwd = os.getcwd()
         repo = git.Repo.init(cls.cwd+"/tests/test_data/s000000xx/")
         os.chdir(cls.cwd+"/tests/test_data/s000000xx/")
-        os.system("git add C01_offline/Prod0_test.ini C01_offline/s000000xx_gpsTime.txt")
+        os.system("git add C01_offline/Prod3_test.ini C01_offline/s000000xx_gpsTime.txt")
         os.system("git commit -m 'test'")
 
 
@@ -60,5 +60,5 @@ class BilbyTests(unittest.TestCase):
         outdir = "outdir_from_config"
         label = "job_label_from_config"
         dagfile = f"{outdir}/submit/dag_{label}.submit"
-        print(f"{self.cwd}/tests/tmp/s000000xx/C01_offline/Prod0/{dagfile}")
-        self.assertEqual(os.path.exists(f"{self.cwd}/tests/tmp/s000000xx/C01_offline/Prod0/{dagfile}"), 1)
+        print(f"{self.cwd}/tests/tmp/s000000xx/C01_offline/Prod3/{dagfile}")
+        self.assertEqual(os.path.exists(f"{self.cwd}/tests/tmp/s000000xx/C01_offline/Prod3/{dagfile}"), 1)
