@@ -84,3 +84,64 @@ The value of ``status`` MAY either be one of the values listed on the :ref:`Stan
 
 Dependencies for jobs can be specified using the value of ``needs``. This field is optional.
 If a production, or list of productions is provided, a directed acyclic graph (DAG) will be constructed to prevent the execution of jobs before their dependency jobs have been marked as finished.
+
+``interferometers``
++++++++++++++++++++
+
+This section should provide a list of interferometers which are to be included in the analysis for a given event.
+The normal two-character identifier should be used here, e.g. "H1" for the 4-km detector at LIGO Hanford Observatory.
+For example:
+
+.. code-block:: yaml
+
+   interferometers: ['L1', 'H1', 'K1']
+
+``quality``
++++++++++++
+
+This section will store detector characterisation and data quality information which is relevant to this event.
+``asimov`` will recognise a number of fields stored in this section.
+
++ ``psd-length``: the length of the PSD in seconds.
++ ``segment-length``: the length of the analysis segment, in seconds.
++ ``lower-frequency``: the lower frequency cut-off (f_low), in hertz.
++ ``sample-rate``: the sampling frequency, in hertz
++ ``padding``: the padding to be applied to the data
++ ``window-length``: the window length, in seconds
+
+For example:
+
+.. code-block:: yaml
+
+   quality:
+      - psd-length: 8.0
+      - segment-length: 8.0
+      - lower-frequency: 11
+      - sample-rate: 1024
+      - window-length: 2.0
+
+
+``data``
++++++++++
+
+This section should provide details of where the data for this event are located.
+
+This information will be used to generate production configurations.
+
+The two sections which ``asimov`` understands for this section are ``frame-types`` and ``channels``.
+
++ ``frame-types`` should be a list of key:value pairs for each detector's frame type (see the example below)
++ ``channels`` should be a list of key:value pairs for each detector's data channel (see the example below)
+
+.. code-block:: yaml
+
+   data:
+      - frame-types:
+	- H1: 'H1_HOFT_CLEAN_SUB60HZ_C01'
+	- L1: 'L1_HOFT_CLEAN_SUB60HZ_C01'
+	- V1: 'V1Online'
+      - channels:
+	- H1: 'H1:DCS-CALIB_STRAIN_CLEAN_SUB60HZ_C01'
+	  L1: 'L1:DCS-CALIB_STRAIN_CLEAN_SUB60HZ_C01'
+	  V1: 'V1:Hrec_hoft_16384Hz'
+   
