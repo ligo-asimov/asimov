@@ -132,3 +132,14 @@ Production metadata
 
 ``lmax``
     The highest order of harmonic to be included in the analysis.
+
+``bootstrap``, optional
+    A previous production which can be used to "bootstrap" the sampler.
+    You should combine this with a ``needs`` instruction, so that the RIFT job isn't run until the bootstrapping job has completed.
+
+::
+
+   bootstrap: Prod1
+   needs: Prod1
+
+

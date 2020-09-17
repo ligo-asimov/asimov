@@ -31,8 +31,8 @@ class Rift(Pipeline):
         if not production.pipeline.lower() == "rift":
             raise PipelineException
         
-        if bootstrap:
-            self.bootstrap = True
+        if "bootstrap" in self.production.meta:
+            self.bootstrap = self.production.meta
 
     def _activate_environment(self):
         """
@@ -131,12 +131,15 @@ class Rift(Pipeline):
         
         ::
            
-           - Prod0:
-               rundir: {0}/tests/tmp/s000000xx/Prod0
+           - Prod3:
+               rundir: tests/tmp/s000000xx/Prod3
                pipeline: rift
                approximant: IMRPhenomPv3
                lmax: 2
                cip jobs: 5 # This is optional, and will default to 3
+               bootstrap: Prod1
+               bootstrap fmin: 20
+               needs: Prod1
                comment: RIFT production run.
                status: wait
 
@@ -167,7 +170,10 @@ class Rift(Pipeline):
             queue = 'Priority_PE'
 
         # FIXME Really we don't want this to be hard-coded.
-        calibration = "C01"
+        try:
+            calibration = config.get("general", "calibration")
+        except:
+            calibration = "C01"
 
         approximant = self.production.meta['approximant']
         
@@ -192,7 +198,7 @@ class Rift(Pipeline):
         else:
             cip = 3
             
-        # TODO The main command-line for RIFT-pseudo-pipe takes a $@ from its script, so this may be missing some things!
+        
         command = ["util_RIFT_pseudo_pipe.py",
                    "--use-coinc", f"{coinc_file}",
                    "--l-max", f"{lmax}",
@@ -205,11 +211,26 @@ class Rift(Pipeline):
                    "--use-ini", ini.ini_loc
         ]
            
-        #Placeholder LI grid bootstrapping; conditional on it existing and location specification
+        # Placeholder LI grid bootstrapping; conditional on it existing and location specification
+        
         if self.bootstrap:
-            # TODO correct naming and repo structure
-            shutil.copy(f"{event.repository.directory}/{category}/LI_output/posterior_samples.dat",os.getcwd()+"/LI_samples.dat")
-            convcmd = ["convert_output_format_inferance2ile","--posterior-samples","LI_samples.dat","--output-xml","bootstrap-grid.xml.gz","--fmin","20"] # is 20 always appropriate?
+
+            # Find the appropriate production in the ledger
+            productions = self.production.event.productions
+            bootstrap_production = [production for production in productions if production.name == self.bootstrap]
+
+            if len(bootstrap_production) == 0:
+                raise PipelineException(f"Unable to find the bootstrapping production for {self.production.name}.",
+                                        issue=self.production.event.issue_object,
+                                        production=self.production.name)
+            else:
+                bootstrap_production = bootstrap_production[0]
+            
+            shutil.copy(f"{bootstrap_production.rundir}/posterior_samples.dat", f"{self.production.rundir}/LI_samples.dat")
+            convcmd = ["convert_output_format_inferance2ile",
+                       "--posterior-samples", f"{self.production.rundir}/LI_samples.dat",
+                       "--output-xml", f"bootstrap-grid.xml.gz",
+                       "--fmin", f"{self.production.meta['bootstrap fmin']}"] 
             pipe = subprocess.Popen(convcmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
             out,err = pipe.communicate()
             if err:
@@ -222,13 +243,16 @@ class Rift(Pipeline):
                     raise PipelineException(f"Unable to convert LI posterior into ILE starting grid.\n{convcmd}\n{out}\n\n{err}",
                                         production=self.production.name)
             else:
-                command += ["--manual-initial-grid",os.path.join(os.getcwd(),"bootstrap-grid.xml.gz")]
+                command += ["--manual-initial-grid", os.path.join(self.production.rundir, "bootstrap-grid.xml.gz")]
         
 
  
         pipe = subprocess.Popen(command, 
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
+
+        
+        
         out, err = pipe.communicate()
         if err or "Successfully created DAG file." not in str(out):
             self.production.status = "stuck"
