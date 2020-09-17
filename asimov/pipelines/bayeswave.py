@@ -118,3 +118,23 @@ class BayesWave(Pipeline):
             else:
                 return PipelineLogger(message=out,
                                       production=self.production.name)
+
+    def after_completion(self):
+        pass
+
+    def before_submit(self):
+        pass
+
+    
+    def upload_assets(self):
+        """
+        Upload the PSDs from this job.
+        """
+        psds = {}
+        detectors = self.production.meta['interferometers']
+        for det in dets:
+        asset = f"{self.production.rundir}/ROQdata/0/BayesWave_PSD_{det}/post/clean/glitch_median_PSD_forLI_{det}.dat"
+        if os.path.exists(asset):
+            psds[det] = asset
+
+        
