@@ -126,8 +126,8 @@ class BayesWave(Pipeline):
                                       production=self.production.name)
 
     def after_completion(self):
-        pass
-
+        self.upload_assets()
+        
     def before_submit(self):
         pass
 
