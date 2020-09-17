@@ -126,3 +126,6 @@ The Bilby interface allows for some bilby-specific metadata.
 ``job label``, optional.
    The label for the job.
    
+``prior``
+   The prior file to be used for this production.
+   Note, this may be semi-automated in the future, but this value will still be available to over-ride the underlying default.

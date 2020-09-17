@@ -54,6 +54,15 @@ class Bilby(Pipeline):
                 raise PipelineException(f"The virtual environment could not be initiated.\n{command}\n{out}\n\n{err}",
                                         production=self.production.name)
 
+    def _determine_prior(self):
+        """
+        Determine the correct choice of prior file for this production.
+        """
+
+        if "prior" in self.production.meta:
+            return self.production.meta
+        else:
+            raise NotImplementedError
         
     def build_dag(self, psds=None, user=None, clobber_psd=False):
         """
@@ -125,9 +134,13 @@ class Bilby(Pipeline):
         else:
             job_label = "job_label"
 
+        prior_file = self._determine_prior()
+        
+            
         # TODO: Check if bilby supports loading a gps time file
         command = ["bilby_pipe",
                    "--label", job_label,
+                   "--prior-file", prior_file,
                    "--outdir", self.production.rundir,
                    ini.ini_loc
         ]
