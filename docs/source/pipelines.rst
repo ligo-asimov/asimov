@@ -39,6 +39,7 @@ The following pipelines currently have support bundled with asimov:
 
 + ``LALInference``
 + ``BayesWave``
++ ``bilby``
 
 
 LALInference interface
@@ -114,3 +115,14 @@ BayesWave jobs must be specified by an appropriately formatted ``ini`` file.
 .. todo::
 
    This needs full documentation once it's clear what the overall requirements of the BW interface will be.
+
+
+Bilby interface
+---------------
+
+The Bilby interface allows for some bilby-specific metadata.
+
+
+``job label``, optional.
+   The label for the job.
+   
