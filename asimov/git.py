@@ -1,4 +1,5 @@
 import os
+import shutil
 import glob
 import subprocess
 import pathlib
@@ -65,6 +66,38 @@ class EventRepo():
             repo.remotes[0].pull()
         return cls(directory, url)
 
+    def add_file(self, source, destination, commit_message=None):
+        """
+        Add a new file to the repository.
+        
+        Parameters
+        ----------
+        source : str, file path
+           The path to the file to be added.
+        destination : str
+           The location to which the file should be copied in
+           the repository, relative to the root of the repository.
+           Any directories which do not exist already will be created.
+        commit_message : str, optional
+           The commit message for the git commit.
+           Defaults to a description of the file addition.
+        """
+
+        destination_dir = os.path.dirname(destination)
+        destination_dir = os.path.join(self.directory, destination_dir)
+        pathlib.Path(destination_dir).mkdir(parents=True, exist_ok=True)
+
+        destination = os.path.join(self.directory, destination)
+        
+        shutil.copyfile(source, destination)
+
+        if not commit_message:
+            commit_message = f"Added {destination}"
+        
+        self.repo.git.add(destination)
+        self.repo.git.commit("-m", commit_message)
+        self.repo.git.push()
+    
     def find_timefile(self, category="C01_offline"):
         """
         Find the time file in this repository.
@@ -116,7 +149,7 @@ class EventRepo():
         else:
             prod_name = production
 
-        command = ["/home/charlie.hoy/gitlab/pesummary-config/upload_to_event_repository.sh",
+        command = [config.get("pesummary", "location"),
                    "--event", self.event,
                    "--exp", prod_name,
                    "--rundir", rundir,
