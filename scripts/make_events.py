@@ -25,6 +25,7 @@ gitlab_events = gitlab.find_events(repository)
 
 super_events = set(superevent_ids) - {event.title for event in gitlab_events}
 
+# Add the new events
 for superevent in list(super_events):
 
     data = client.superevent(superevent).json()
@@ -41,3 +42,30 @@ for superevent in list(super_events):
                   disable_repo=True
     )
     gitlab.EventIssue.create_issue(repository, event, issue_template="scripts/outline.md")
+
+
+def find_calibrations(time):
+    with open("../scripts/LLO_calibs.txt") as llo_file:
+        data_llo = llo_file.read().split("\n")
+        data_llo = [datum for datum in data_llo if datum[-16:]=="FinalResults.txt"]
+        times_llo = {int(datum.split("GPSTime_")[1].split("_C01")[0]): datum for datum in data_llo}
+    
+    with open("../scripts/LHO_calibs.txt") as llo_file:
+        data_lho = llo_file.read().split("\n")
+        data_lho = [datum for datum in data_lho if datum[-16:]=="FinalResults.txt"]
+        times_lho = {int(datum.split("GPSTime_")[1].split("_C01")[0]): datum for datum in data_lho}
+        
+    keys_llo = np.array(list(times_llo.keys())) 
+    keys_lho = np.array(list(times_lho.keys())) 
+    return {"LHO": times_lho[keys_lho[np.argmin(np.abs(keys_lho - time))]], "LLO": times_llo[keys_llo[np.argmin(np.abs(keys_llo - time))]]}
+
+    
+# Update existing events
+for event in gitlab_events:
+    data = client.superevent(event.title).json()
+    event_data = client.event(data['preferred_event']).json()
+
+    print(event_data['gpstime'])
+    
+    event.event_object.meta['event time'] = event_data['gpstime']
+    event.update_data()

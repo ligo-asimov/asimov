@@ -4,7 +4,7 @@ Make the event issues on the gitlab issue tracker from gracedb.
 
 
 import asimov
-from asimov.event import Event
+from asimov.event import Event, DescriptionException
 from asimov import config
 
 from asimov import gitlab
@@ -45,18 +45,28 @@ def find_calibrations(time):
     
 # Update existing events
 for event in gitlab_events:
-    
-    time = event.event_object.meta['event time'] 
+    try:
+        event.event_object._check_calibration()
+    except DescriptionException:
+        time = event.event_object.meta['event time'] 
 
-    print(find_calibrations(time))
+        calibrations = find_calibrations(time)
 
-    envelopes = yaml.dump(find_calibrations(time))
-    event.add_note(f"""
-## Calibration envelopes
-The following calibration envelopes have been found.
-```yaml
----
-{envelopes}
----
-```
-""")
+        envelopes = yaml.dump(calibrations)
+#         event.add_note(f"""
+# ## Calibration envelopes
+# The following calibration envelopes have been found.
+# ```yaml
+# ---
+# {envelopes}
+# ---
+# ```
+# """)
+
+        try:
+            for ifo, envelope in calibrations.items():
+                description = f"Added calibration {envelope} for {ifo}."
+                event.event_object.repository.add_file(envelope, f"C01_offline/calibration/{ifo}.dat", commit_message=description)
+        except:
+            print("There was a problem with the repository.")
+            pass
