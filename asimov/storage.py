@@ -35,6 +35,9 @@ class NotAStoreError(Exception):
 class AlreadyPresentException(Exception):
     pass
 
+class HashError(Exception):
+    pass
+
 class Manifest:
     """
     The storage manifest.
@@ -161,16 +164,19 @@ class Manifest:
         """
         # This function should store the name, location, event, production of the file
         # then calculate the hash and uuid for the file, and store them in the manifest
+        
         if not event in self.data['events']:
             self.data['events'][event] = {}
         if not production in self.data['events'][event]:
             self.data['events'][event][production] = {}
+
+        if resource in self.data['events'][event][production]:
+            raise FileExistsError
             
         self.data['events'][event][production][resource] = {
             "uuid": resource_uuid.hex,
             "hash": hash
         }
-        self.update()
         
 
 class Store:
@@ -262,6 +268,9 @@ class Store:
             raise AlreadyPresentException
         
         pathlib.Path(os.path.join(self.root, event, production)).mkdir(parents=True, exist_ok=True)
+
+        self.manifest.add_record(event, production, file, hash, this_uuid)
+        
         this_uuid = uuid.uuid4()
 
         destination = os.path.join(self.root, event, production, this_uuid.hex)
@@ -270,7 +279,7 @@ class Store:
 
         os.chmod(destination, stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
 
-        self.manifest.add_record(event, production, file, hash, this_uuid)
+        self.manifest.update()
 
         return {"file": file, "hash": self._hash(file), "uuid": this_uuid.urn}
 
