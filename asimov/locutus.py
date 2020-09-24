@@ -63,3 +63,15 @@ def fetch(event, production, filename, hash=None):
         click.echo(this_store.fetch_file(event, production, filename, hash))
     except FileNotFoundError:
         click.echo("File not found in the manifest.")
+
+@click.argument("production")
+@click.argument("event")
+@cli.command()
+def list(event, production):
+    """
+    Store a file in the Store.
+    """
+    click.echo(f"{'Resource':30} {'Hash':32} {'UUID':32}")
+    click.echo("-"*96)
+    for resource, details in this_store.manifest.list_resources(event, production).items():
+        click.echo(f"{resource:30} {details['hash']:32} {details['uuid']:32}")
