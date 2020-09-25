@@ -144,6 +144,12 @@ class Manifest:
         """
         pass
 
+    def list_resources(self, event, production):
+        """
+        List all of the resources available for a production.
+        """
+        return self.data['events'][event][production]
+
     def add_record(self, event, production, resource, hash, resource_uuid):
         """
         Add a resource record to the manifest.
