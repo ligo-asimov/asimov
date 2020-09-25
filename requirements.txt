@@ -6,3 +6,4 @@ gitpython
 otter-report
 htcondor
 click
+sphinx-click

@@ -40,7 +40,7 @@ The following pipelines currently have support bundled with asimov:
 + ``LALInference``
 + ``BayesWave``
 + ``bilby``
-
++ ``RIFT``
 
 LALInference interface
 ----------------------
@@ -116,7 +116,6 @@ BayesWave jobs must be specified by an appropriately formatted ``ini`` file.
 
    This needs full documentation once it's clear what the overall requirements of the BW interface will be.
 
-
 Bilby interface
 ---------------
 
@@ -129,3 +128,29 @@ The Bilby interface allows for some bilby-specific metadata.
 ``prior``
    The prior file to be used for this production.
    Note, this may be semi-automated in the future, but this value will still be available to over-ride the underlying default.
+
+RIFT interface
+--------------
+
+Production metadata
+~~~~~~~~~~~~~~~~~~~
+
+``approximant``
+    The approximant which should be used for this RIFT run.
+
+``cip jobs``, optional
+    Used to specify the number of independent sampler jobs which should be run.
+    Defaults to 3 if a value is not supplied.
+
+``lmax``
+    The highest order of harmonic to be included in the analysis.
+
+``bootstrap``, optional
+    A previous production which can be used to "bootstrap" the sampler.
+    You should combine this with a ``needs`` instruction, so that the RIFT job isn't run until the bootstrapping job has completed.
+
+::
+
+   bootstrap: Prod1
+   needs: Prod1
+
