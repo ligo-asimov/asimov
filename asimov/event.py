@@ -428,11 +428,11 @@ class Production:
            The location of the time file.
         """
         try:
-            self.event.repository.find_timefile(self.category)
+            self.event.repository.find_coincfile(self.category)
         except FileNotFound:
             # TODO Need code to fetch the coinc file from GDB
             # command to do this seems to be gracedb_legacy download ${my_gid} coinc.xml
-            self.get_gracedb(self, "coinc.xml", self.category)
+            self.get_gracedb(self, "coinc.xml", os.path.join(self.event.repository.directory, self.category))
     
     def get_configuration(self):
         """
