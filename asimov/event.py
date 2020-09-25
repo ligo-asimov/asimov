@@ -292,7 +292,7 @@ class Production:
         else:
             self.category = "online"
 
-        if "needs" in self.meta:
+        if "needs" n self.meta:
             self.dependencies = self._process_dependencies(self.meta['needs'])
         else:
             self.dependencies = None
@@ -389,6 +389,24 @@ class Production:
         else:
             raise ValueError
 
+    def get_psds(self, format="ascii"):
+        """
+        Get the PSDs for this production.
+        """
+        if (len(self.psds)>0) and (format=="ascii"):
+            return self.psds
+        elif (format=="ascii"):
+            files = glob.glob(f"{self.event.repository.directory}/{category}/psds/*.dat")
+            if len(files)>0:
+                return files
+            else:
+                raise DescriptionException(f"The PSDs for this event cannot be found.",
+                                           issue=self.event.issue_object,
+                                           production=self.name)
+        elif (format=="xml"):
+            files = glob.glob(f"{self.event.repository.directory}/{category}/psds/*.dat")
+            return files
+            
     def get_timefile(self):
         """
         Find this event's time file.
@@ -400,6 +418,22 @@ class Production:
         """
         return self.event.repository.find_timefile(self.category)
 
+    def get_coincfile(self):
+        """
+        Find this event's coinc.xml file.
+
+        Returns
+        -------
+        str
+           The location of the time file.
+        """
+        try:
+            self.event.repository.find_coincfile(self.category)
+        except FileNotFound:
+            # TODO Need code to fetch the coinc file from GDB
+            # command to do this seems to be gracedb_legacy download ${my_gid} coinc.xml
+            self.get_gracedb(self, "coinc.xml", os.path.join(self.event.repository.directory, self.category))
+    
     def get_configuration(self):
         """
         Get the configuration file contents for this event.
