@@ -91,3 +91,19 @@ Locutus is designed to provide a simple user interface to the storage API which 
 
 Manifest files
 --------------
+
+Manifest files are used to track changes within the repository, and store details of all of the files which are stored in the store.
+
+Manifest files are YAML 1.1 files which store details of files in a simple hierarchy:
+
+::
+   
+   name: Store's name
+   events:
+      S000000xx:
+         Prod0:
+            test_file:
+               hash: d41d8cd98f00b204e9800998ecf8427e
+               uuid: f9f167bee8e3449aa0c68bf7f91e7b7a
+
+A python object (``asimov.storage.Manifest``) is provided to make working with manifest files easier, although normally you shouldn't need to interact directly with the store's manifest.
