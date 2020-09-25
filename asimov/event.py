@@ -432,8 +432,7 @@ class Production:
         except FileNotFound:
             # TODO Need code to fetch the coinc file from GDB
             # command to do this seems to be gracedb_legacy download ${my_gid} coinc.xml
-            
-            pass
+            self.get_gracedb(self, "coinc.xml", self.category)
     
     def get_configuration(self):
         """
