@@ -6,6 +6,7 @@ import glob
 import subprocess
 from ..pipeline import Pipeline, PipelineException, PipelineLogger
 from ..ini import RunConfiguration
+from asimov import config
 
 
 class BayesWave(Pipeline):
@@ -28,6 +29,11 @@ class BayesWave(Pipeline):
 
         if not production.pipeline.lower() == "bayeswave":
             raise PipelineException
+
+        try:
+            self.category = config.get("general", "category")
+        except:
+            self.category = "C01_offline"
 
     def build_dag(self, user=None):
         """
@@ -118,3 +124,29 @@ class BayesWave(Pipeline):
             else:
                 return PipelineLogger(message=out,
                                       production=self.production.name)
+
+    def after_completion(self):
+        self.upload_assets()
+        
+    def before_submit(self):
+        pass
+
+    
+    def upload_assets(self):
+        """
+        Upload the PSDs from this job.
+        """
+        psds = {}
+        detectors = self.production.meta['interferometers']
+
+        git_location = os.path.join(self.category, "psds")
+        
+        for det in dets:
+            asset = f"{self.production.rundir}/ROQdata/0/BayesWave_PSD_{det}/post/clean/glitch_median_PSD_forLI_{det}.dat"
+            if os.path.exists(asset):
+                psds[det] = asset
+                self.production.event.production.add_file(
+                    asset,
+                    os.path.join(git_location, f"psd_{det}.dat"),
+                    commit_message = f"Added the PSD for {det}.")
+        
