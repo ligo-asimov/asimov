@@ -37,7 +37,8 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
-    'numpydoc'
+    'numpydoc',
+    'sphinx_click'
 ]
 autodoc_mock_imports = ["htcondor", "git"]
 # Add any paths that contain templates here, relative to this directory.

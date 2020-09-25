@@ -9,6 +9,11 @@ import networkx as nx
 
 from .ini import RunConfiguration
 from .git import EventRepo
+from asimov import config
+
+from liquid import Liquid
+
+from ligo.gracedb.rest import GraceDb, HTTPError
 
 class DescriptionException(Exception):
     """Exception for event description problems."""
@@ -55,15 +60,59 @@ class Event:
             self.work_dir = kwargs['working_directory']
         else:
             self.work_dir = None
-        self.repository = EventRepo.from_url(repository,
+
+        if "disable_repo" not in kwargs:
+            self.repository = EventRepo.from_url(repository,
                                              self.name,
                                              self.work_dir)
+        else:
+            self.repository = repository
+            
         self.productions = []
+        if "psds" in kwargs:
+            self.psds = kwargs.pop("psds")
+        else:
+            self.psds = {}
+            
         self.meta = kwargs
+
+        self._check_required()
+
+        try:
+            self._check_calibration()
+        except DescriptionException:
+            print("No calibration envelopes found.")
+        #self._check_psds()
 
         self.graph = nx.DiGraph()
 
+    def _check_required(self):
+        """
+        Find all of the required metadata is provided.
+        """
+        required = {"interferometers"}
+        if not (required <= self.meta.keys()):
+            raise DescriptionException(f"Some of the required parameters are missing from this issue. {required-self.meta.keys()}")
+        else:
+            return True
         
+    def _check_calibration(self):
+        """
+        Find the calibration envelope locations.
+        """
+        if ("calibration" in self.meta) and (set(self.meta['interferometers']) == set(self.meta['calibration'].keys())):
+            pass
+        else:
+            raise DescriptionException(f"Some of the required calibration envelopes are missing from this issue. {set(self.meta['interferometers']) - set(self.meta['calibration'].keys())}")
+
+    def _check_psds(self):
+        """
+        Find the psd locations.
+        """
+        if ("calibration" in self.meta) and (set(self.meta['interferometers']) == set(self.psds.keys())):
+            pass
+        else:
+            raise DescriptionException(f"Some of the required psds are missing from this issue. {set(self.meta['interferometers']) - set(self.meta['calibration'].keys())}")
 
     @property
     def webdir(self):
@@ -74,7 +123,6 @@ class Event:
             return self.meta['webdir']
         else:
             return None
-        
         
     def add_production(self, production):
         """
@@ -146,7 +194,29 @@ class Event:
     #     """
     #     for production in self.productions:
             
-        
+    def get_gracedb(self, gfile, destination):
+        """
+        Get a file from Gracedb, and store it in the event repository.
+
+        Parameters
+        ----------
+        gfile : str
+           The name of the gracedb file, e.g. `coinc.xml`.
+        destination : str
+           The location in the repository for this file.
+        """
+
+
+        gid = self.meta['gid']
+        client = GraceDb(service_url=config.get("gracedb", "url"))
+        print(config.get("gracedb", "url"))
+        file_obj = client.files(self.meta['gid'], gfile)
+
+        with open("download.file", "w") as dest_file:
+            dest_file.write(file_obj.read().decode())
+
+        self.repository.add_file("download.file", destination,
+                                 commit_message = f"Downloaded {gfile} from GraceDB")
     
     def to_yaml(self):
         """Serialise this object as yaml"""
@@ -210,14 +280,19 @@ class Production:
         self.status_str = status.lower()
         self.pipeline = pipeline.lower()
         self.comment = comment
-        self.meta = kwargs
+        self.meta = self.event.meta
+        self.meta.update(kwargs)
+
+        self.psds = self.event.psds
+        if 'psds' in kwargs:
+            self.psds.update(kwargs['psds'])
 
         if "Prod" in self.name:
             self.category = "C01_offline"
         else:
             self.category = "online"
 
-        if "needs" in self.meta:
+        if "needs" n self.meta:
             self.dependencies = self._process_dependencies(self.meta['needs'])
         else:
             self.dependencies = None
@@ -314,6 +389,24 @@ class Production:
         else:
             raise ValueError
 
+    def get_psds(self, format="ascii"):
+        """
+        Get the PSDs for this production.
+        """
+        if (len(self.psds)>0) and (format=="ascii"):
+            return self.psds
+        elif (format=="ascii"):
+            files = glob.glob(f"{self.event.repository.directory}/{category}/psds/*.dat")
+            if len(files)>0:
+                return files
+            else:
+                raise DescriptionException(f"The PSDs for this event cannot be found.",
+                                           issue=self.event.issue_object,
+                                           production=self.name)
+        elif (format=="xml"):
+            files = glob.glob(f"{self.event.repository.directory}/{category}/psds/*.dat")
+            return files
+            
     def get_timefile(self):
         """
         Find this event's time file.
@@ -325,6 +418,22 @@ class Production:
         """
         return self.event.repository.find_timefile(self.category)
 
+    def get_coincfile(self):
+        """
+        Find this event's coinc.xml file.
+
+        Returns
+        -------
+        str
+           The location of the time file.
+        """
+        try:
+            self.event.repository.find_coincfile(self.category)
+        except FileNotFound:
+            # TODO Need code to fetch the coinc file from GDB
+            # command to do this seems to be gracedb_legacy download ${my_gid} coinc.xml
+            self.get_gracedb(self, "coinc.xml", os.path.join(self.event.repository.directory, self.category))
+    
     def get_configuration(self):
         """
         Get the configuration file contents for this event.
@@ -358,3 +467,31 @@ class Production:
     
     def __repr__(self):
         return f"<Production {self.name} for {self.event} | status: {self.status}>"
+
+
+    def make_config(self, filename, template_directory=None):
+        """
+        Make the configuration file for this production.
+
+        Parameters
+        ----------
+        filename : str
+           The location at which the config file should be saved.
+        template_directory : str, optional
+           The path to the directory containing the pipeline config templates.
+           Defaults to the directory specified in the asimov configuration file.
+        """
+
+        if not template_directory:
+            template_directory = config.get("templating", "directory")
+
+        try:
+            with open(f"{template_directory}/{self.pipeline}.ini", "r") as template_file:
+                liq = Liquid(template_file.read())
+                rendered = liq.render(production=self)
+        except:
+            raise DescriptionException("There was a problem writing the configuration file.",
+                                       production=self)
+
+        with open(filename, "w") as output_file:
+            output_file.write(rendered)

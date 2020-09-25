@@ -40,6 +40,8 @@ Module documentation
    api/git
    yamlformat
    pipelines
+   storage
+   templates
 	     
 Indices and tables
 ------------------

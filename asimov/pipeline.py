@@ -84,6 +84,15 @@ class Pipeline():
         else:
             self.category = category
 
+    def _activate_environment(self):
+        """
+        Activate the virtual environment for this pipeline.
+        If no specific environment is required to build DAG files
+        or run scripts in this runner then this method can be 
+        left without overloading.
+        """
+        pass
+            
     def detect_completion(self):
         """
         Detect if the job has completed normally.
@@ -98,6 +107,35 @@ class Pipeline():
             return True
         else:
             return False
+
+    def before_submit(self):
+        """
+        Define a hook to run before the DAG file is generated and submitted.
+
+        Note, this method should take no arguments, and should be over-written in the 
+        specific pipeline implementation if required.
+        """
+        pass
+
+    def after_completion(self):
+        """
+        Define a hook to run after the DAG has completed execution successfully.
+
+        Note, this method should take no arguments, and should be over-written in the 
+        specific pipeline implementation if required.
+        """
+        pass
+
+    def collect_assets(self):
+        """
+        Add the various analysis assets from the run directory to the git repository.
+        """
+
+        assets = self.assets
+        repo = self.production.event.repository
+
+        for asset in self.assets:
+            repo.add_file(asset[0], asset[1])
 
     def submit_dag(self):
         """
@@ -124,6 +162,9 @@ class Pipeline():
            This will be raised if the pipeline fails to submit the job.
         """
         os.chdir(self.production.rundir)
+
+        self.before_submit()
+        
         try:
             command = ["condor_submit_dag",
                                    os.path.join(self.production.rundir, "multidag.dag")]

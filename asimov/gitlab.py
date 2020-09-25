@@ -9,6 +9,8 @@ import gitlab
 import re
 import datetime
 
+from liquid import Liquid
+
 STATE_PREFIX = "C01"
 
 def find_events(repository, milestone=None):
@@ -55,6 +57,22 @@ class EventIssue(object):
         if self.event_object:
             self.event_object.text = self.issue_object.description.split("---")
 
+    @classmethod
+    def create_issue(cls, repository, event_object, issue_template=None):
+        """
+        Create an issue for an event.
+        """
+
+        if issue_template:
+            with open(issue_template, "r") as template_file:
+                liq = Liquid(template_file.read())
+                rendered = liq.render(event_object=event_object, yaml = event_object.to_yaml())
+        else:
+            rendered = event_object.to_yaml()
+            
+        repository.issues.create({'title': event_object.name,
+                                       'description': rendered})
+            
     @property
     def productions(self):
         """List the productions on this event."""
