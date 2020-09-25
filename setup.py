@@ -28,7 +28,7 @@ setup(
     package_dir={'asimov': 'asimov'},
     entry_points={
         'console_scripts': [
-            'olivaw=asimov.olivaw:main',
+            'olivaw=asimov.olivaw:olivaw',
             'locutus=asimov.locutus:cli'
         ]
     },
