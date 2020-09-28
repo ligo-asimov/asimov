@@ -158,7 +158,7 @@ class Event:
         Event
            An event.
         """
-        data = yaml.load(data)
+        data = yaml.safe_load(data)
         if not {"name", "repository"} <= data.keys():
             raise DescriptionException(f"Some of the required parameters are missing from this issue.")
         event = cls(**data)
@@ -292,7 +292,7 @@ class Production:
         else:
             self.category = "online"
 
-        if "needs" n self.meta:
+        if "needs" in self.meta:
             self.dependencies = self._process_dependencies(self.meta['needs'])
         else:
             self.dependencies = None
@@ -358,7 +358,7 @@ class Production:
         output[self.name]['status'] = self.status
         output[self.name]['pipeline'] = self.pipeline.lower()
         output[self.name]['comment'] = self.comment
-        for key, value in self.meta.iteritems():
+        for key, value in self.meta.items():
             output[self.name][key] = value
         return output
 
@@ -442,9 +442,11 @@ class Production:
             ini_loc = self.meta['ini']
         else:
             # We'll need to search the repository for it.
-
-            ini_loc = self.event.repository.find_prods(self.name,
+            try:
+                ini_loc = self.event.repository.find_prods(self.name,
                                                        self.category)[0]
+            except IndexError:
+                raise ValueError("Could not open the ini file.")
         try:
             ini = RunConfiguration(ini_loc)
         except ValueError:
@@ -486,7 +488,8 @@ class Production:
             template_directory = config.get("templating", "directory")
 
         try:
-            with open(f"{template_directory}/{self.pipeline}.ini", "r") as template_file:
+        
+            with open(os.path.join(f"{template_directory}", f"{self.pipeline}.ini"), "r") as template_file:
                 liq = Liquid(template_file.read())
                 rendered = liq.render(production=self)
         except:

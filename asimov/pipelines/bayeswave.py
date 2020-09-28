@@ -6,6 +6,7 @@ import glob
 import subprocess
 from ..pipeline import Pipeline, PipelineException, PipelineLogger
 from ..ini import RunConfiguration
+from ..git import AsimovFileNotFound
 from asimov import config
 
 
@@ -66,8 +67,17 @@ class BayesWave(Pipeline):
 
         os.chdir(os.path.join(self.production.event.repository.directory,
                               self.category))
-        gps_file = self.production.get_timefile()
-
+        try:
+            gps_file = self.production.get_timefile()
+        except AsimovFileNotFound:
+            if "event time" in self.production.meta:
+                gps_time = self.production.get_meta("event time")
+                with open("gpstime.txt", "w") as f:
+                    f.write(str(gps_time))
+                gps_file = os.path.join(f"{production.category}", f"gpstime.txt")
+                self.production.event.repository.add_file(f"gpstime.txt", gps_file)
+            else:
+                raise PipelineException("Cannot find the event time.")
         # FIXME currently no distinction between bayeswave and lalinference ini files
         ini = self.production.get_configuration()
 

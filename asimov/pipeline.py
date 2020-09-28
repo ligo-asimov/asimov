@@ -84,6 +84,8 @@ class Pipeline():
         else:
             self.category = category
 
+        self._activate_environment()
+
     def _activate_environment(self):
         """
         Activate the virtual environment for this pipeline.

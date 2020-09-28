@@ -33,7 +33,7 @@ setup(
         ]
     },
     include_package_data=True,
-    install_requires=requirements,
+    #install_requires=requirements,
     license="MIT license",
     zip_safe=True,
     keywords='supervisor, pe, ligo, asimov',

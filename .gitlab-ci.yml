@@ -79,14 +79,25 @@ wheel-38:
   stage: build
   script:
     - pip install wheel
+    - pip install twine
     # Build wheel
     - python setup.py bdist_wheel --universal
+    # Test wheel
+    - twine check dist/*
   dependencies: []
   artifacts:
     expire_in: 3h
     paths:
       - dist
 
+gitlab-deploy:
+  image: python:3.8
+  stage: deploy
+  script:
+    - pip install twine
+    - twine check dist/*
+    - twine upload --username __token__ --password $GITLAB_PYPI --repository-url https://git.ligo.org/api/v4/projects/$CI_PROJECT_ID/packages/pypi
+      
 docker-olivaw:
   image: docker
   stage: build
