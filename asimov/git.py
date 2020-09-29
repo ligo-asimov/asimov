@@ -62,6 +62,15 @@ class EventRepo():
         if not directory:
             directory = f"/tmp/{name}"
             pathlib.Path(directory).mkdir(parents=True, exist_ok=True)
+
+        # Replace an https address with an ssh address
+        if "https" in url:
+            url = url.replace("https://", "git@")
+            final = "/".join(url.split("/")[1:])
+            start = url.split("/")[0]
+
+            url = f"{start}:{final}"
+            
         try:
             git.Repo.clone_from(url, directory)
         except git.GitCommandError:
@@ -91,8 +100,11 @@ class EventRepo():
         pathlib.Path(destination_dir).mkdir(parents=True, exist_ok=True)
 
         destination = os.path.join(self.directory, destination)
-        
-        shutil.copyfile(source, destination)
+
+        try:
+            shutil.copyfile(source, destination)
+        except shutil.SameFileError:
+            pass
 
         if not commit_message:
             commit_message = f"Added {destination}"
@@ -106,8 +118,11 @@ class EventRepo():
         Find the time file in this repository.
         """
         os.chdir(os.path.join(self.directory, category))
-        gps_file = glob.glob("*gps*.txt")[0]
-        return gps_file
+        try:
+            gps_file = glob.glob("*gps*.txt")[0]
+            return gps_file
+        except IndexError:
+            raise AsimovFileNotFound
 
     def find_coincfile(self, category="C01_offline"):
         """

@@ -1,9 +1,11 @@
 python-gitlab
 liquidpy
-kentigern
+#kentigern
 sphinx
 gitpython
 otter-report
-htcondor
 click
+networkx
+htcondor
 sphinx-click
+ligo.gracedb

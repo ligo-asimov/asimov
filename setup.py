@@ -28,12 +28,12 @@ setup(
     package_dir={'asimov': 'asimov'},
     entry_points={
         'console_scripts': [
-            'olivaw=asimov.olivaw:main',
+            'olivaw=asimov.olivaw:olivaw',
             'locutus=asimov.locutus:cli'
         ]
     },
     include_package_data=True,
-    install_requires=requirements,
+    #install_requires=requirements,
     license="MIT license",
     zip_safe=True,
     keywords='supervisor, pe, ligo, asimov',

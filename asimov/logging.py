@@ -5,7 +5,9 @@ information for review purposes.
 """
 
 import logging
-import mattermost
+import os
+
+from asimov import mattermost
 
 from asimov import config
 from .gitlab import EventIssue
@@ -25,8 +27,12 @@ class AsimovLogger():
         self.event_object = event
         self.event_issue = event.issue_object
         self.mattermost = mattermost.Mattermost()
-        self.log_file = f"{event.work_dir}/asimov.log"
-        self.file_logger = logging.basicConfig(filename=self.log_file,level=logging.DEBUG)
+        if event.work_dir:
+            log_dir = event.work_dir
+        else:
+            log_dir = os.getcwd()
+        self.log_file = f"{log_dir}/asimov.log"
+        self.file_logger = logging.basicConfig(filename=self.log_file, level=logging.DEBUG)
         
     def log(self, level, message, production=None, channels="file"):
         """
@@ -45,22 +51,22 @@ class AsimovLogger():
            Defaults to file only.
         """
 
-        logger_levels = {"debug": logger.DEBUG,
-                         "info": logger.INFO,
-                         "warning": logger.WARNING,
-                         "error": logger.ERROR}
+        logger_levels = {"debug": logging.DEBUG,
+                         "info": logging.INFO,
+                         "warning": logging.WARNING,
+                         "error": logging.ERROR}
 
         if not production:
             production = ""
         
         if "file" in channels:
-            self.file_logger.log(logger_levels[level.lower()],
+            logging.log(logger_levels[level.lower()],
                                  message)
 
         if "mattermost" in channels:
-            self.mattermost.send_message(f":mega: {self.event_object.name} {production} {message} :robot:}")
+            self.mattermost.send_message(f":mega: {self.event_object.name} {production} {message} :robot:")
 
-        if "gitlab" in channes:
+        if "gitlab" in channels:
             self.event_issue.add_note(message)
             
         
