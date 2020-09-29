@@ -120,5 +120,14 @@ def submit(event):
             if production.pipeline.lower() == "bayeswave":
                 from asimov.pipelines.bayeswave import BayesWave
                 pipe = BayesWave(production, "C01_offline")
-                pipe.build_dag()
+                try:
+                    pipe.build_dag()
+                except PipelineException:
+                    logger.error("The pipeline failed to build a DAG file.",
+                                 production=production)
+                try:
+                    pipe.submit_dag()
+                except PipelineException:
+                    logger.error("The pipeline failed to submit the DAG file to the cluster.",
+                                 production=production)
                 
