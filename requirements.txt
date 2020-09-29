@@ -1,6 +1,6 @@
 python-gitlab
 liquidpy
-#kentigern
+kentigern
 sphinx
 gitpython
 otter-report
