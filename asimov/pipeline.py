@@ -168,11 +168,7 @@ class Pipeline():
         self.before_submit()
         
         try:
-            if self.production.lower() == "rift":
-                command = ["condor_submit_dag",
-                                   os.path.join(self.production.rundir, "marginalize_intrinsic_parameters_BasicIterationWorkflow.dag")]
-            else:
-                command = ["condor_submit_dag",
+            command = ["condor_submit_dag",
                                    os.path.join(self.production.rundir, "multidag.dag")]
             dagman = subprocess.Popen(command,
                                   stdout=subprocess.PIPE,
