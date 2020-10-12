@@ -41,6 +41,7 @@ class EventRepo():
         self.event = directory.split("/")[-1]
         self.directory = directory
         self.repo = git.Repo(directory)
+        self.url = url
 
     @classmethod
     def from_url(cls, url, name, directory=None):
