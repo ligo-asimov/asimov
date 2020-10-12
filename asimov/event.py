@@ -222,7 +222,7 @@ class Event:
         """Serialise this object as yaml"""
         data = {}
         data['name'] = self.name
-        data['repository'] = self.repository
+        data['repository'] = self.repository.url
         for key, value in self.meta.items():
             data[key] = value
         data['productions'] = []
