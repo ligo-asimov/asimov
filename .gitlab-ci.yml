@@ -96,7 +96,7 @@ gitlab-deploy:
   script:
     - pip install twine
     - twine check dist/*
-    - twine upload --username __token__ --password $GITLAB_PYPI --repository-url https://git.ligo.org/api/v4/projects/$CI_PROJECT_ID/packages/pypi
+    - twine upload -u __token__ -p $GITLAB_PYPI --repository-url https://git.ligo.org/api/v4/projects/$CI_PROJECT_ID/packages/pypi
       
 docker-olivaw:
   image: docker
