@@ -4,11 +4,30 @@ import click
 
 from asimov import gitlab
 from asimov.event import DescriptionException
-from asimov import config, config_locations
+from asimov import config
 from asimov import logging
+from asimov.pipeline import PipelineException
+from asimov import condor
+import asimov.pipelines
+from asimov.pipelines.bayeswave import BayesWave
+from asimov.pipelines.lalinference import LALInference                    
+from asimov.pipelines.rift import Rift
+from asimov.pipelines.bilby import Bilby
+
+# Replace this with a better logfile handling module please
+from glob import glob
 
 import yaml
 
+import otter
+import otter.bootstrap as bt
+
+ACTIVE_STATES = {"running", "stuck"}
+
+known_pipelines = {"bayeswave": BayesWave,
+                   "bilby": Bilby,
+                   "rift": Rift,
+                   "lalinference": LALInference}
 
 server = gitlab.gitlab.Gitlab('https://git.ligo.org',
                               private_token=config.get("gitlab", "token"))
@@ -32,7 +51,7 @@ def ledger(event, yaml_f):
     Return the ledger for a given event.
     If no event is specified then the entire production ledger is returned.
     """
-    events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"))
+    events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event])
 
     if event:
         events = [event_i for event_i in events if event_i.title == event]
@@ -43,7 +62,8 @@ def ledger(event, yaml_f):
         click.echo(f"{event.title:30}")
         click.echo("-"*45)
         if len(event.event_object.meta['productions'])>0:
-            click.echo(event.event_object.meta['productions'])
+            for production in event.event_object.meta['productions']:
+                click.echo(f"{production}")
             click.echo("-"*45)
         if len(event.event_object.get_all_latest())>0:
             click.echo("Jobs waiting")
@@ -54,6 +74,77 @@ def ledger(event, yaml_f):
         with open(yaml_f, "w") as f:
             f.write(yaml.dump(total))
 
+
+@click.option("--location", "webdir", default=None, help="The place to save the report to")
+@click.option("--event", "event", default=None, help="The event which the report should be returned for, optional.")
+@olivaw.command()
+def report(event, webdir):
+    """
+    Return the ledger for a given event.
+    If no event is specified then the entire production ledger is returned.
+    """
+
+    if not webdir:
+        webdir = "./"
+    if event:
+        events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event])
+    else:
+        events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"))
+    report = otter.Otter(f"{webdir}/index.html", 
+                         author="Olivaw", 
+                         title="Olivaw PE Report", 
+                         author_email="daniel.williams@ligo.org", 
+                         config_file="asimov.conf")
+
+    with report:
+        navbar = bt.Navbar("Asimov", background="navbar-dark bg-primary")
+        report + navbar
+
+    cards = []
+    container = bt.Container()
+    container + "# All PE Productions"
+    for event in events:
+
+        event_report =  otter.Otter(f"{webdir}/{event.title}.html", 
+                         author="Olivaw", 
+                         title=f"Olivaw PE Report | {event.title}", 
+                         author_email="daniel.williams@ligo.org", 
+                         config_file="asimov.conf")
+
+        card = bt.Card(title=f"<a href='{event.title}.html'>{event.title}</a>")
+        production_list = bt.ListGroup()
+        for production in event.productions:
+            pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
+            
+            status_map = {"finished": "success", "running": "primary", "stuck": "warning", "ready": "secondary", "wait": "light"}
+            production_list.add_item(f"{production.name}" + str(bt.Badge(f"{production.pipeline}", "info")) + str(bt.Badge(f"{production.status}")), 
+                                     context=status_map[production.status])
+
+            with event_report:
+                container = bt.Container()
+                container + f"## {production.name}"
+                container + "### Ledger"
+                container + production.meta
+                logs = pipe.collect_logs()
+                container + f"### Log files"
+                
+                for log, message in logs.items():
+                    log_card = bt.Card(title=f"{log}")
+                    log_card.add_content("<div class='card-body'><pre>"+message+"</pre></div>")
+                    container + log_card
+                event_report + container
+
+        card.add_content(production_list)
+        cards.append(card)
+
+    with report:
+        for i, card in enumerate(cards):
+            if i%2==0:
+                deck = bt.CardDeck()
+            deck + card
+            if i%2==1:
+                report + deck
+
             
 @click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
 @olivaw.command()
@@ -62,37 +153,41 @@ def build(event):
     Create the run configuration files for a given event for jobs which are ready to run.
     If no event is specified then all of the events will be processed.
     """
-    events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"))
 
     if event:
-        events = [event_i for event_i in events if event_i.title == event]
-
+        events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event])
+    else:
+        events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"))
+    
     for event in events:
+        click.echo(f"Working on {event.title}")
         logger = logging.AsimovLogger(event=event.event_object)
         ready_productions = event.event_object.get_all_latest()
-
+        print(event.productions)
         for production in ready_productions:
+            click.echo(f"\tWorking on production {production.name}")
+            if production.status in {"running", "stuck", "wait"}: continue
             try:
-                configuration = production.get_configuration()
+               configuration = production.get_configuration()
             except ValueError:
-                try:
-                    templates = os.path.join(rundir, config.get("templating", "directory"))
-                    production.make_config(f"{production.name}.ini", template_directory=templates)
-                    click.echo(f"Production config {production.name} created.")
-                    logger.info("Run configuration created.", production=production)
+               try:
+                   templates = os.path.join(rundir, config.get("templating", "directory"))
+                   production.make_config(f"{production.name}.ini", template_directory=templates)
+                   click.echo(f"Production config {production.name} created.")
+                   logger.info("Run configuration created.", production=production)
 
-                    #try:
-                    event.event_object.repository.add_file(f"{production.name}.ini",
-                                                               os.path.join(f"{production.category}",
-                                                                            f"{production.name}.ini"))
-                    #logger.info("Configuration committed to event repository.",
-                    #                production=production)
-                    #except Exception as e:
-                    #    logger.error(f"Configuration could not be committed to repository.\n{e}",
-                    #                 production=production)
-                    
-                except DescriptionException:
-                    logger.error("Run configuration failed", production=production, channels=["file", "mattermost"])
+                   try:
+                       event.event_object.repository.add_file(f"{production.name}.ini",
+                                                              os.path.join(f"{production.category}",
+                                                                           f"{production.name}.ini"))
+                       logger.info("Configuration committed to event repository.",
+                                   production=production)
+                   except Exception as e:
+                       logger.error(f"Configuration could not be committed to repository.\n{e}",
+                                    production=production)
+                   
+               except DescriptionException as e:
+                   logger.error("Run configuration failed", production=production, channels=["file", "mattermost"])
 
 
 @click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
@@ -102,32 +197,81 @@ def submit(event):
     Submit the run configuration files for a given event for jobs which are ready to run.
     If no event is specified then all of the events will be processed.
     """
-    events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"))
-
     if event:
-        events = [event_i for event_i in events if event_i.title == event]
+        events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event])
+    else:
+        events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"))
 
     for event in events:
         logger = logging.AsimovLogger(event=event.event_object)
         ready_productions = event.event_object.get_all_latest()
-
+        
         for production in ready_productions:
+            if production.status.lower() in {"running", "stuck", "wait"}: continue
             try:
                 configuration = production.get_configuration()
-            except ValueError:
-                build(event)
-
-            if production.pipeline.lower() == "bayeswave":
-                from asimov.pipelines.bayeswave import BayesWave
-                pipe = BayesWave(production, "C01_offline")
-                try:
-                    pipe.build_dag()
-                except PipelineException:
-                    logger.error("The pipeline failed to build a DAG file.",
-                                 production=production)
+            except ValueError as e:
+                #build(event)
+                logger.error(f"Error while trying to submit a configuration. {e}", production=production, channels="gitlab")
+            if production.pipeline.lower() in known_pipelines:
+                pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
+                #try:
+                pipe.build_dag()
+                #except PipelineException:
+                #    logger.error("The pipeline failed to build a DAG file.",
+                #                 production=production)
                 try:
                     pipe.submit_dag()
-                except PipelineException:
-                    logger.error("The pipeline failed to submit the DAG file to the cluster.",
+                    production.status = "running"
+
+                except PipelineException as e:
+                    production.status = "stuck"
+                    logger.error(f"The pipeline failed to submit the DAG file to the cluster. {e}",
                                  production=production)
                 
+
+@click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
+@olivaw.command()
+def monitor(event):
+    """
+    Monitor condor jobs' status, and collect logging information.
+    """
+
+    if event:
+        events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event])
+    else:
+        events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"))
+
+    for event in events:
+        click.echo(f"Checking {event.title}")
+        on_deck = [production for production in event.productions if production.status in ACTIVE_STATES]
+        for production in on_deck:
+
+            click.echo(f"Checking {production.name}")
+            logger = logging.AsimovLogger(event=event.event_object)
+            # Get the condor jobs
+            try:
+                job = condor.CondorJob(production.meta['job id'])
+                print(f"{event.event_object.name}\t{production.name}\t{job.status}")
+                if job.status.lower() == "stuck":
+                    event.state = "stuck"
+                    production.status = "stuck"
+            except ValueError as e:
+                if production.pipeline.lower() in known_pipelines:
+                    
+                    pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
+
+                    if pipe.detect_completion():
+                        # The job has been completed, collect its assets
+                        pipe.after_completion()
+                        production.status = "finished"
+
+                    else:
+                        # It looks like the job has been evicted from the cluster
+                        # Let's find its log files.
+                        event.state = "stuck"
+                        production.status = "stuck"
+                        logs = pipe.collect_logs()
+                        for log, message in logs.items():
+                            logger.error(message = f"```{message}```", channels="gitlab", production=production)
+

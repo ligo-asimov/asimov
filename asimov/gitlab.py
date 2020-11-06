@@ -1,6 +1,7 @@
 """
 Code for interacting with a gitlab instance.
 """
+import yaml
 
 from .event import Event
 from . import config
@@ -13,7 +14,7 @@ from liquid import Liquid
 
 STATE_PREFIX = "C01"
 
-def find_events(repository, milestone=None):
+def find_events(repository, milestone=None, subset=None):
     """
     Search through a repository's issues and find all of the ones
     for events.
@@ -23,9 +24,10 @@ def find_events(repository, milestone=None):
     issues = repository.issues.list(labels=[event_label], 
                                     milestone=milestone,
                                     per_page=1000)
-
-    return [EventIssue(issue, repository) for issue in issues]
-
+    if subset:
+        return [EventIssue(issue, repository) for issue in issues if issue.title in subset]
+    else:
+        return [EventIssue(issue, repository) for issue in issues]
 
 class EventIssue(object):
     """
@@ -39,8 +41,9 @@ class EventIssue(object):
     """
 
     def __init__(self, issue, repository):
+        print(issue.title)
         self.issue_object = issue
-        
+        print(issue.title)
         self.title = issue.title
         self.text = issue.description
         
@@ -154,10 +157,14 @@ class EventIssue(object):
         data = {}
         keyval = r"([\w]+):[\s]*([ \w\#\/\,\.-]+)"
         notes = self.issue_object.notes.list(per_page=200)
+        note_data = []
         for note in reversed(notes):
-            if "# Run information" in note.body:
-                for match in re.finditer(keyval, note.body):
-                    key, val = match.groups()
-                    data[key] = val
-        self.data = data
+            if "---\n" in note.body:
+                data = note.body.split("---")
+                if len(data)>0: 
+                    data=data[1]
+                else: 
+                    continue
+                data = yaml.safe_load(data)
+                note_data.append(data)
         return data

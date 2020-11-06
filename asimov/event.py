@@ -14,6 +14,7 @@ from asimov import config
 from liquid import Liquid
 
 from ligo.gracedb.rest import GraceDb, HTTPError
+from copy import copy
 
 class DescriptionException(Exception):
     """Exception for event description problems."""
@@ -70,12 +71,11 @@ class Event:
             
         self.productions = []
         if "psds" in kwargs:
-            self.psds = kwargs.pop("psds")
+            self.psds = kwargs["psds"]
         else:
             self.psds = {}
             
         self.meta = kwargs
-
         self._check_required()
 
         try:
@@ -162,6 +162,9 @@ class Event:
         if not {"name", "repository"} <= data.keys():
             raise DescriptionException(f"Some of the required parameters are missing from this issue.")
         event = cls(**data)
+        if issue:
+            event.issue_object = issue
+            event.from_notes()
         for production in data['productions']:
             try:
                 event.add_production(
@@ -180,20 +183,17 @@ class Event:
 
         event = cls.from_yaml(text[1], issue)
         event.text = text
-        event.issue_object = issue
 
         return event
 
-    # def production_dag(self):
-    #     """
-    #     Attempt to assemble the execution DAG for this event's productions.
+    def from_notes(self):
         
-    #     Note
-    #     ----
-    #     This DAG is NOT a condor DAG.
-    #     """
-    #     for production in self.productions:
-            
+        notes_data = self.issue_object.parse_notes()
+        for note in notes_data:
+            for key, value in notes_data.items():
+                if key in self.meta:
+                    self.meta[key] = value
+
     def get_gracedb(self, gfile, destination):
         """
         Get a file from Gracedb, and store it in the event repository.
@@ -209,8 +209,7 @@ class Event:
 
         gid = self.meta['gid']
         client = GraceDb(service_url=config.get("gracedb", "url"))
-        print(config.get("gracedb", "url"))
-        file_obj = client.files(self.meta['gid'], gfile)
+        file_obj = client.files(gid, gfile)
 
         with open("download.file", "w") as dest_file:
             dest_file.write(file_obj.read().decode())
@@ -225,11 +224,25 @@ class Event:
         data['repository'] = self.repository.url
         for key, value in self.meta.items():
             data[key] = value
+        try:
+            data['repository'] = self.repository.url
+        except AttributeError:
+            pass
         data['productions'] = []
+        
         for production in self.productions:
-            data['productions'].append(production.to_dict())
+            # Remove duplicate data
+            prod_dict = production.to_dict()[production.name]
+            dupes = []
+            for key, value in prod_dict.items():
+                if key in data:
+                    if data[key] == value:
+                        dupes.append(key)
+            for dupe in dupes:
+                prod_dict.pop(dupe)
+            data['productions'].append({production.name: prod_dict})
 
-        return yaml.dump(data)
+        return yaml.dump(data, default_flow_style=False)
 
     def to_issue(self):
         self.text[1] = "\n"+self.to_yaml()
@@ -280,12 +293,38 @@ class Production:
         self.status_str = status.lower()
         self.pipeline = pipeline.lower()
         self.comment = comment
-        self.meta = self.event.meta
+        self.meta = copy(self.event.meta)
+        if "productions" in self.meta:
+            self.meta.pop("productions")
         self.meta.update(kwargs)
 
-        self.psds = self.event.psds
-        if 'psds' in kwargs:
-            self.psds.update(kwargs['psds'])
+        # Get the data quality recommendations
+        if 'quality' in self.event.meta:
+            self.quality = self.event.meta['quality']
+        else:
+            self.quality = {}
+        if 'quality' in kwargs:
+            self.quality.update(kwargs['quality'])
+            
+        quality_required = {"lower-frequency", "psd-length", "sample-rate", "segment-length", "window-length"}
+        if not (quality_required <= self.quality.keys()):
+            raise DescriptionException(f"Some of the required parameters are missing from this production's metadata.\n{quality_required-self.meta.keys()}",
+                                       issue = self.event.issue_object,
+                                       production = self)
+
+        
+        # Need to fetch the correct PSDs for this sample rate
+        if 'psds' in self.meta:
+            if self.quality['sample-rate'] in self.meta['psds']:
+                self.psds = self.meta['psds'][self.quality['sample-rate']]
+            else:
+                raise DescriptionException(f"No PSDs were found for this event at the correct sampling rate.\n{self.quality['sample-rate']}",
+                                       issue = self.event.issue_object,
+                                       production = self)
+        else:
+            raise DescriptionException(f"No PSDs were found for this event.",
+                                       issue = self.event.issue_object,
+                                       production = self)
 
         if "Prod" in self.name:
             self.category = "C01_offline"
@@ -347,11 +386,8 @@ class Production:
 
     @job_id.setter
     def job_id(self, value):
-        if "job id" not in self.meta:
-            self.meta["job id"] = value
-            self.event.issue_object.update_data()
-        else:
-            raise ValueError
+        self.meta["job id"] = value
+        self.event.issue_object.update_data()
         
     def to_dict(self):
         output = {self.name: {}}
@@ -360,6 +396,8 @@ class Production:
         output[self.name]['comment'] = self.comment
         for key, value in self.meta.items():
             output[self.name][key] = value
+        if "repository" in self.meta:
+            output[self.name]['repository'] = self.repository.url
         return output
 
     @property
@@ -369,8 +407,8 @@ class Production:
         """
         if "rundir" in self.meta:
             return self.meta['rundir']
-        elif "rundir" in self.event.meta:
-            value = os.path.join(self.event.meta['working_directory'], self.name)
+        elif "working directory" in self.event.meta:
+            value = os.path.join(self.event.meta['working directory'], self.name)
             self.meta["rundir"] = value
             self.event.issue_object.update_data()
             return value
@@ -389,14 +427,41 @@ class Production:
         else:
             raise ValueError
 
-    def get_psds(self, format="ascii"):
+    def get_psds(self, format="ascii", sample_rate=None):
         """
         Get the PSDs for this production.
+
+        Parameters
+        ----------
+        format : {ascii, xml}
+           The format of the PSD to be returned. 
+           Defaults to the ascii format.
+        sample_rate : int
+           The sample rate of the PSD to be returned.
+           Defaults to None, in which case the sample rate in the event data is used.
+
+        Returns
+        -------
+        list
+           A list of PSD files for the production.
         """
+        if sample_rate == None:
+            try:
+                if quality in self.meta and "sample-rate" in self.meta['quality']:
+                    sample_rate = self.meta['quality']['sample-rate']
+                else:
+                    raise DescriptionException(f"The sample rate for this event cannot be found.",
+                                           issue=self.event.issue_object,
+                                           production=self.name)
+            except Exception as e:
+                raise DescriptionException(f"The sample rate for this event cannot be found.",
+                                           issue=self.event.issue_object,
+                                           production=self.name)
+            
         if (len(self.psds)>0) and (format=="ascii"):
             return self.psds
         elif (format=="ascii"):
-            files = glob.glob(f"{self.event.repository.directory}/{category}/psds/*.dat")
+            files = glob.glob(f"{self.event.repository.directory}/{category}/psds/{sample_rate}/*.dat")
             if len(files)>0:
                 return files
             else:
@@ -404,7 +469,7 @@ class Production:
                                            issue=self.event.issue_object,
                                            production=self.name)
         elif (format=="xml"):
-            files = glob.glob(f"{self.event.repository.directory}/{category}/psds/*.dat")
+            files = glob.glob(f"{self.event.repository.directory}/{category}/psds/{sample_rate}/*.xml")
             return files
             
     def get_timefile(self):
@@ -428,11 +493,10 @@ class Production:
            The location of the time file.
         """
         try:
-            self.event.repository.find_coincfile(self.category)
-        except FileNotFound:
-            # TODO Need code to fetch the coinc file from GDB
-            # command to do this seems to be gracedb_legacy download ${my_gid} coinc.xml
-            self.get_gracedb(self, "coinc.xml", os.path.join(self.event.repository.directory, self.category))
+            coinc = self.event.repository.find_coincfile(self.category)
+            return coinc
+        except FileNotFoundError:
+            self.event.get_gracedb("coinc.xml", os.path.join(self.event.repository.directory, self.category, "coinc.xml"))
     
     def get_configuration(self):
         """
@@ -487,14 +551,13 @@ class Production:
         if not template_directory:
             template_directory = config.get("templating", "directory")
 
-        try:
-        
-            with open(os.path.join(f"{template_directory}", f"{self.pipeline}.ini"), "r") as template_file:
+        #try:
+        with open(os.path.join(f"{template_directory}", f"{self.pipeline}.ini"), "r") as template_file:
                 liq = Liquid(template_file.read())
                 rendered = liq.render(production=self)
-        except:
-            raise DescriptionException("There was a problem writing the configuration file.",
-                                       production=self)
+        #except Exception as e:
+        #    raise DescriptionException(f"There was a problem writing the configuration file.\n\n{e}",
+        #                               production=self)
 
         with open(filename, "w") as output_file:
             output_file.write(rendered)

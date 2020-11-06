@@ -72,9 +72,12 @@ class CondorJob(object):
         data = {}
         for schedd_ad in htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd):
             schedd = htcondor.Schedd(schedd_ad)
-            jobs = schedd.xquery(requirements="ClusterId == {}".format(self.cluster))
-            for job in jobs:
-                data = job
+            try:
+                jobs = schedd.xquery(constraint="ClusterId == {}".format(self.cluster))
+                for job in jobs:
+                    data = job
+            except RuntimeError as e:
+                print(e)
         if len(list(data.keys()))==0:
             raise ValueError
         self.data = data
