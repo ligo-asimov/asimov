@@ -8,6 +8,7 @@ import subprocess
 from ..pipeline import Pipeline, PipelineException, PipelineLogger
 from ..ini import RunConfiguration
 from asimov import config
+from asimov import logging
 
 
 class Rift(Pipeline):
@@ -27,19 +28,21 @@ class Rift(Pipeline):
 
     def __init__(self, production, category=None):
         super(Rift, self).__init__(production, category)
-
+        self.logger = logger = logging.AsimovLogger(event=production.event)
         if not production.pipeline.lower() == "rift":
             raise PipelineException
         
         if "bootstrap" in self.production.meta:
             self.bootstrap = self.production.meta
+        else:
+            self.bootstrap = False
 
     def _activate_environment(self):
         """
         Activate the python virtual environment for the pipeline.
         """
         env = config.get("rift", "environment")
-        command = ["source", f"{env}/bin/activate"]
+        command = ["/bin/bash", "-c", "source", f"{env}/bin/activate"]
 
         pipe = subprocess.Popen(command, 
                                 stdout=subprocess.PIPE,
@@ -94,12 +97,12 @@ class Rift(Pipeline):
         Convert the text-based PSD to an XML psd if the xml doesn't exist already.
         """
         category = "C01_offline" # Fix me: this shouldn't be hard-coded
-        if len(production.get_psds("xml"))==0:
-            for ifo in production.meta['interferometers']:
+        if len(self.production.get_psds("xml"))==0:
+            for ifo in self.production.meta['interferometers']:
                 os.chdir(f"{event.repository.directory}/{category}")
                 os.mkdir(f"psds")
                 os.chdir("psds")
-                self._convert_psd(production['psds'][ifo])
+                self._convert_psd(self.production['psds'][ifo])
                 event.repository.repo.git.add(f"{ifo.upper()}-psd.xml")
             event.repository.repo.git.commit("Added converted xml psds")
             event.repository.repo.git.push()
@@ -164,20 +167,12 @@ class Rift(Pipeline):
 
         ini.update_accounting(user)
 
-        if 'queue' in self.production.meta:
-            queue = self.production.meta['queue']
-        else:
-            queue = 'Priority_PE'
-
-        # FIXME Really we don't want this to be hard-coded.
         try:
             calibration = config.get("general", "calibration")
         except:
             calibration = "C01"
 
         approximant = self.production.meta['approximant']
-        
-        ini.set_queue(queue)
 
         ini.save()
 
@@ -199,16 +194,17 @@ class Rift(Pipeline):
             cip = 3
             
         
-        command = ["util_RIFT_pseudo_pipe.py",
-                   "--use-coinc", f"{coinc_file}",
+        command = [os.path.join(config.get("pipelines", "environment"), "bin", "util_RIFT_pseudo_pipe.py"),
+                   "--use-coinc", os.path.join(self.production.event.repository.directory, "C01_offline",
+                                               coinc_file),
                    "--l-max", f"{lmax}",
                    "--calibration", f"{calibration}",
                    "--add-extrinsic",
-                   "--archive-pesummary-label", "{calibration}:{approximant}",
-                   "--archive-pesummary-event-label", "{calibration}:{approximant}",
-                   "--cip-explode-jobs", cip,
+                   #"--archive-pesummary-label", f"{calibration}:{approximant}",
+                   #"--archive-pesummary-event-label", f"{calibration}:{approximant}",
+                   "--cip-explode-jobs", str(cip),
                    "--use-rundir", self.production.rundir,
-                   "--use-ini", ini.ini_loc
+                   "--use-ini", os.path.join(self.production.event.repository.directory, "C01_offline",  ini.ini_loc)
         ]
            
         # Placeholder LI grid bootstrapping; conditional on it existing and location specification
@@ -245,22 +241,22 @@ class Rift(Pipeline):
             else:
                 command += ["--manual-initial-grid", os.path.join(self.production.rundir, "bootstrap-grid.xml.gz")]
         
-
- 
+        self.logger.info(command, production = self.production)
         pipe = subprocess.Popen(command, 
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
-
-        
-        
         out, err = pipe.communicate()
         if err or "Successfully created DAG file." not in str(out):
             self.production.status = "stuck"
             if hasattr(self.production.event, "issue_object"):
+                self.logger.info(out, production = self.production)
+                self.logger.error(err, production = self.production)
                 raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
                                             issue=self.production.event.issue_object,
                                             production=self.production.name)
             else:
+                self.logger.info(out, production = self.production)
+                self.logger.error(err, production = self.production)
                 raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
                                         production=self.production.name)
         else:

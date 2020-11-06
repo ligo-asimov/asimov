@@ -7,8 +7,9 @@ import subprocess
 from ..pipeline import Pipeline, PipelineException, PipelineLogger
 from ..ini import RunConfiguration
 from .. import config
-
+from asimov import logging
 import re
+import numpy as np
 
 class Bilby(Pipeline):
     """
@@ -27,7 +28,7 @@ class Bilby(Pipeline):
 
     def __init__(self, production, category=None):
         super(Bilby, self).__init__(production, category)
-
+        self.logger = logger = logging.AsimovLogger(event=production.event)
         if not production.pipeline.lower() == "bilby":
             raise PipelineException
 
@@ -36,33 +37,79 @@ class Bilby(Pipeline):
         """
         Activate the python virtual environment for the pipeline.
         """
-        env = config.get("bilby", "environment")
-        command = ["source", f"{env}/bin/activate"]
+        # env = config.get("bilby", "environment")
+        # command = ["source", f"{env}/bin/activate"]
 
-        pipe = subprocess.Popen(command, 
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
-        out, err = pipe.communicate()
+        # pipe = subprocess.Popen(command, 
+        #                         stdout=subprocess.PIPE,
+        #                         stderr=subprocess.STDOUT)
+        # out, err = pipe.communicate()
 
-        if err:
-            self.production.status = "stuck"
-            if hasattr(self.production.event, "issue_object"):
-                raise PipelineException(f"The virtual environment could not be initiated.\n{command}\n{out}\n\n{err}",
-                                            issue=self.production.event.issue_object,
-                                            production=self.production.name)
-            else:
-                raise PipelineException(f"The virtual environment could not be initiated.\n{command}\n{out}\n\n{err}",
-                                        production=self.production.name)
+        # if err:
+        #     self.production.status = "stuck"
+        #     if hasattr(self.production.event, "issue_object"):
+        #         raise PipelineException(f"The virtual environment could not be initiated.\n{command}\n{out}\n\n{err}",
+        #                                     issue=self.production.event.issue_object,
+        #                                     production=self.production.name)
+        #     else:
+        #         raise PipelineException(f"The virtual environment could not be initiated.\n{command}\n{out}\n\n{err}",
+        #                                 production=self.production.name)
+        pass
 
     def _determine_prior(self):
         """
         Determine the correct choice of prior file for this production.
         """
 
-        if "prior" in self.production.meta:
-            return self.production.meta
+        if "prior file" in self.production.meta:
+            return self.production.meta['prior file']
         else:
-            raise NotImplementedError
+
+            DEFAULT_DISTANCE_LOOKUPS = {
+                "high_mass": (1e2, 5e3),
+                "4s": (1e2, 5e3),
+                "8s": (1e2, 5e3),
+                "16s": (1e2, 4e3),
+                "32s": (1e2, 3e3),
+                "64s": (50, 2e3),
+                "128s": (1, 5e2),
+                "128s_tidal": (1, 5e2),
+                "128s_tidal_lowspin": (1, 5e2),
+            }
+            duration = int(self.production.meta['quality']['segment-length'])
+            roq_folder = f"/home/cbc/ROQ_data/IMRPhenomPv2/{duration}s"
+            if os.path.isdir(roq_folder) is False:
+                self.logger.warning("Requested ROQ folder does not exist")
+                return f"{duration}s", None, duration, 20, 1024
+
+            roq_params = np.genfromtxt(os.path.join(roq_folder, "params.dat"), names=True)
+    
+            scale_factor = 1 # Check this
+            template = None
+            
+            distance_bounds = DEFAULT_DISTANCE_LOOKUPS[str(duration) + "s"]
+            mc_min = roq_params["chirpmassmin"] / scale_factor
+            mc_max = roq_params["chirpmassmax"] / scale_factor
+            comp_min = roq_params["compmin"] / scale_factor
+            
+            if template is None:
+                template = os.path.join(
+                    config.get("bilby", "priors"), "roq.prior.template"
+            )
+
+            with open(template, "r") as old_prior:
+                prior_string = old_prior.read().format(
+                    mc_min=mc_min,
+                    mc_max=mc_max,
+                    comp_min=comp_min,
+                    d_min=distance_bounds[0],
+                    d_max=distance_bounds[1],
+                )
+            prior_file = os.path.join(os.getcwd(), f"{self.production.name}.prior")
+            with open(prior_file, "w") as new_prior:
+                new_prior.write(prior_string)
+            return prior_file
+
         
     def build_dag(self, psds=None, user=None, clobber_psd=False):
         """
@@ -88,38 +135,11 @@ class Bilby(Pipeline):
 
         self._activate_environment()
         
-        os.chdir(os.path.join(self.production.event.repository.directory,
-                              self.category))
+        #os.chdir(os.path.join(self.production.event.repository.directory,
+        #                      self.category))
         gps_file = self.production.get_timefile()
-        ini = self.production.get_configuration()
-
-        if not user:
-            if self.production.get_meta("user"):
-                user = self.production.get_meta("user")
-        else:
-            user = ini._get_user()
-            self.production.set_meta("user", user)
-
-        ini.update_accounting(user)
-
-        if 'queue' in self.production.meta:
-            queue = self.production.meta['queue']
-        else:
-            queue = 'Priority_PE'
-
-        ini.set_queue(queue)
-
-        if psds:
-            ini.update_psds(psds, clobber=clobber_psd)
-            ini.run_bayeswave(False)
-        else:
-            # Need to generate PSDs as part of this job.
-            ini.run_bayeswave(True)
-
-        ini.update_webdir(self.production.event.name,
-                          self.production.name,
-                          rootdir=self.production.event.webdir)
-        ini.save()
+        ini = self.production.event.repository.find_prods(self.production.name,
+                                                          self.category)[0]
 
         if self.production.rundir:
             rundir = self.production.rundir
@@ -132,24 +152,25 @@ class Bilby(Pipeline):
         if "job label" in self.production.meta:
             job_label = self.production.meta['job label']
         else:
-            job_label = "job_label"
+            job_label = self.production.name
 
         prior_file = self._determine_prior()
         
-            
+        os.chdir(self.production.event.meta['working directory'])   
         # TODO: Check if bilby supports loading a gps time file
         command = ["bilby_pipe",
+                   os.path.join(self.production.event.repository.directory, self.category,  ini),
                    "--label", job_label,
                    "--prior-file", prior_file,
                    "--outdir", self.production.rundir,
-                   ini.ini_loc
+                   "--accounting", config.get("bilby", "accounting")
         ]
             
         pipe = subprocess.Popen(command, 
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
         out, err = pipe.communicate()
-        if err or "Successfully created DAG file." not in str(out):
+        if err or "DAG generation complete, to submit jobs" not in str(out):
             self.production.status = "stuck"
             if hasattr(self.production.event, "issue_object"):
                 raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
@@ -207,7 +228,7 @@ class Bilby(Pipeline):
             if "job label" in self.production.meta:
                 job_label = self.production.meta['job label']
             else:
-                job_label = "job_label"
+                job_label = self.production.name
             dag_filename = f"dag_{job_label}.submit"
             command = ["condor_submit_dag",
                                    os.path.join(self.production.rundir, "submit", dag_filename)]
@@ -229,3 +250,16 @@ class Bilby(Pipeline):
             raise PipelineException(f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
                                     issue=self.production.event.issue_object,
                                     production=self.production.name)
+
+    def collect_logs(self):
+        """
+        Collect all of the log files which have been produced by this production and 
+        return their contents as a dictionary.
+        """
+        logs = glob.glob(f"{self.production.rundir}/submit/*.err") + glob.glob(f"{self.production.rundir}/log*/*.err")
+        messages = {}
+        for log in logs:
+            with open(log, "r") as log_f:
+                message = log_f.read()
+                messages[log.split("/")[-1]] = message
+        return messages

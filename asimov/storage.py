@@ -275,9 +275,11 @@ class Store:
         
         pathlib.Path(os.path.join(self.root, event, production)).mkdir(parents=True, exist_ok=True)
 
-        self.manifest.add_record(event, production, file, hash, this_uuid)
+        
         
         this_uuid = uuid.uuid4()
+
+        self.manifest.add_record(event, production, file, hash, this_uuid)
 
         destination = os.path.join(self.root, event, production, this_uuid.hex)
         

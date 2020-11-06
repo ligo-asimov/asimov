@@ -3,6 +3,8 @@
 import os
 import subprocess
 import glob
+import re
+from asimov import config
 
 class PipelineException(Exception):
     """Exception for pipeline problems."""
@@ -93,7 +95,25 @@ class Pipeline():
         or run scripts in this runner then this method can be 
         left without overloading.
         """
-        pass
+        env = config.get("pipelines", "environment")
+        command = ["/bin/bash", "-c", "source", f"{env}/bin/activate"]
+
+        pipe = subprocess.Popen(command, 
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT)
+        out, err = pipe.communicate()
+
+        if err:
+            self.production.status = "stuck"
+            if hasattr(self.production.event, "issue_object"):
+                raise PipelineException(f"The virtual environment could not be initiated.\n{command}\n{out}\n\n{err}",
+                                            issue=self.production.event.issue_object,
+                                            production=self.production.name)
+            else:
+                raise PipelineException(f"The virtual environment could not be initiated.\n{command}\n{out}\n\n{err}",
+                                        production=self.production.name)
+        
+
             
     def detect_completion(self):
         """
@@ -139,6 +159,9 @@ class Pipeline():
         for asset in self.assets:
             repo.add_file(asset[0], asset[1])
 
+    def collect_logs(self):
+        return {}
+            
     def submit_dag(self):
         """
         Submit a DAG file to the condor cluster.
@@ -163,13 +186,14 @@ class Pipeline():
         PipelineException
            This will be raised if the pipeline fails to submit the job.
         """
+
         os.chdir(self.production.rundir)
 
         self.before_submit()
         
         try:
             command = ["condor_submit_dag",
-                                   os.path.join(self.production.rundir, "multidag.dag")]
+                                   os.path.join(self.production.rundir, f"multidag.dag")]
             dagman = subprocess.Popen(command,
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.STDOUT)

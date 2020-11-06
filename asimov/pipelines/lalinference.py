@@ -6,7 +6,7 @@ import glob
 import subprocess
 from ..pipeline import Pipeline, PipelineException, PipelineLogger
 from ..ini import RunConfiguration
-
+from asimov import config
 
 class LALInference(Pipeline):
     """
@@ -29,6 +29,24 @@ class LALInference(Pipeline):
         if not production.pipeline.lower() == "lalinference":
             raise PipelineException
 
+    def detect_completion(self):
+        """
+        Check for the production of the posterior file to signal that the job has completed.
+        """
+        results_dir = glob.glob(f"{self.production.rundir}/posterior_samples")
+        if len(results_dir)>0:
+            if len(glob.glob(os.path.join(results_dir[0], f"posterior_*.hdf5"))) > 0:
+                return True
+            else:
+                return False
+        else:
+            return False
+        
+    def after_completion(self):
+        #self.collect_assets()
+        # This is where PE Summary needs to be run
+        pass
+        
     def build_dag(self, psds=None, user=None, clobber_psd=False):
         """
         Construct a DAG file in order to submit a production to the
@@ -71,16 +89,6 @@ class LALInference(Pipeline):
 
         ini.set_queue(queue)
 
-        if psds:
-            ini.update_psds(psds, clobber=clobber_psd)
-            ini.run_bayeswave(False)
-        else:
-            # Need to generate PSDs as part of this job.
-            ini.run_bayeswave(True)
-
-        ini.update_webdir(self.production.event.name,
-                          self.production.name,
-                          rootdir=self.production.event.webdir)
         ini.save()
 
         if self.production.rundir:
@@ -91,7 +99,12 @@ class LALInference(Pipeline):
                                   self.production.name)
             self.production.rundir = rundir
 
-        command = ["lalinference_pipe",
+        #os.mkdir(self.production.rundir, exist_ok=True)
+            
+        command = [
+            os.path.join(config.get("pipelines", "environment"),
+            "bin",
+            "lalinference_pipe"),
                    "-g", f"{gps_file}",
                    "-r", self.production.rundir,
                    ini.ini_loc
@@ -118,3 +131,16 @@ class LALInference(Pipeline):
             else:
                 return PipelineLogger(message=out,
                                       production=self.production.name)
+
+    def collect_logs(self):
+        """
+        Collect all of the log files which have been produced by this production and 
+        return their contents as a dictionary.
+        """
+        logs = glob.glob(f"{self.production.rundir}/log/*.err") + glob.glob(f"{self.production.rundir}/*.err")
+        messages = {}
+        for log in logs:
+            with open(log, "r") as log_f:
+                message = log_f.read()
+                messages[log.split("/")[-1]] = message
+        return messages

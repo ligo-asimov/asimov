@@ -8,7 +8,8 @@ import getpass
 import git
 
 from .ini import RunConfiguration
-
+from asimov import config
+# from asimov import logging
 
 class AsimovFileNotFound(FileNotFoundError):
     pass
@@ -43,6 +44,9 @@ class EventRepo():
         self.repo = git.Repo(directory)
         self.url = url
 
+    def __repr__(self):
+        return self.directory
+        
     @classmethod
     def from_url(cls, url, name, directory=None):
         """
@@ -61,7 +65,8 @@ class EventRepo():
            cloned into the /tmp directory.
         """
         if not directory:
-            directory = f"/tmp/{name}"
+            tmp = config.get("general", "git_default")
+            directory = f"{tmp}/{name}"
             pathlib.Path(directory).mkdir(parents=True, exist_ok=True)
 
         # Replace an https address with an ssh address
@@ -129,8 +134,9 @@ class EventRepo():
         """
         Find the coinc file for this calibration category in this repository.
         """
-        os.chdir(os.path.join(self.directory, category))
-        coinc_file = glob.glob("*coinc*.xml")
+        #os.chdir(os.path.join(self.directory, category))
+        coinc_file = glob.glob(os.path.join(self.directory, category, "*coinc*.xml"))
+        
         if len(coinc_file)>0:
             return coinc_file[0]
         else:
@@ -149,9 +155,10 @@ class EventRepo():
         category : str, optional
            The category of run. Defaults to "C01_offline".
         """
-        
+
+        self.update()
         os.chdir(os.path.join(self.directory, category))
-        prods = glob.glob("Prod*.ini")
+        prods = glob.glob(f"{name}.ini")
         return prods
 
     def upload_prod(self, production, rundir, preferred=False, category="C01_offline", rootdir="public_html/LVC/projects/O3/C01/", rename = False):
@@ -267,5 +274,7 @@ class EventRepo():
         if stash:
             self.repo.git.stash()
 
+        print("Running a git pull")
+            
         self.repo.git.checkout(branch)
         self.repo.git.pull()
