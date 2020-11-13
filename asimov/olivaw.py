@@ -271,7 +271,8 @@ def monitor(event):
                         # Let's find its log files.
                         event.state = "stuck"
                         production.status = "stuck"
-                        logs = pipe.collect_logs()
-                        for log, message in logs.items():
-                            logger.error(message = f"```{message}```", channels="gitlab", production=production)
+                        #logs = pipe.collect_logs()
+                        #logger.error(message = f"```{message}```", channels=["gitlab"], production=production)
+                        #for log, message in logs.items():
+                        #    logger.error(message = f"```{message}```", channels=["gitlab"], production=production)
 
