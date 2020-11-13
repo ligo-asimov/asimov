@@ -133,10 +133,10 @@ class Bilby(Pipeline):
            Raised if the construction of the DAG fails.
         """
 
-        self._activate_environment()
+        #self._activate_environment()
         
-        #os.chdir(os.path.join(self.production.event.repository.directory,
-        #                      self.category))
+        os.chdir(os.path.join(self.production.event.repository.directory,
+                              self.category))
         gps_file = self.production.get_timefile()
         ini = self.production.event.repository.find_prods(self.production.name,
                                                           self.category)[0]
@@ -218,7 +218,10 @@ class Bilby(Pipeline):
         This overloads the default submission routine, as bilby seems to store
         its DAG files in a different location
         """
-        os.chdir(self.production.rundir)
+        os.chdir(self.production.event.meta['working directory'])   
+        #os.chdir(os.path.join(self.production.event.repository.directory,
+        #                      self.category))
+
 
         self.before_submit()
         
@@ -244,7 +247,7 @@ class Bilby(Pipeline):
         if "submitted to cluster" in str(stdout):
             cluster = re.search("submitted to cluster ([\d]+)", str(stdout)).groups()[0]
             self.production.status = "running"
-            self.production.job_id = cluster
+            self.production.job_id = int(cluster)
             return cluster, PipelineLogger(stdout)
         else:
             raise PipelineException(f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
@@ -257,6 +260,7 @@ class Bilby(Pipeline):
         return their contents as a dictionary.
         """
         logs = glob.glob(f"{self.production.rundir}/submit/*.err") + glob.glob(f"{self.production.rundir}/log*/*.err")
+        logs += glob.glob(f"{self.production.rundir}/*/*.out")
         messages = {}
         for log in logs:
             with open(log, "r") as log_f:
