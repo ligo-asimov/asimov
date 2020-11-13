@@ -1,6 +1,6 @@
 """RIFT Pipeline specification."""
 
-
+import re
 import os
 import shutil
 import glob
@@ -60,7 +60,7 @@ class Rift(Pipeline):
                                         production=self.production.name)
         
 
-    def _convert_psd(self, ascii_format):
+    def _convert_psd(self, ascii_format, ifo):
         """
         Convert an ascii format PSD to XML.
 
@@ -68,11 +68,9 @@ class Rift(Pipeline):
         ----------
         ascii_format : str
            The location of the ascii format file.
+        ifo : str
+           The IFO which this PSD is for.
         """
-        self._activate_environment()
-        
-        
-                   
         command = ["convert_psd_ascii2xml",
                    "--fname-psd-ascii", f"{ascii_format}",
                    "--conventional-postfix",
@@ -91,21 +89,26 @@ class Rift(Pipeline):
             else:
                 raise PipelineException(f"An XML format PSD could not be created.\n{command}\n{out}\n\n{err}",
                                         production=self.production.name)
+        
             
     def before_submit(self):
         """
         Convert the text-based PSD to an XML psd if the xml doesn't exist already.
         """
-        category = "C01_offline" # Fix me: this shouldn't be hard-coded
+        event = self.production.event
+        category = config.get("general", "calibration_directory")
+        
         if len(self.production.get_psds("xml"))==0:
             for ifo in self.production.meta['interferometers']:
-                os.chdir(f"{event.repository.directory}/{category}")
-                os.mkdir(f"psds")
-                os.chdir("psds")
-                self._convert_psd(self.production['psds'][ifo])
-                event.repository.repo.git.add(f"{ifo.upper()}-psd.xml")
-            event.repository.repo.git.commit("Added converted xml psds")
-            event.repository.repo.git.push()
+                os.chdir(f"{event.repository.directory}/")
+                sample = self.production.meta['quality']['sample-rate']
+                self._convert_psd(self.production.meta['psds'][sample][ifo], ifo)
+                asset = f"{ifo.upper()}-psd.xml.gz"
+                git_location = os.path.join(category, "psds")
+                self.production.event.repository.add_file(
+                    asset,
+                    os.path.join(git_location, str(sample), f"psd_{ifo}.xml.gz"),
+                    commit_message = f"Added the xml format PSD for {ifo}.")
             
 
     def build_dag(self, user=None):
@@ -165,7 +168,9 @@ class Rift(Pipeline):
             user = ini._get_user()
             self.production.set_meta("user", user)
 
-        ini.update_accounting(user)
+        # ini.update_accounting(user)
+        os.environ['LIGO_USER_NAME'] = user
+        os.environ['LIGO_ACCOUNTING'] = config.get('pipelines', 'accounting')
 
         try:
             calibration = config.get("general", "calibration")
@@ -184,8 +189,6 @@ class Rift(Pipeline):
                                   self.production.name)
             self.production.rundir = rundir
 
-        # TODO lmax needs to be determined for each waveform (it's the maximum harmonic order)
-        # for now it will be fetched from the production metadata
         lmax = self.production.meta['lmax']
         
         if "cip jobs" in self.production.meta:
@@ -246,7 +249,7 @@ class Rift(Pipeline):
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
         out, err = pipe.communicate()
-        if err or "Successfully created DAG file." not in str(out):
+        if err:
             self.production.status = "stuck"
             if hasattr(self.production.event, "issue_object"):
                 self.logger.info(out, production = self.production)
@@ -269,7 +272,7 @@ class Rift(Pipeline):
                                       production=self.production.name)
     
     def submit_dag(self):
-         """
+        """
         Submit a DAG file to the condor cluster (using the RIFT dag name). This is an overwrite of the near identical parent function submit_dag()
 
         Parameters
@@ -292,17 +295,15 @@ class Rift(Pipeline):
         PipelineException
            This will be raised if the pipeline fails to submit the job.
         """
-
         os.chdir(self.production.rundir)
-
         self.before_submit()
-        
+         
         try:
-            command = ["condor_submit_dag",
-                                   os.path.join(self.production.rundir, "marginalize_intrinsic_parameters_BasicIterationWorkflow.dag")]
+            command = ["condor_submit_dag", 
+                       os.path.join(self.production.rundir, "marginalize_intrinsic_parameters_BasicIterationWorkflow.dag")]
             dagman = subprocess.Popen(command,
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT)
+                                      stdout=subprocess.PIPE,
+                                      stderr=subprocess.STDOUT)
         except FileNotFoundError as error:
             raise PipelineException("It looks like condor isn't installed on this system.\n"
                                     f"""I wanted to run {" ".join(command)}.""")
@@ -312,10 +313,23 @@ class Rift(Pipeline):
         if "submitted to cluster" in str(stdout):
             cluster = re.search("submitted to cluster ([\d]+)", str(stdout)).groups()[0]
             self.production.status = "running"
-            self.production.job_id = cluster
+            self.production.job_id = int(cluster)
             return cluster, PipelineLogger(stdout)
         else:
             raise PipelineException(f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
                                     issue=self.production.event.issue_object,
                                     production=self.production.name)
 
+    def collect_logs(self):
+        """
+        Collect all of the log files which have been produced by this production and 
+        return their contents as a dictionary.
+        """
+        logs = glob.glob(f"{self.production.rundir}/*.err") + glob.glob(f"{self.production.rundir}/*/logs/*")
+        logs += glob.glob(f"{self.production.rundir}/*.out")
+        messages = {}
+        for log in logs:
+            with open(log, "r") as log_f:
+                message = log_f.read()
+                messages[log.split("/")[-1]] = message
+        return messages
