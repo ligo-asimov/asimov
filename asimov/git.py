@@ -69,6 +69,7 @@ class EventRepo():
             directory = f"{tmp}/{name}"
             pathlib.Path(directory).mkdir(parents=True, exist_ok=True)
 
+
         # Replace an https address with an ssh address
         if "https" in url:
             url = url.replace("https://", "git@")
@@ -78,9 +79,13 @@ class EventRepo():
             url = f"{start}:{final}"
             
         try:
-            git.Repo.clone_from(url, directory)
-        except git.GitCommandError:
+            repo = git.Repo.clone_from(url, directory)
+            repo.git.execute(["git", "lfs", "install"])
+            repo.git.execute(["git", "lfs", "fetch"])
+            repo.git.execute(["git", "lfs", "pull"])
+        except git.exc.GitCommandError:
             repo = git.Repo(directory)
+            repo.git.stash()
             repo.remotes[0].pull()
         return cls(directory, url)
 
@@ -278,3 +283,4 @@ class EventRepo():
             
         self.repo.git.checkout(branch)
         self.repo.git.pull()
+        self.repo.git.execute(["git", "lfs", "fetch"])
