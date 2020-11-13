@@ -4,6 +4,7 @@ Trigger handling code.
 
 import yaml
 import os
+import glob
 
 import networkx as nx
 
@@ -326,6 +327,9 @@ class Production:
                                        issue = self.event.issue_object,
                                        production = self)
 
+        for ifo, psd in self.psds.items():
+            self.psds[ifo] = os.path.join(self.event.repository.directory, psd)
+
         if "Prod" in self.name:
             self.category = "C01_offline"
         else:
@@ -447,7 +451,7 @@ class Production:
         """
         if sample_rate == None:
             try:
-                if quality in self.meta and "sample-rate" in self.meta['quality']:
+                if "quality" in self.meta and "sample-rate" in self.meta['quality']:
                     sample_rate = self.meta['quality']['sample-rate']
                 else:
                     raise DescriptionException(f"The sample rate for this event cannot be found.",
@@ -461,7 +465,7 @@ class Production:
         if (len(self.psds)>0) and (format=="ascii"):
             return self.psds
         elif (format=="ascii"):
-            files = glob.glob(f"{self.event.repository.directory}/{category}/psds/{sample_rate}/*.dat")
+            files = glob.glob(f"{self.event.repository.directory}/{self.category}/psds/{sample_rate}/*.dat")
             if len(files)>0:
                 return files
             else:
@@ -469,7 +473,7 @@ class Production:
                                            issue=self.event.issue_object,
                                            production=self.name)
         elif (format=="xml"):
-            files = glob.glob(f"{self.event.repository.directory}/{category}/psds/{sample_rate}/*.xml")
+            files = glob.glob(f"{self.event.repository.directory}/{self.category}/psds/{sample_rate}/*.xml.gz")
             return files
             
     def get_timefile(self):
