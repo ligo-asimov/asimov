@@ -222,16 +222,16 @@ class BayesWave(Pipeline):
         """
         psds = {}
         detectors = self.production.meta['interferometers']
-
+        sample = self.production.meta["quality"]["sample-rate"]
         git_location = os.path.join(self.category, "psds")
         
         for det in dets:
             asset = f"{self.production.rundir}/ROQdata/0/BayesWave_PSD_{det}/post/clean/glitch_median_PSD_forLI_{det}.dat"
             if os.path.exists(asset):
                 psds[det] = asset
-                self.production.event.production.add_file(
+                self.production.event.repository.add_file(
                     asset,
-                    os.path.join(git_location, f"psd_{det}.dat"),
+                    os.path.join(git_location, str(sample), f"psd_{det}.dat"),
                     commit_message = f"Added the PSD for {det}.")
 
     def collect_logs(self):
