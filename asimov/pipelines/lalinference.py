@@ -132,6 +132,11 @@ class LALInference(Pipeline):
                 return PipelineLogger(message=out,
                                       production=self.production.name)
 
+    def samples(self):
+        """
+        Collect the combined samples file for PESummary.
+        """
+        return glob.glob(os.path.join(self.production.rundir, "posterior_samples", "posterior*.hdf5"))
     def collect_logs(self):
         """
         Collect all of the log files which have been produced by this production and 
@@ -144,3 +149,54 @@ class LALInference(Pipeline):
                 message = log_f.read()
                 messages[log.split("/")[-1]] = message
         return messages
+
+    def submit_dag(self):
+        """
+        Submit a DAG file to the condor cluster.
+
+        Parameters
+        ----------
+        category : str, optional
+           The category of the job.
+           Defaults to "C01_offline".
+        production : str
+           The production name.
+
+        Returns
+        -------
+        int
+           The cluster ID assigned to the running DAG file.
+        PipelineLogger
+           The pipeline logger message.
+
+        Raises
+        ------
+        PipelineException
+           This will be raised if the pipeline fails to submit the job.
+        """
+
+        os.chdir(self.production.rundir)
+
+        self.before_submit()
+        
+        try:
+            command = ["condor_submit_dag",
+                                   os.path.join(self.production.rundir, f"multidag.dag")]
+            dagman = subprocess.Popen(command,
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.STDOUT)
+        except FileNotFoundError as error:
+            raise PipelineException("It looks like condor isn't installed on this system.\n"
+                                    f"""I wanted to run {" ".join(command)}.""")
+
+        stdout, stderr = dagman.communicate()
+
+        if "submitted to cluster" in str(stdout):
+            cluster = re.search("submitted to cluster ([\d]+)", str(stdout)).groups()[0]
+            self.production.status = "running"
+            self.production.job_id = cluster
+            return cluster, PipelineLogger(stdout)
+        else:
+            raise PipelineException(f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
+                                    issue=self.production.event.issue_object,
+                                    production=self.production.name)

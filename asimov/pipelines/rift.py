@@ -168,7 +168,6 @@ class Rift(Pipeline):
             user = ini._get_user()
             self.production.set_meta("user", user)
 
-        # ini.update_accounting(user)
         os.environ['LIGO_USER_NAME'] = user
         os.environ['LIGO_ACCOUNTING'] = config.get('pipelines', 'accounting')
 
@@ -203,13 +202,12 @@ class Rift(Pipeline):
                    "--l-max", f"{lmax}",
                    "--calibration", f"{calibration}",
                    "--add-extrinsic",
-                   #"--archive-pesummary-label", f"{calibration}:{approximant}",
-                   #"--archive-pesummary-event-label", f"{calibration}:{approximant}",
+                   "--approx", f"{approximant}",
                    "--cip-explode-jobs", str(cip),
                    "--use-rundir", self.production.rundir,
                    "--use-ini", os.path.join(self.production.event.repository.directory, "C01_offline",  ini.ini_loc)
         ]
-           
+
         # Placeholder LI grid bootstrapping; conditional on it existing and location specification
         
         if self.bootstrap:
@@ -249,6 +247,8 @@ class Rift(Pipeline):
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
         out, err = pipe.communicate()
+
+
         if err:
             self.production.status = "stuck"
             if hasattr(self.production.event, "issue_object"):
@@ -263,6 +263,14 @@ class Rift(Pipeline):
                 raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
                                         production=self.production.name)
         else:
+            #os.makedirs(self.production.rundir, exist_ok=True)
+            os.chdir(self.production.rundir)
+            for psdfile in self.production.get_psds("xml"):
+                ifo = psdfile.split("/")[-1].split("_")[1].split(".")[0]
+                os.system(f"cp {psdfile} {ifo}-psd.xml.gz")
+
+            os.system("cat *_local.cache > local.cache")
+
             if hasattr(self.production.event, "issue_object"):
                 return PipelineLogger(message=out,
                                       issue=self.production.event.issue_object,
@@ -300,6 +308,7 @@ class Rift(Pipeline):
          
         try:
             command = ["condor_submit_dag", 
+                       "-batch-name", f"rift/{self.production.event.name}/{self.production.name}",
                        os.path.join(self.production.rundir, "marginalize_intrinsic_parameters_BasicIterationWorkflow.dag")]
             dagman = subprocess.Popen(command,
                                       stdout=subprocess.PIPE,
@@ -309,6 +318,7 @@ class Rift(Pipeline):
                                     f"""I wanted to run {" ".join(command)}.""")
 
         stdout, stderr = dagman.communicate()
+
 
         if "submitted to cluster" in str(stdout):
             cluster = re.search("submitted to cluster ([\d]+)", str(stdout)).groups()[0]

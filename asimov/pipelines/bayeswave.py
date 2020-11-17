@@ -196,6 +196,7 @@ class BayesWave(Pipeline):
         
         try:
             command = ["condor_submit_dag",
+                       "-batch-name", f"bwave/{self.production.event.name}/{self.production.name}",
                                    os.path.join(self.production.rundir, f"{self.production.name}.dag")]
             dagman = subprocess.Popen(command,
                                   stdout=subprocess.PIPE,

@@ -1,10 +1,13 @@
 """Defines the interface with generic analysis pipelines."""
-
 import os
 import subprocess
 import glob
 import re
+
+import htcondor
+
 from asimov import config
+from .storage import Store
 
 class PipelineException(Exception):
     """Exception for pipeline problems."""
@@ -114,21 +117,11 @@ class Pipeline():
                                         production=self.production.name)
         
 
-            
     def detect_completion(self):
         """
-        Detect if the job has completed normally.
-        Looks to see if posterior sample files have been produced.
-
-        Returns
-        -------
-        bool
-           Returns True if the completion criteria are fulfilled for this job.
+        Check to see if the job has in fact completed.
         """
-        if len(glob.glob(f"{self.production.rundir}/posterior_samples/*hdf5")) > 0:
-            return True
-        else:
-            return False
+        pass
 
     def before_submit(self):
         """
@@ -146,7 +139,8 @@ class Pipeline():
         Note, this method should take no arguments, and should be over-written in the 
         specific pipeline implementation if required.
         """
-        pass
+        self.production.status = "finished"
+        self.production.meta.pop('job id')
 
     def collect_assets(self):
         """
@@ -161,54 +155,81 @@ class Pipeline():
 
     def collect_logs(self):
         return {}
-            
+
+    def run_pesummary(self):
+        """
+        Run PESummary on the results of this job.
+        """
+
+        psds = self.production.psds
+        calibration = self.production.meta['calibration']
+        configfile = self.production.event.repository.find_prods(self.production.name, self.category)[0]
+        command = [
+            "--webdir", os.path.join(config.get('general', 'webroot'), self.production.event.name, self.production.name,  "results"),
+            "--labels", self.production.name,
+            "--gw",
+            "--sensitivity",
+            "--cosmology", config.get('pesummary', 'cosmology'),
+            "--redshift_method", config.get('pesummary', 'redshift'),
+            "--nsamples_for_skymap", config.get('pesummary', 'skymap_samples'),
+            "--config", os.path.join(self.production.event.repository.directory, self.category, configfile)]
+        # Samples
+        command += ["--samples"]
+        command += self.samples()
+        # Calibration information
+        command += ["--calibration"]
+        command += calibration.values()
+        # PSDs
+        command += ["--psd"]
+        command += psds.values()
+        
+        hostname_job = htcondor.Submit({
+            "executable": config.get("pesummary", "executable"),  
+            "arguments": " ".join(command),
+            "accounting_group": config.get("pipelines", "accounting"),
+            "output": f"{self.production.rundir}/pesummary.out",
+            "error": f"{self.production.rundir}/pesummary.err",
+            "log": f"{self.production.rundir}/pesummary.log",
+            "request_cpus": "4",
+            "getenv": "true",
+            "batch-name": f"PESummary/{self.production.event.name}/{self.production.name}",
+            "request_memory": "2048MB",
+            "request_disk": "2048MB",
+        })
+
+        schedulers = htcondor.Collector().locate(htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler"))
+
+        schedd = htcondor.Schedd(schedulers)
+        with schedd.transaction() as txn:   
+            cluster_id = hostname_job.queue(txn)
+
+        return cluster_id
+
+    def store_results(self):
+        """
+        Store the PE Summary results
+        """
+        results = os.path.join(config.get('general', 'webroot'), 
+                               self.production.event.name, 
+                               self.production.name,  
+                               "results", "samples", f"{self.production.name}_pesummary.dat")
+        store = Store(root=config.get("storage", "directory"))
+        store.add_file(self.production.event.name, self.production.name,
+                       file = results)
+
+    def after_processing(self):
+        """
+        Run the after processing jobs.
+        """
+        try:
+            self.store_results()
+            self.production.status = "uploaded"
+        except Exception as e:
+            raise ValueError(e)
+
     def submit_dag(self):
         """
-        Submit a DAG file to the condor cluster.
-
-        Parameters
-        ----------
-        category : str, optional
-           The category of the job.
-           Defaults to "C01_offline".
-        production : str
-           The production name.
-
-        Returns
-        -------
-        int
-           The cluster ID assigned to the running DAG file.
-        PipelineLogger
-           The pipeline logger message.
-
-        Raises
-        ------
-        PipelineException
-           This will be raised if the pipeline fails to submit the job.
+        Submit the DAG for this pipeline.
         """
-
-        os.chdir(self.production.rundir)
-
-        self.before_submit()
+        raise NotImplementedError
         
-        try:
-            command = ["condor_submit_dag",
-                                   os.path.join(self.production.rundir, f"multidag.dag")]
-            dagman = subprocess.Popen(command,
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT)
-        except FileNotFoundError as error:
-            raise PipelineException("It looks like condor isn't installed on this system.\n"
-                                    f"""I wanted to run {" ".join(command)}.""")
-
-        stdout, stderr = dagman.communicate()
-
-        if "submitted to cluster" in str(stdout):
-            cluster = re.search("submitted to cluster ([\d]+)", str(stdout)).groups()[0]
-            self.production.status = "running"
-            self.production.job_id = cluster
-            return cluster, PipelineLogger(stdout)
-        else:
-            raise PipelineException(f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
-                                    issue=self.production.event.issue_object,
-                                    production=self.production.name)

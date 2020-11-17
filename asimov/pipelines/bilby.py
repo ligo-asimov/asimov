@@ -11,6 +11,8 @@ from asimov import logging
 import re
 import numpy as np
 
+import htcondor
+
 class Bilby(Pipeline):
     """
     The Bilby Pipeline.
@@ -31,6 +33,19 @@ class Bilby(Pipeline):
         self.logger = logger = logging.AsimovLogger(event=production.event)
         if not production.pipeline.lower() == "bilby":
             raise PipelineException
+
+    def detect_completion(self):
+        """
+        Check for the production of the posterior file to signal that the job has completed.
+        """
+        results_dir = glob.glob(f"{self.production.rundir}/result")
+        if len(results_dir)>0:
+            if len(glob.glob(os.path.join(results_dir[0], f"*_result.json"))) > 0:
+                return True
+            else:
+                return False
+        else:
+            return False
 
 
     def _activate_environment(self):
@@ -234,6 +249,7 @@ class Bilby(Pipeline):
                 job_label = self.production.name
             dag_filename = f"dag_{job_label}.submit"
             command = ["condor_submit_dag",
+                       "-batch-name", f"bilby/{self.production.event.name}/{self.production.name}",
                                    os.path.join(self.production.rundir, "submit", dag_filename)]
             dagman = subprocess.Popen(command,
                                   stdout=subprocess.PIPE,
@@ -253,6 +269,23 @@ class Bilby(Pipeline):
             raise PipelineException(f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
                                     issue=self.production.event.issue_object,
                                     production=self.production.name)
+
+    def collect_assets(self):
+        """
+        Gather all of the results assets for this job.
+        """
+        pass
+
+    def samples(self):
+        """
+        Collect the combined samples file for PESummary.
+        """
+        return glob.glob(os.path.join(self.production.rundir, "result", "*_merge_result.json"))
+        
+    def after_completion(self):
+        cluster = self.run_pesummary()
+        self.production.meta['job id'] = int(cluster)
+        self.production.status = "processing"
 
     def collect_logs(self):
         """

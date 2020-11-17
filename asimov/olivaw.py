@@ -1,6 +1,12 @@
 import os
 
+
 import click
+
+from datetime import datetime
+import pytz
+
+tz = pytz.timezone('Europe/London')
 
 from asimov import gitlab
 from asimov.event import DescriptionException
@@ -22,7 +28,7 @@ import yaml
 import otter
 import otter.bootstrap as bt
 
-ACTIVE_STATES = {"running", "stuck"}
+ACTIVE_STATES = {"running", "stuck", "finished", "processing"}
 
 known_pipelines = {"bayeswave": BayesWave,
                    "bilby": Bilby,
@@ -100,6 +106,12 @@ def report(event, webdir):
         navbar = bt.Navbar("Asimov", background="navbar-dark bg-primary")
         report + navbar
 
+    with report:
+        time = bt.Container()
+
+        time + f"Report generated at {str(datetime.now(tz))}"
+        report + time
+
     cards = []
     container = bt.Container()
     container + "# All PE Productions"
@@ -112,38 +124,70 @@ def report(event, webdir):
                          config_file="asimov.conf")
 
         card = bt.Card(title=f"<a href='{event.title}.html'>{event.title}</a>")
+
+        toc = bt.Container()
+
+        for production in event.productions:
+            toc + f"[{production.name}](#{production.name})"
+
+        with event_report:
+            event_report + f"#{event.title}"
+            event_report + toc
+
         production_list = bt.ListGroup()
         for production in event.productions:
+
+            event_log =  otter.Otter(f"{webdir}/{event.title}-{production.name}.html", 
+                                     author="Olivaw", 
+                                     title=f"Olivaw PE Report | {event.title} | {production.name}", 
+                                     author_email="daniel.williams@ligo.org", 
+                                     config_file="asimov.conf")
+
+            
+
             pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
             
-            status_map = {"finished": "success", "running": "primary", "stuck": "warning", "ready": "secondary", "wait": "light"}
+            status_map = {"finished": "success", "uploaded": "success", "processing": "primary",  "running": "primary", "stuck": "warning", "ready": "secondary", "wait": "light"}
             production_list.add_item(f"{production.name}" + str(bt.Badge(f"{production.pipeline}", "info")) + str(bt.Badge(f"{production.status}")), 
                                      context=status_map[production.status])
 
             with event_report:
                 container = bt.Container()
                 container + f"## {production.name}"
+                container + f"<a id='{production.name}'/>"
                 container + "### Ledger"
                 container + production.meta
-                logs = pipe.collect_logs()
-                container + f"### Log files"
-                
+
+
+
+            logs = pipe.collect_logs()
+            container + f"### Log files"
+            container + f"<a href='{event.title}-{production.name}.html'>Log file page</a>"
+            with event_log:
+
                 for log, message in logs.items():
                     log_card = bt.Card(title=f"{log}")
                     log_card.add_content("<div class='card-body'><pre>"+message+"</pre></div>")
-                    container + log_card
+                    event_log + log_card
+
+            with event_report:
                 event_report + container
 
         card.add_content(production_list)
         cards.append(card)
 
+
+
     with report:
-        for i, card in enumerate(cards):
-            if i%2==0:
-                deck = bt.CardDeck()
-            deck + card
-            if i%2==1:
-                report + deck
+        if len(cards) == 1:
+            report + card
+        else:
+            for i, card in enumerate(cards):
+                if i%2==0:
+                    deck = bt.CardDeck()
+                deck + card
+                if i%2==1:
+                    report + deck
 
             
 @click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
@@ -215,11 +259,11 @@ def submit(event):
                 logger.error(f"Error while trying to submit a configuration. {e}", production=production, channels="gitlab")
             if production.pipeline.lower() in known_pipelines:
                 pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
-                #try:
-                pipe.build_dag()
-                #except PipelineException:
-                #    logger.error("The pipeline failed to build a DAG file.",
-                #                 production=production)
+                try:
+                    pipe.build_dag()
+                except PipelineException:
+                    logger.error("The pipeline failed to build a DAG file.",
+                                 production=production)
                 try:
                     pipe.submit_dag()
                     production.status = "running"
@@ -253,26 +297,38 @@ def monitor(event):
             try:
                 job = condor.CondorJob(production.meta['job id'])
                 print(f"{event.event_object.name}\t{production.name}\t{job.status}")
-                if job.status.lower() == "stuck":
+                if event.state == "running" and job.status.lower() == "stuck":
                     event.state = "stuck"
                     production.status = "stuck"
+                    production.meta['stage'] = 'production'
+                elif event.state == "processing" and job.status.lower() == "stuck":
+                    production.status = "stuck"
+                    production.meta['stage'] = "post"
             except ValueError as e:
+                click.echo(production.status.lower())
                 if production.pipeline.lower() in known_pipelines:
                     
                     pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
 
-                    if pipe.detect_completion():
-                        # The job has been completed, collect its assets
-                        pipe.after_completion()
-                        production.status = "finished"
+                    if production.status.lower() == "processing":
+                    # Need to check the upload has completed
+                        try:
+                            pipe.after_processing()
+                        except ValueError as e:
+                            click.echo(e)
+                            production.status = "stuck"
+                            production.meta['stage'] = "after processing"
 
+                    elif pipe.detect_completion() and production.status.lower() == "running":
+                        # The job has been completed, collect its assets
+                        production.meta['job id'] = None
+                        pipe.after_completion()
+                        
                     else:
                         # It looks like the job has been evicted from the cluster
-                        # Let's find its log files.
                         event.state = "stuck"
                         production.status = "stuck"
-                        #logs = pipe.collect_logs()
-                        #logger.error(message = f"```{message}```", channels=["gitlab"], production=production)
-                        #for log, message in logs.items():
-                        #    logger.error(message = f"```{message}```", channels=["gitlab"], production=production)
+                        production.meta['stage'] = 'production'
 
+                if production.status == "stuck":
+                    event.state = "stuck"
