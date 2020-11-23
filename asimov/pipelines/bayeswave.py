@@ -161,6 +161,12 @@ class BayesWave(Pipeline):
             
     def after_completion(self):
         self.collect_assets()
+
+        if "supress" in self.production.meta:
+            for ifo in self.production.meta['supress']:
+                self.supress_psd(ifo, 
+                                 self.production.meta['supress'][ifo]['lower'],
+                                 self.production.meta['supress'][ifo]['upper'])
         
     def before_submit(self):
         pass
@@ -284,3 +290,36 @@ class BayesWave(Pipeline):
             store.add_file(self.production.event.name, self.production.name,
                            file = f"{det}-{sample_rate}-psd.dat")
             
+    def supress_psd(self, ifo, fmin, fmax):
+        """
+        Suppress portions of a PSD.
+        Author: Carl-Johan Haster - August 2020
+        """
+        sample_rate = self.production.meta['quality']['sample-rate']
+        orig_PSD_file = np.genfromtxt(os.path.join(self.production.event.repository.directory, self.category, "psds", sample_rate, f"{ifo}-psd.dat"))
+
+        freq = orig_PSD_file[:,0]
+        PSD = orig_PSD_file[:,1]
+
+        suppression_region = np.logical_and(np.greater_equal(freq, fmin), np.less_equal(freq, fmax))
+
+        #Suppress the PSD in this region
+
+        PSD[suppression_region] = 1.
+
+        new_PSD = np.vstack([freq, PSD]).T
+
+        asset = f"{ifo}-psd.dat"
+        np.savetxt(asset, new_PSD, fmt='%+.5e')
+        
+        destination = os.path.join(self.category, "psds", str(sample_rate), f"{det}-psd.dat")
+
+        try:
+            self.production.event.repository.add_file(asset, destination, message=f"Added the supresed {ifo} PSD")
+        except Exception as e:
+            raise PipelineException(f"There was a problem committing the suppresed PSD for {det} to the repository.\n\n{e}",
+                                    issue=self.production.event.issue_object,
+                                    production=self.production.name)
+        copyfile(asset, f"{det}-{sample_rate}-psd-suppresed.dat")
+        store.add_file(self.production.event.name, self.production.name,
+                       file = f"{det}-{sample_rate}-psd-suppresed.dat")
