@@ -59,6 +59,11 @@ class Rift(Pipeline):
                 raise PipelineException(f"The virtual environment could not be initiated.\n{command}\n{out}\n\n{err}",
                                         production=self.production.name)
         
+    def after_completion(self):
+        cluster = self.run_pesummary()
+        self.production.meta['job id'] = int(cluster)
+        self.production.status = "processing"
+
 
     def _convert_psd(self, ascii_format, ifo):
         """
@@ -330,12 +335,24 @@ class Rift(Pipeline):
                                     issue=self.production.event.issue_object,
                                     production=self.production.name)
 
+    def resurrect(self):
+        """
+        Attempt to ressurrect a failed job.
+        """
+        try:
+            count = self.production.meta['resurrections']
+        except:
+            count = 0
+        if (count < 5) and (len(glob.glob(os.path.join(self.production.rundir, "marginalize_intrinsic_parameters_BasicIterationWorkflow.dag.rescue*")))>0):
+            count +=1
+            self.submit_dag()
+
     def collect_logs(self):
         """
         Collect all of the log files which have been produced by this production and 
         return their contents as a dictionary.
         """
-        logs = glob.glob(f"{self.production.rundir}/*.err") + glob.glob(f"{self.production.rundir}/*/logs/*")
+        logs = glob.glob(f"{self.production.rundir}/*.err") #+ glob.glob(f"{self.production.rundir}/*/logs/*")
         logs += glob.glob(f"{self.production.rundir}/*.out")
         messages = {}
         for log in logs:
