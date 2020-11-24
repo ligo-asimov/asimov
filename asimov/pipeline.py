@@ -233,3 +233,8 @@ class Pipeline():
         """
         raise NotImplementedError
         
+    def resurrect(self):
+        pass
+
+    def clean(self):
+        pass
