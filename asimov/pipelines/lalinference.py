@@ -41,12 +41,7 @@ class LALInference(Pipeline):
                 return False
         else:
             return False
-        
-    def after_completion(self):
-        #self.collect_assets()
-        # This is where PE Summary needs to be run
-        pass
-        
+                
     def build_dag(self, psds=None, user=None, clobber_psd=False):
         """
         Construct a DAG file in order to submit a production to the
@@ -200,3 +195,8 @@ class LALInference(Pipeline):
             raise PipelineException(f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
                                     issue=self.production.event.issue_object,
                                     production=self.production.name)
+
+    def after_completion(self):
+        cluster = self.run_pesummary()
+        self.production.meta['job id'] = int(cluster)
+        self.production.status = "processing"
