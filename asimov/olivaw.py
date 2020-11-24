@@ -147,7 +147,7 @@ def report(event, webdir):
 
             pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
             
-            status_map = {"finished": "success", "uploaded": "success", "processing": "primary",  "running": "primary", "stuck": "warning", "ready": "secondary", "wait": "light"}
+            status_map = {"finished": "success", "uploaded": "success", "processing": "primary",  "running": "primary", "stuck": "warning", "restart": "secondary", "ready": "secondary", "wait": "light"}
             production_list.add_item(f"{production.name}" + str(bt.Badge(f"{production.pipeline}", "info")) + str(bt.Badge(f"{production.status}")), 
                                      context=status_map[production.status])
 
@@ -249,29 +249,35 @@ def submit(event):
     for event in events:
         logger = logging.AsimovLogger(event=event.event_object)
         ready_productions = event.event_object.get_all_latest()
-        
+        print(ready_productions)
         for production in ready_productions:
-            if production.status.lower() in {"running", "stuck", "wait"}: continue
-            try:
-                configuration = production.get_configuration()
-            except ValueError as e:
-                #build(event)
-                logger.error(f"Error while trying to submit a configuration. {e}", production=production, channels="gitlab")
-            if production.pipeline.lower() in known_pipelines:
-                pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
-                try:
-                    pipe.build_dag()
-                except PipelineException:
-                    logger.error("The pipeline failed to build a DAG file.",
-                                 production=production)
-                try:
+            if production.status.lower() in {"running", "stuck", "wait", "processing", "uploaded", "finished"}: continue
+            if production.status.lower() == "restart":
+                if production.pipeline.lower() in known_pipelines:
+                    pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
+                    pipe.clean()
                     pipe.submit_dag()
-                    production.status = "running"
+            else:
+                try:
+                    configuration = production.get_configuration()
+                except ValueError as e:
+                    #build(event)
+                    logger.error(f"Error while trying to submit a configuration. {e}", production=production, channels="gitlab")
+                if production.pipeline.lower() in known_pipelines:
+                    pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
+                    try:
+                        pipe.build_dag()
+                    except PipelineException:
+                        logger.error("The pipeline failed to build a DAG file.",
+                                     production=production)
+                    try:
+                        pipe.submit_dag()
+                        production.status = "running"
 
-                except PipelineException as e:
-                    production.status = "stuck"
-                    logger.error(f"The pipeline failed to submit the DAG file to the cluster. {e}",
-                                 production=production)
+                    except PipelineException as e:
+                        production.status = "stuck"
+                        logger.error(f"The pipeline failed to submit the DAG file to the cluster. {e}",
+                                     production=production)
                 
 
 @click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
@@ -322,6 +328,7 @@ def monitor(event):
                     elif pipe.detect_completion() and production.status.lower() == "running":
                         # The job has been completed, collect its assets
                         production.meta['job id'] = None
+                        production.status = "finished"
                         pipe.after_completion()
                         
                     else:
@@ -329,6 +336,7 @@ def monitor(event):
                         event.state = "stuck"
                         production.status = "stuck"
                         production.meta['stage'] = 'production'
+                        pipe.resurrect()
 
                 if production.status == "stuck":
                     event.state = "stuck"
