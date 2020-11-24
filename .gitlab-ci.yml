@@ -98,15 +98,15 @@ gitlab-deploy:
     - twine check dist/*
     - twine upload -u __token__ -p $GITLAB_PYPI --repository-url https://git.ligo.org/api/v4/projects/$CI_PROJECT_ID/packages/pypi
       
-docker-olivaw:
-  image: docker
-  stage: build
-  variables:
-    IMAGE_TAG: $CI_REGISTRY_IMAGE:olivaw-$CI_COMMIT_REF_SLUG
-  script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build -t $IMAGE_TAG -f containers/olivaw/Dockerfile .
-    - docker push $IMAGE_TAG
+#docker-olivaw:
+#  image: docker
+#  stage: build
+#  variables:
+#    IMAGE_TAG: $CI_REGISTRY_IMAGE:olivaw-$CI_COMMIT_REF_SLUG
+#  script:
+#    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+#    - docker build -t $IMAGE_TAG -f containers/olivaw/Dockerfile .
+#    - docker push $IMAGE_TAG
     
   
       
