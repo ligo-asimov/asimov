@@ -35,9 +35,22 @@ known_pipelines = {"bayeswave": BayesWave,
                    "rift": Rift,
                    "lalinference": LALInference}
 
-server = gitlab.gitlab.Gitlab('https://git.ligo.org',
+
+def connect_gitlab():
+    """
+    Connect to the gitlab server.
+
+    Returns
+    -------
+    server : `Gitlab`
+       The gitlab server.
+    repository: `Gitlab.project`
+       The gitlab project.
+    """
+    server = gitlab.gitlab.Gitlab('https://git.ligo.org',
                               private_token=config.get("gitlab", "token"))
-repository = server.projects.get(config.get("olivaw", "tracking_repository"))
+    repository = server.projects.get(config.get("olivaw", "tracking_repository"))
+    return server, repository
 
 @click.group()
 def olivaw():
@@ -57,6 +70,9 @@ def ledger(event, yaml_f):
     Return the ledger for a given event.
     If no event is specified then the entire production ledger is returned.
     """
+
+    server, repository = connect_gitlab()
+    
     events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event])
 
     if event:
@@ -89,7 +105,7 @@ def report(event, webdir):
     Return the ledger for a given event.
     If no event is specified then the entire production ledger is returned.
     """
-
+    server, repository = connect_gitlab()
     if not webdir:
         webdir = "./"
     if event:
@@ -197,7 +213,7 @@ def build(event):
     Create the run configuration files for a given event for jobs which are ready to run.
     If no event is specified then all of the events will be processed.
     """
-
+    server, repository = connect_gitlab()
     if event:
         events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event])
     else:
@@ -241,6 +257,7 @@ def submit(event):
     Submit the run configuration files for a given event for jobs which are ready to run.
     If no event is specified then all of the events will be processed.
     """
+    server, repository = connect_gitlab()
     if event:
         events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event])
     else:
@@ -286,7 +303,7 @@ def monitor(event):
     """
     Monitor condor jobs' status, and collect logging information.
     """
-
+    server, repository = connect_gitlab()
     if event:
         events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event])
     else:
