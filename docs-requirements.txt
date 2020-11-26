@@ -1,0 +1,4 @@
+kentigern
+numpydoc
+sphinx
+sphinx-click
