@@ -7,7 +7,7 @@ FROM python:3.7
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN pip install git+https://git.ligo.org/daniel-williams/supervisor.git@11-rewrite-olivaw
+RUN pip install git+https://git.ligo.org/daniel-williams/supervisor.git
 
 CMD [ "olivaw" ]
 

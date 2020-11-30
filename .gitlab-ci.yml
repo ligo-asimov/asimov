@@ -38,7 +38,7 @@ test-python-38:
 pages:
   stage: build
   script:
-  - pip install sphinx sphinx-click numpydoc
+  - pip install -r docs-requirements.txt
   - pip install -r requirements.txt
   - pip install .
   - sphinx-build -b html docs/source public
@@ -90,13 +90,13 @@ wheel-38:
     paths:
       - dist
 
-gitlab-deploy:
-  image: python:3.8
-  stage: deploy
-  script:
-    - pip install twine
-    - twine check dist/*
-    - twine upload -u __token__ -p $GITLAB_PYPI --repository-url https://git.ligo.org/api/v4/projects/$CI_PROJECT_ID/packages/pypi
+#gitlab-deploy:
+#  image: python:3.8
+#  stage: deploy
+#  script:
+#    - pip install twine
+#    - twine check dist/*
+#    - twine upload -u __token__ -p $GITLAB_PYPI --repository-url https://git.ligo.org/api/v4/projects/$CI_PROJECT_ID/packages/pypi
       
 docker-olivaw:
   image: docker
