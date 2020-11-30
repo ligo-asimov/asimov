@@ -11,7 +11,7 @@ from ..git import AsimovFileNotFound
 from ..storage import Store
 from asimov import config
 from shutil import copyfile
-
+import numpy as np
 
 class BayesWave(Pipeline):
     """
@@ -160,13 +160,18 @@ class BayesWave(Pipeline):
              return False
             
     def after_completion(self):
-        self.collect_assets()
-
-        if "supress" in self.production.meta:
-            for ifo in self.production.meta['supress']:
+        try:
+            self.collect_assets()
+        except Exception as e:
+            PipelineLogger(message=b"Failed to store PSDs.",
+                           issue=self.production.event.issue_object,
+                           production=self.production.name)
+            
+        if "supress" in self.production.meta['quality']:
+            for ifo in self.production.meta['quality']['supress']:
                 self.supress_psd(ifo, 
-                                 self.production.meta['supress'][ifo]['lower'],
-                                 self.production.meta['supress'][ifo]['upper'])
+                                 self.production.meta['quality']['supress'][ifo]['lower'],
+                                 self.production.meta['quality']['supress'][ifo]['upper'])
         
     def before_submit(self):
         pass
@@ -294,9 +299,11 @@ class BayesWave(Pipeline):
         """
         Suppress portions of a PSD.
         Author: Carl-Johan Haster - August 2020
+        (Updated for asimov by Daniel Williams - November 2020
         """
+        store = Store(root=config.get("storage", "directory"))
         sample_rate = self.production.meta['quality']['sample-rate']
-        orig_PSD_file = np.genfromtxt(os.path.join(self.production.event.repository.directory, self.category, "psds", sample_rate, f"{ifo}-psd.dat"))
+        orig_PSD_file = np.genfromtxt(os.path.join(self.production.event.repository.directory, self.category, "psds", str(sample_rate), f"{ifo}-psd.dat"))
 
         freq = orig_PSD_file[:,0]
         PSD = orig_PSD_file[:,1]
@@ -312,14 +319,14 @@ class BayesWave(Pipeline):
         asset = f"{ifo}-psd.dat"
         np.savetxt(asset, new_PSD, fmt='%+.5e')
         
-        destination = os.path.join(self.category, "psds", str(sample_rate), f"{det}-psd.dat")
+        destination = os.path.join(self.category, "psds", str(sample_rate), f"{ifo}-psd.dat")
 
         try:
-            self.production.event.repository.add_file(asset, destination, message=f"Added the supresed {ifo} PSD")
+            self.production.event.repository.add_file(asset, destination)#, message=f"Added the supresed {ifo} PSD")
         except Exception as e:
-            raise PipelineException(f"There was a problem committing the suppresed PSD for {det} to the repository.\n\n{e}",
+            raise PipelineException(f"There was a problem committing the suppresed PSD for {ifo} to the repository.\n\n{e}",
                                     issue=self.production.event.issue_object,
                                     production=self.production.name)
-        copyfile(asset, f"{det}-{sample_rate}-psd-suppresed.dat")
+        copyfile(asset, f"{ifo}-{sample_rate}-psd-suppresed.dat")
         store.add_file(self.production.event.name, self.production.name,
-                       file = f"{det}-{sample_rate}-psd-suppresed.dat")
+                       file = f"{ifo}-{sample_rate}-psd-suppresed.dat")
