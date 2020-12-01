@@ -2,6 +2,7 @@
 Trigger handling code.
 """
 
+import collections.abc
 import yaml
 import os
 import glob
@@ -188,12 +189,24 @@ class Event:
         return event
 
     def from_notes(self):
-        
+        """
+        Update the event data from information in the issue comments.
+
+        Uses nested dictionary update code from
+        https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth#3233356
+        """
+
+        def update(d, u):
+            for k, v in u.items():
+                if isinstance(v, collections.abc.Mapping):
+                    d[k] = update(d.get(k, {}), v)
+                else:
+                    d[k] = v
+            return d
+
         notes_data = self.issue_object.parse_notes()
         for note in notes_data:
-            for key, value in notes_data.items():
-                if key in self.meta:
-                    self.meta[key] = value
+            update(self.meta, note)
 
     def get_gracedb(self, gfile, destination):
         """
