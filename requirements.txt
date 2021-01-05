@@ -4,5 +4,9 @@ htcondor
 ligo-gracedb
 liquidpy
 networkx
+numpy
 otter-report
 python-gitlab
+pytz
+pyyaml
+requests
