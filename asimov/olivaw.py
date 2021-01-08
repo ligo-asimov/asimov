@@ -73,7 +73,7 @@ def ledger(event, yaml_f):
 
     server, repository = connect_gitlab()
     
-    events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event])
+    events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event], update=False)
 
     if event:
         events = [event_i for event_i in events if event_i.title == event]
@@ -108,10 +108,8 @@ def report(event, webdir):
     server, repository = connect_gitlab()
     if not webdir:
         webdir = "./"
-    if event:
-        events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event])
-    else:
-        events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"))
+
+    events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event], update=False)
     report = otter.Otter(f"{webdir}/index.html", 
                          author="Olivaw", 
                          title="Olivaw PE Report", 
@@ -214,11 +212,7 @@ def build(event):
     If no event is specified then all of the events will be processed.
     """
     server, repository = connect_gitlab()
-    if event:
-        events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event])
-    else:
-        events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"))
-    
+    events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event], update=True)    
     for event in events:
         click.echo(f"Working on {event.title}")
         logger = logging.AsimovLogger(event=event.event_object)
@@ -226,7 +220,7 @@ def build(event):
         print(event.productions)
         for production in ready_productions:
             click.echo(f"\tWorking on production {production.name}")
-            if production.status in {"running", "stuck", "wait"}: continue
+            if production.status in {"running", "stuck", "wait", "finished", "uploaded"}: continue
             try:
                configuration = production.get_configuration()
             except ValueError:
@@ -251,18 +245,15 @@ def build(event):
 
 
 @click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
+@click.option("--update", "update", default=False, help="Force the git repos to be pulled before submission occurs.")
 @olivaw.command()
-def submit(event):
+def submit(event, update):
     """
     Submit the run configuration files for a given event for jobs which are ready to run.
     If no event is specified then all of the events will be processed.
     """
     server, repository = connect_gitlab()
-    if event:
-        events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event])
-    else:
-        events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"))
-
+    events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event], update=update)
     for event in events:
         logger = logging.AsimovLogger(event=event.event_object)
         ready_productions = event.event_object.get_all_latest()
@@ -298,17 +289,14 @@ def submit(event):
                 
 
 @click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
+@click.option("--update", "update", default=False, help="Force the git repos to be pulled before submission occurs.")
 @olivaw.command()
-def monitor(event):
+def monitor(event, update):
     """
     Monitor condor jobs' status, and collect logging information.
     """
     server, repository = connect_gitlab()
-    if event:
-        events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event])
-    else:
-        events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"))
-
+    events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event], update=update)
     for event in events:
         click.echo(f"Checking {event.title}")
         on_deck = [production for production in event.productions if production.status in ACTIVE_STATES]
@@ -318,9 +306,14 @@ def monitor(event):
             logger = logging.AsimovLogger(event=event.event_object)
             # Get the condor jobs
             try:
-                job = condor.CondorJob(production.meta['job id'])
-                print(f"{event.event_object.name}\t{production.name}\t{job.status}")
+                if "job id" in production.meta:
+                    job = condor.CondorJob(production.meta['job id'])
+                else:
+                    raise ValueError
+                print(f"{event.event_object.name}\t{event.state}\t{production.name}\t{job.status}")
+
                 if event.state == "running" and job.status.lower() == "stuck":
+                    click.echo("Job is stuck on condor")
                     event.state = "stuck"
                     production.status = "stuck"
                     production.meta['stage'] = 'production'
@@ -330,7 +323,7 @@ def monitor(event):
             except ValueError as e:
                 click.echo(production.status.lower())
                 if production.pipeline.lower() in known_pipelines:
-                    
+                    click.echo("Investigating...")
                     pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
 
                     if production.status.lower() == "processing":
@@ -350,9 +343,10 @@ def monitor(event):
                         
                     else:
                         # It looks like the job has been evicted from the cluster
-                        event.state = "stuck"
-                        production.status = "stuck"
-                        production.meta['stage'] = 'production'
+                        click.echo(f"Attempting to rescue {production.name}")
+                        #event.state = "stuck"
+                        #production.status = "stuck"
+                        #production.meta['stage'] = 'production'
                         pipe.resurrect()
 
                 if production.status == "stuck":

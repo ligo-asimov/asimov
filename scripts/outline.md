@@ -16,6 +16,6 @@ In the run information block please use YAML markup to specify the metadata and 
 
 	  
 
-/label ~trigger
+/label ~trigger ~"trigger-o3a"
 /epic &1
 /milestone %1
