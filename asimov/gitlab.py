@@ -181,4 +181,4 @@ class EventIssue(object):
                     continue
                 data = yaml.safe_load(data)
                 note_data.append(data)
-        return data
+        return note_data

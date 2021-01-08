@@ -2,6 +2,7 @@
 Trigger handling code.
 """
 
+import collections.abc
 import yaml
 import os
 import glob
@@ -78,6 +79,7 @@ class Event:
         else:
             self.repository = repository
             
+
         self.productions = []
         if "psds" in kwargs:
             self.psds = kwargs["psds"]
@@ -85,13 +87,17 @@ class Event:
             self.psds = {}
             
         self.meta = kwargs
+
+        if "issue" in kwargs:
+            self.issue_object = kwargs.pop("issue")
+            self.from_notes()
+
         self._check_required()
 
         try:
             self._check_calibration()
         except DescriptionException:
             print("No calibration envelopes found.")
-        #self._check_psds()
 
         self.graph = nx.DiGraph()
 
@@ -109,7 +115,7 @@ class Event:
         """
         Find the calibration envelope locations.
         """
-        if ("calibration" in self.meta) and (set(self.meta['interferometers']) == set(self.meta['calibration'].keys())):
+        if ("calibration" in self.meta) and (set(self.meta['interferometers']).issubset(set(self.meta['calibration'].keys()))):
             pass
         else:
             raise DescriptionException(f"Some of the required calibration envelopes are missing from this issue. {set(self.meta['interferometers']) - set(self.meta['calibration'].keys())}")
@@ -203,16 +209,29 @@ class Event:
 
         event = cls.from_yaml(text[1], issue)
         event.text = text
+        # event.from_notes()
 
         return event
 
     def from_notes(self):
-        
+        """
+        Update the event data from information in the issue comments.
+
+        Uses nested dictionary update code from
+        https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth#3233356
+        """
+
+        def update(d, u):
+            for k, v in u.items():
+                if isinstance(v, collections.abc.Mapping):
+                    d[k] = update(d.get(k, {}), v)
+                else:
+                    d[k] = v
+            return d
+
         notes_data = self.issue_object.parse_notes()
         for note in notes_data:
-            for key, value in notes_data.items():
-                if key in self.meta:
-                    self.meta[key] = value
+            update(self.meta, note)
 
     def get_gracedb(self, gfile, destination):
         """
@@ -342,9 +361,10 @@ class Production:
                                        issue = self.event.issue_object,
                                        production = self)
         else:
-            raise DescriptionException(f"No PSDs were found for this event.",
-                                       issue = self.event.issue_object,
-                                       production = self)
+            self.psds = {}
+        #    raise DescriptionException(f"No PSDs were found for this event.",
+        #                               issue = self.event.issue_object,
+         #                              production = self)
 
         for ifo, psd in self.psds.items():
             self.psds[ifo] = os.path.join(self.event.repository.directory, psd)
