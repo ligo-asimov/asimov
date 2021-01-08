@@ -1,4 +1,5 @@
 import os
+import time
 import shutil
 import glob
 import subprocess
@@ -36,11 +37,15 @@ class EventRepo():
        The path to the git repository on the filesystem.
     url : str
        The URL of the git repository
+    update : bool 
+        Flag to determine if the repository is updated when loaded.
+        Defaults to False.
     """
 
-    def __init__(self, directory, url=None):
+    def __init__(self, directory, url=None, update=False):
         self.event = directory.split("/")[-1]
         self.directory = directory
+        self.update_needed = update
         self.repo = git.Repo(directory)
         self.url = url
 
@@ -48,7 +53,7 @@ class EventRepo():
         return self.directory
         
     @classmethod
-    def from_url(cls, url, name, directory=None):
+    def from_url(cls, url, name, directory=None, update=False):
         """
         Clone a git repository into a working directory,
         then create an EventRepo object for it.
@@ -63,12 +68,14 @@ class EventRepo():
            The location to store the cloned repository.
            If this value isn't provided the repository is
            cloned into the /tmp directory.
+        update : bool 
+           Flag to determine if the repository is updated when loaded.
+           Defaults to False.
         """
         if not directory:
             tmp = config.get("general", "git_default")
             directory = f"{tmp}/{name}"
             pathlib.Path(directory).mkdir(parents=True, exist_ok=True)
-
 
         # Replace an https address with an ssh address
         if "https" in url:
@@ -86,7 +93,11 @@ class EventRepo():
         except git.exc.GitCommandError:
             repo = git.Repo(directory)
             repo.git.stash()
-            repo.remotes[0].pull()
+        if update:
+            try:
+                repo.remotes[0].pull()
+            except git.exc.GitCommandError:
+                pass
         return cls(directory, url)
 
     def add_file(self, source, destination, commit_message=None):
@@ -123,6 +134,7 @@ class EventRepo():
         self.repo.git.add(destination)
         self.repo.git.commit("-m", commit_message)
         self.repo.git.push()
+        time.sleep(15)
     
     def find_timefile(self, category="C01_offline"):
         """
@@ -256,6 +268,7 @@ class EventRepo():
         self.repo.git.add("Preferred/PESummary_metafile/posterior_samples.h5")
         self.repo.git.commit("-m", "Updated the preferred sample metafile.")
         self.repo.git.push()
+        time.sleep(15)
 
         event.labels += ["Preferred cleaned"]
         event.issue_object.save()

@@ -277,9 +277,10 @@ class BayesWave(Pipeline):
             try:
                 self.production.event.repository.add_file(asset, destination)
             except Exception as e:
-                raise PipelineException(f"There was a problem committing the PSD for {det} to the repository.\n\n{e}",
+                error = PipelineLogger(f"There was a problem committing the PSD for {det} to the repository.\n\n{e}",
                                     issue=self.production.event.issue_object,
                                     production=self.production.name)
+                error.submit_comment()
 
             # Add to the event ledger
             if "psds" not in self.production.event.meta:
@@ -292,8 +293,14 @@ class BayesWave(Pipeline):
             # TODO improve the event metadata interface
             self.production.event.issue_object.update_data()
             copyfile(asset, f"{det}-{sample_rate}-psd.dat")
-            store.add_file(self.production.event.name, self.production.name,
-                           file = f"{det}-{sample_rate}-psd.dat")
+            try:
+                store.add_file(self.production.event.name, self.production.name,
+                               file = f"{det}-{sample_rate}-psd.dat")
+            except Exception as e:
+                error = PipelineLogger(f"There was a problem committing the PSD for {det} to the store.\n\n{e}",
+                                    issue=self.production.event.issue_object,
+                                    production=self.production.name)
+                error.submit_comment()
             
     def supress_psd(self, ifo, fmin, fmax):
         """
@@ -330,3 +337,11 @@ class BayesWave(Pipeline):
         copyfile(asset, f"{ifo}-{sample_rate}-psd-suppresed.dat")
         store.add_file(self.production.event.name, self.production.name,
                        file = f"{ifo}-{sample_rate}-psd-suppresed.dat")
+
+    def resurrect(self):
+        """
+        Attempt to ressurrect a failed job.
+        """
+        count = len(glob.glob(os.path.join(self.production.rundir, ".dag.rescue*")))
+        if (count < 5) and (count > 0):
+            self.submit_dag()

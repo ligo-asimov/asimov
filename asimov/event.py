@@ -57,7 +57,14 @@ class Event:
     A specific gravitational wave event or trigger.
     """
 
-    def __init__(self, name, repository, **kwargs):
+    def __init__(self, name, repository, update=False, **kwargs):
+        """
+        Parameters
+        ----------
+        update : bool
+           Flag to determine if the event repo should be updated 
+           when it is loaded. Defaults to False.
+        """
         self.name = name
         if "working_directory" in kwargs:
             self.work_dir = kwargs['working_directory']
@@ -67,7 +74,8 @@ class Event:
         if "disable_repo" not in kwargs:
             self.repository = EventRepo.from_url(repository,
                                              self.name,
-                                             self.work_dir)
+                                                 self.work_dir,
+                                                 update)
         else:
             self.repository = repository
             
@@ -149,7 +157,7 @@ class Event:
         return f"<Event {self.name}>"
 
     @classmethod
-    def from_yaml(cls, data, issue=None):
+    def from_yaml(cls, data, issue=None, update=False):
         """
         Parse YAML to generate this event.
 
@@ -159,6 +167,9 @@ class Event:
            YAML-formatted event specification.
         issue : int
            The gitlab issue which stores this event.
+        update : bool 
+           Flag to determine if the repository is updated when loaded.
+           Defaults to False.
 
         Returns
         -------
@@ -168,8 +179,11 @@ class Event:
         data = yaml.safe_load(data)
         if not {"name", "repository"} <= data.keys():
             raise DescriptionException(f"Some of the required parameters are missing from this issue.")
-            
-        event = cls(**data, issue=issue)
+
+        event = cls(**data, issue=issue, update=update)
+        if issue:
+            event.issue_object = issue
+            event.from_notes()
         for production in data['productions']:
             try:
                 event.add_production(
@@ -179,9 +193,16 @@ class Event:
         return event
 
     @classmethod
-    def from_issue(cls, issue):
+    def from_issue(cls, issue, update=False):
         """
         Parse an issue description to generate this event.
+
+
+        Parameters
+        ----------
+        update : bool 
+           Flag to determine if the repository is updated when loaded.
+           Defaults to False.
         """
 
         text = issue.text.split("---")

@@ -46,7 +46,7 @@ Please fix the error and then remove the `pipeline-error` label from this issue.
 class PipelineLogger():
     """Log things for pipelines."""
     def __init__(self, message, issue=None, production=None):
-        self.message = message.decode()
+        self.message = message#.decode()
         self.issue = issue
         self.production = production
 

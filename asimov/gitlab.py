@@ -14,20 +14,30 @@ from liquid import Liquid
 
 STATE_PREFIX = "C01"
 
-def find_events(repository, milestone=None, subset=None):
+def find_events(repository, milestone=None, subset=None, update=False):
     """
     Search through a repository's issues and find all of the ones
     for events.
     """
-
+    if subset == [None]:
+        subset = None
     event_label = config.get("gitlab", "event_label")
     issues = repository.issues.list(labels=[event_label], 
                                     milestone=milestone,
                                     per_page=1000)
     if subset:
-        return [EventIssue(issue, repository) for issue in issues if issue.title in subset]
+        for issue in issues:
+            if issue.title in subset:
+                output += [EventIssue(issue, repository, update)]
+                if update:
+                    time.sleep(30)
     else:
-        return [EventIssue(issue, repository) for issue in issues]
+        for issue in issues:
+            output += [EventIssue(issue, repository, update)]
+            if update:
+                time.sleep(30)
+    return output
+
 
 class EventIssue(object):
     """
@@ -38,10 +48,14 @@ class EventIssue(object):
     ----------
     issue : `gitlab.issue`
        The issue which represents the event.
+    update : bool
+       Flag to determine if the git repository is updated 
+       when it is loaded. Defaults to False to prevent
+       excessive load on the git server.
     """
 
-    def __init__(self, issue, repository):
-        print(issue.title)
+    def __init__(self, issue, repository, update=False):
+
         self.issue_object = issue
         print(issue.title)
         self.title = issue.title
@@ -52,7 +66,7 @@ class EventIssue(object):
         self.data = self.parse_notes()
         self.repository = repository
         self.event_object=None
-        self.event_object = Event.from_issue(self)
+        self.event_object = Event.from_issue(self, update)
         
 
     def _refresh(self):

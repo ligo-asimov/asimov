@@ -210,9 +210,10 @@ class Rift(Pipeline):
                    "--approx", f"{approximant}",
                    "--cip-explode-jobs", str(cip),
                    "--use-rundir", self.production.rundir,
+                   "--ile-force-gpu",
                    "--use-ini", os.path.join(self.production.event.repository.directory, "C01_offline",  ini.ini_loc)
         ]
-
+        print(" ".join(command))
         # Placeholder LI grid bootstrapping; conditional on it existing and location specification
         
         if self.bootstrap:
