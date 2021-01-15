@@ -9,6 +9,7 @@ from asimov import config
 
 import numpy as np
 import yaml
+import json
 
 from git.exc import GitCommandError
 import click
@@ -85,6 +86,7 @@ def create(superevent, name):
     gitlab.EventIssue.create_issue(repository, event, issue_template="/home/daniel.williams/repositories/asimov/scripts/outline.md")
 
 
+
 @click.option("--event", "event", help="The event which the ledger should be returned for.")
 @click.option("--yaml", "yaml", default=None)
 @click.option("--ini", "ini", default=None)
@@ -125,6 +127,45 @@ def populate(event, yaml, ini):
         job = Production(name="ProdF0", status="Ready", pipeline="Bayeswave", comment="PSD Production", event = event_o)
         event_o.add_production(job)
     event.update_data()
+
+
+
+
+@click.option("--event", "event", default=None, help="The event which will be updated")
+@click.option("--json", "json_data", default=None)
+@olivaw.command(help="Add data from the configurator.")
+def configurator(event, json_data=None):    
+    gitlab_event = gitlab.find_events(repository, subset=event)
+    def update(d, u):
+        for k, v in u.items():
+            if isinstance(v, collections.abc.Mapping):
+                d[k] = update(d.get(k, {}), v)
+            else:
+                d[k] = v
+        return d
+
+   
+    if json_data:
+        with open(json_data, "r") as datafile:
+            data = json.load(datafile)
+
+    new_data = {"quality": {}, "priors": {}}
+    new_data["quality"]["sample-rate"] = data["srate"]
+    new_data["quality"]["lower-frequency"] = {}
+    for ifo in gitlab_event[0].event_object.meta['interferometers']:
+        new_data["quality"]["lower-frequency"][ifo] = data['f_start']
+    new_data["quality"]["segment-length"] = data['seglen']
+    new_data["quality"]["window-length"] = data['seglen']
+    new_data["quality"]["psd-length"] = data['seglen']
+    new_data["quality"]["reference-frequency"] = data['f_ref']
+
+    new_data["priors"]["amp order"] = data['amp_order']
+    new_data["priors"]["chirp-mass"] = [data["chirpmass_min"], data["chirpmass_max"]]
+
+    update(gitlab_event[0].event_object.meta, new_data)
+    print(gitlab_event[0].event_object.meta)
+    gitlab_event[0].update_data()
+
 
 #@click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
 #@olivaw.command()
