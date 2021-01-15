@@ -2,6 +2,7 @@
 Code for interacting with a gitlab instance.
 """
 import yaml
+import time
 
 from .event import Event
 from . import config
@@ -25,6 +26,7 @@ def find_events(repository, milestone=None, subset=None, update=False):
     issues = repository.issues.list(labels=[event_label], 
                                     milestone=milestone,
                                     per_page=1000)
+    output = []
     if subset:
         for issue in issues:
             if issue.title in subset:
