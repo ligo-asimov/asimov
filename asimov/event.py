@@ -7,6 +7,7 @@ import yaml
 import os
 import glob
 
+
 import networkx as nx
 
 from .ini import RunConfiguration
@@ -17,6 +18,16 @@ from liquid import Liquid
 
 from ligo.gracedb.rest import GraceDb, HTTPError
 from copy import copy
+
+
+def update(d, u):
+    """Recursively update a dictionary."""
+    for k, v in u.items():
+        if isinstance(v, collections.abc.Mapping):
+            d[k] = update(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d
 
 class DescriptionException(Exception):
     """Exception for event description problems."""
@@ -221,13 +232,6 @@ class Event:
         https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth#3233356
         """
 
-        def update(d, u):
-            for k, v in u.items():
-                if isinstance(v, collections.abc.Mapping):
-                    d[k] = update(d.get(k, {}), v)
-                else:
-                    d[k] = v
-            return d
 
         notes_data = self.issue_object.parse_notes()
         for note in notes_data:
@@ -335,15 +339,18 @@ class Production:
         self.meta = copy(self.event.meta)
         if "productions" in self.meta:
             self.meta.pop("productions")
-        self.meta.update(kwargs)
+
+
+
+        self.meta = update(self.meta, kwargs)
 
         # Get the data quality recommendations
         if 'quality' in self.event.meta:
             self.quality = self.event.meta['quality']
         else:
             self.quality = {}
-        if 'quality' in kwargs:
-            self.quality.update(kwargs['quality'])
+        #if 'quality' in kwargs:
+        #    self.quality.update(kwargs['quality'])
             
         quality_required = {"lower-frequency", "psd-length", "sample-rate", "segment-length", "window-length"}
         if not (quality_required <= self.quality.keys()):
@@ -351,15 +358,13 @@ class Production:
                                        issue = self.event.issue_object,
                                        production = self)
 
-        
+        print(self.pipeline)
         # Need to fetch the correct PSDs for this sample rate
         if 'psds' in self.meta:
             if self.quality['sample-rate'] in self.meta['psds']:
                 self.psds = self.meta['psds'][self.quality['sample-rate']]
             else:
-                raise DescriptionException(f"No PSDs were found for this event at the correct sampling rate.\n{self.quality['sample-rate']}",
-                                       issue = self.event.issue_object,
-                                       production = self)
+                self.psds = {}
         else:
             self.psds = {}
         #    raise DescriptionException(f"No PSDs were found for this event.",
@@ -407,7 +412,7 @@ class Production:
 
     @property
     def finished(self):
-        finished_states = ["finished"]
+        finished_states = ["finished", "uploaded"]
         return self.status in finished_states
         
     @property
@@ -540,7 +545,9 @@ class Production:
             return coinc
         except FileNotFoundError:
             self.event.get_gracedb("coinc.xml", os.path.join(self.event.repository.directory, self.category, "coinc.xml"))
-    
+            coinc = self.event.repository.find_coincfile(self.category)
+            return coinc
+
     def get_configuration(self):
         """
         Get the configuration file contents for this event.
