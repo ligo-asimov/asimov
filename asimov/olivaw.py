@@ -28,7 +28,7 @@ import yaml
 import otter
 import otter.bootstrap as bt
 
-ACTIVE_STATES = {"running", "stuck", "finished", "processing"}
+ACTIVE_STATES = {"running", "stuck", "finished", "processing", "stop"}
 
 known_pipelines = {"bayeswave": BayesWave,
                    "bilby": Bilby,
@@ -161,7 +161,7 @@ def report(event, webdir):
 
             pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
             
-            status_map = {"finished": "success", "uploaded": "success", "processing": "primary",  "running": "primary", "stuck": "warning", "restart": "secondary", "ready": "secondary", "wait": "light"}
+            status_map = {"cancelled": "light", "finished": "success", "uploaded": "success", "processing": "primary",  "running": "primary", "stuck": "warning", "restart": "secondary", "ready": "secondary", "wait": "light", "stop": "danger", "stopped": "light"}
             production_list.add_item(f"{production.name}" + str(bt.Badge(f"{production.pipeline}", "info")) + str(bt.Badge(f"{production.status}")), 
                                      context=status_map[production.status])
 
@@ -298,33 +298,55 @@ def monitor(event, update):
     server, repository = connect_gitlab()
     events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event], update=update)
     for event in events:
+        stuck = 0
+        running = 0
+        ready = 0
+        finish = 0
         click.echo(f"Checking {event.title}")
         on_deck = [production for production in event.productions if production.status in ACTIVE_STATES]
         for production in on_deck:
 
             click.echo(f"Checking {production.name}")
             logger = logging.AsimovLogger(event=event.event_object)
+
+            # Deal with jobs which need to be stopped first
+            if production.status.lower() == "stop":
+                pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
+                pipe.eject_job()
+                production.status = "stopped"
+                click.echo(f"{production.name} stopped")
+                continue
+
             # Get the condor jobs
             try:
                 if "job id" in production.meta:
                     job = condor.CondorJob(production.meta['job id'])
                 else:
                     raise ValueError
-                print(f"{event.event_object.name}\t{event.state}\t{production.name}\t{job.status}")
+                click.echo(f"{event.event_object.name}\t{event.state}\t{production.name}\t{job.status}")
 
                 if event.state == "running" and job.status.lower() == "stuck":
                     click.echo("Job is stuck on condor")
                     event.state = "stuck"
                     production.status = "stuck"
+                    stuck += 1
                     production.meta['stage'] = 'production'
                 elif event.state == "processing" and job.status.lower() == "stuck":
                     production.status = "stuck"
+                    stuck += 1
                     production.meta['stage'] = "post"
+                    
+                else:
+                    running += 1
             except ValueError as e:
                 click.echo(production.status.lower())
                 if production.pipeline.lower() in known_pipelines:
                     click.echo("Investigating...")
                     pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
+
+                    if production.status.lower() == "stop":
+                        pipe.eject_job()
+                        production.status = "stopped"
 
                     if production.status.lower() == "processing":
                     # Need to check the upload has completed
@@ -333,11 +355,13 @@ def monitor(event, update):
                         except ValueError as e:
                             click.echo(e)
                             production.status = "stuck"
+                            stuck += 1
                             production.meta['stage'] = "after processing"
 
                     elif pipe.detect_completion() and production.status.lower() == "running":
                         # The job has been completed, collect its assets
                         production.meta['job id'] = None
+                        finish += 1
                         production.status = "finished"
                         pipe.after_completion()
                         
@@ -351,3 +375,8 @@ def monitor(event, update):
 
                 if production.status == "stuck":
                     event.state = "stuck"
+
+            if (running > 0) and (stuck == 0):
+                event.state = "running"
+            elif (stuck == 0) and (running == 0) and (finish > 0):
+                event.state = "finished"

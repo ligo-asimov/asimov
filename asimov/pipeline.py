@@ -3,7 +3,7 @@ import os
 import subprocess
 import glob
 import re
-
+import time
 import htcondor
 
 from asimov import config
@@ -226,6 +226,29 @@ class Pipeline():
             self.production.status = "uploaded"
         except Exception as e:
             raise ValueError(e)
+
+    def eject_job(self):
+        """
+        Remove a job from the cluster.
+        """
+        command = ["condor_rm", f"{self.production.meta['job id']}"]
+        try:
+            dagman = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        
+        except FileNotFoundError as error:
+            raise PipelineException("It looks like condor isn't installed on this system.\n"
+                                    f"""I wanted to run {" ".join(command)}.""")
+
+        stdout, stderr = dagman.communicate()
+        if not stderr:
+            time.sleep(20)
+            self.production.meta.pop('job id')
+
+    def clean(self):
+        """
+        Remove all of the artefacts from a job from the working directory.
+        """
+        pass
 
     def submit_dag(self):
         """
