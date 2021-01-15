@@ -1,6 +1,7 @@
 """RIFT Pipeline specification."""
 
 import re
+import time
 import os
 import shutil
 import glob
@@ -102,9 +103,10 @@ class Rift(Pipeline):
         """
         event = self.production.event
         category = config.get("general", "calibration_directory")
-        
+        current = os.getcwd()        
         if len(self.production.get_psds("xml"))==0:
             for ifo in self.production.meta['interferometers']:
+
                 os.chdir(f"{event.repository.directory}/")
                 sample = self.production.meta['quality']['sample-rate']
                 self._convert_psd(self.production.meta['psds'][sample][ifo], ifo)
@@ -114,7 +116,7 @@ class Rift(Pipeline):
                     asset,
                     os.path.join(git_location, str(sample), f"psd_{ifo}.xml.gz"),
                     commit_message = f"Added the xml format PSD for {ifo}.")
-            
+        os.chdir(current)
 
     def build_dag(self, user=None):
         """
@@ -158,23 +160,24 @@ class Rift(Pipeline):
         """
 
         self._activate_environment()
-        
-        os.chdir(os.path.join(self.production.event.repository.directory,
-                              self.category))
+
+        os.chdir(self.production.event.meta['working directory'])
+        #os.chdir(os.path.join(self.production.event.repository.directory,
+        #                      self.category))
+
         gps_file = self.production.get_timefile()
         coinc_file = self.production.get_coincfile()
         
         ini = self.production.get_configuration()
 
-        if not user:
-            if self.production.get_meta("user"):
+        if self.production.get_meta("user"):
                 user = self.production.get_meta("user")
         else:
-            user = ini._get_user()
+            user = config.get("condor", "user")
             self.production.set_meta("user", user)
 
-        os.environ['LIGO_USER_NAME'] = user
-        os.environ['LIGO_ACCOUNTING'] = config.get('pipelines', 'accounting')
+        os.environ['LIGO_USER_NAME'] = f"{user}"
+        os.environ['LIGO_ACCOUNTING'] = f"{config.get('pipelines', 'accounting')}"
 
         try:
             calibration = config.get("general", "calibration")
@@ -193,8 +196,9 @@ class Rift(Pipeline):
                                   self.production.name)
             self.production.rundir = rundir
 
-        lmax = self.production.meta['lmax']
+        lmax = self.production.meta['priors']['amp order']
         
+
         if "cip jobs" in self.production.meta:
             cip = self.production.meta['cip jobs']
         else:
@@ -209,11 +213,11 @@ class Rift(Pipeline):
                    "--add-extrinsic",
                    "--approx", f"{approximant}",
                    "--cip-explode-jobs", str(cip),
-                   "--use-rundir", self.production.rundir,
+                   "--use-rundir", self.production.name,
                    "--ile-force-gpu",
                    "--use-ini", os.path.join(self.production.event.repository.directory, "C01_offline",  ini.ini_loc)
         ]
-        print(" ".join(command))
+        #print(" ".join(command))
         # Placeholder LI grid bootstrapping; conditional on it existing and location specification
         
         if self.bootstrap:
@@ -249,11 +253,11 @@ class Rift(Pipeline):
                 command += ["--manual-initial-grid", os.path.join(self.production.rundir, "bootstrap-grid.xml.gz")]
         
         self.logger.info(command, production = self.production)
+        os.chdir(self.production.event.meta['working directory'])
         pipe = subprocess.Popen(command, 
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
         out, err = pipe.communicate()
-
 
         if err:
             self.production.status = "stuck"
@@ -275,7 +279,7 @@ class Rift(Pipeline):
                 ifo = psdfile.split("/")[-1].split("_")[1].split(".")[0]
                 os.system(f"cp {psdfile} {ifo}-psd.xml.gz")
 
-            os.system("cat *_local.cache > local.cache")
+            #os.system("cat *_local.cache > local.cache")
 
             if hasattr(self.production.event, "issue_object"):
                 return PipelineLogger(message=out,
