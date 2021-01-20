@@ -169,6 +169,7 @@ This can be used to remove regions with poor calibration from the analysis, and 
 This must be set on a per-detector basis with the structure below:
 
 .. code-block:: yaml
+
    quality:
      supress:
        V1:
