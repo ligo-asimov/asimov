@@ -168,7 +168,7 @@ The ``supress`` value can be used to specify frequency ranges which should be ex
 This can be used to remove regions with poor calibration from the analysis, and is performed by setting the PSD to zero at these locations.
 This must be set on a per-detector basis with the structure below:
 
-.. code-block::
+.. code-block:: yaml
    quality:
      supress:
        V1:
