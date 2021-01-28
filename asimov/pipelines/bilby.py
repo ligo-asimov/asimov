@@ -120,9 +120,16 @@ class Bilby(Pipeline):
                     d_min=distance_bounds[0],
                     d_max=distance_bounds[1],
                 )
-            prior_file = os.path.join(os.getcwd(), f"{self.production.name}.prior")
+            prior_name = f"{self.production.name}.prior"
+            prior_file = os.path.join(os.getcwd(), prior_name)
             with open(prior_file, "w") as new_prior:
                 new_prior.write(prior_string)
+                
+            repo = self.production.event.repository
+
+            repo.add_file(prior_file, os.path.join("C01_offline", prior_name)
+
+
             return prior_file
 
         
@@ -180,7 +187,7 @@ class Bilby(Pipeline):
                    "--outdir", self.production.rundir,
                    "--accounting", config.get("bilby", "accounting")
         ]
-            
+        print(" ".join(command))
         pipe = subprocess.Popen(command, 
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
@@ -280,7 +287,7 @@ class Bilby(Pipeline):
         """
         Collect the combined samples file for PESummary.
         """
-        return glob.glob(os.path.join(self.production.rundir, "result", "*_merge_result.json"))
+        return glob.glob(os.path.join(self.production.rundir, "result", "*_samples.dat"))
         
     def after_completion(self):
         cluster = self.run_pesummary()
