@@ -86,6 +86,7 @@ class Rift(Pipeline):
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
         out, err = pipe.communicate()
+        self.logger.info(command, production = self.production)
         if err:
             self.production.status = "stuck"
             if hasattr(self.production.event, "issue_object"):
@@ -196,8 +197,15 @@ class Rift(Pipeline):
                                   self.production.name)
             self.production.rundir = rundir
 
-        lmax = self.production.meta['priors']['amp order']
-        
+        #lmax = self.production.meta['priors']['amp order']
+
+        if "lmax" in self.production.meta:
+            lmax = self.production.meta['lmax']
+        elif "HM" in self.production.meta['approximant']:
+            lmax = 4
+        else:
+            lmax = 2
+            
 
         if "cip jobs" in self.production.meta:
             cip = self.production.meta['cip jobs']
@@ -217,8 +225,8 @@ class Rift(Pipeline):
                    "--ile-force-gpu",
                    "--use-ini", os.path.join(self.production.event.repository.directory, "C01_offline",  ini.ini_loc)
         ]
+        self.logger.info(" ".join(command), production = self.production)
 
-        print(" ".join(command))
         # Placeholder LI grid bootstrapping; conditional on it existing and location specification
         
         if self.bootstrap:
@@ -324,6 +332,7 @@ class Rift(Pipeline):
             dagman = subprocess.Popen(command,
                                       stdout=subprocess.PIPE,
                                       stderr=subprocess.STDOUT)
+            self.logger.info(command, production = self.production)
         except FileNotFoundError as error:
             raise PipelineException("It looks like condor isn't installed on this system.\n"
                                     f"""I wanted to run {" ".join(command)}.""")
