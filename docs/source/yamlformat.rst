@@ -1,8 +1,10 @@
-----------------------------
-The event specification format
-----------------------------
+---------------------
+The production ledger
+---------------------
 
-In order to construct and monitor on-going PE jobs, asimov stores metadata for each gravitational wave event and for each PE job (or "production" in asimov terminology).
+In order to construct and monitor on-going PE jobs, asimov stores metadata for each gravitational wave event and for each PE job (or "production" in `asimov` terminology).
+
+These metadata are stored in the event's *production ledger*, which is specified in `yaml` format.
 
 A number of fields are required for `asimov` to correctly process an event, while a number of additional fields will allow it to perform more operations automatically, or over-ride defaults.
 
@@ -31,6 +33,17 @@ For example:
    
    repository: https://git.ligo.org/pe/O3/S200311bg
 
+``working directory``
++++++++++++++++++++++
+
+The working directory in which run directories for each production should be stored.
+
+For example
+
+.. code-block:: yaml
+
+   working directory: /home/daniel.williams/events/O3/o3b/run_directories/S200224a
+   
 Optional fields
 ~~~~~~~~~~~~~~~
 
@@ -60,6 +73,30 @@ For example:
 		- needs:
 		  - Prod0
 
+The precise metadata required for each production will vary depending on the pipeline, and any additional data it requries.
+
+It is also possible to specify specific data quality, prior, or data attributes for individual productions by specifying these within the production block.
+
+For example, to set a different sampling rate for ``Prod1`` above:
+
+.. code-block:: yaml
+   
+   productions:
+	- Prod0: 
+		status: Wait
+		pipeline: bayeswave
+		comment: PSD production
+	- Prod1:
+		status: Wait
+		pipeline: lalinference
+		quality:
+		  sample-rate: 4096    
+		comment: IMRPhenomD
+
+Then this production will use 4096-Hz as its sampling rate rather than the default specified in the event's ``quality`` block.
+
+The value of `status` can be used both to track the current state of the production of the job as it is being processed, or to affect its processing.
+This defines a simple state machine which is described in :ref:`Asimov state<Asimov's states>`.
 
 Production format
 ~~~~~~~~~~~~~~~~~
@@ -104,22 +141,106 @@ This section will store detector characterisation and data quality information w
 
 + ``psd-length``: the length of the PSD in seconds.
 + ``segment-length``: the length of the analysis segment, in seconds.
-+ ``lower-frequency``: the lower frequency cut-off (f_low), in hertz.
++ ``lower-frequency``: the lower frequency integration cut-off (f_low), in hertz.
 + ``sample-rate``: the sampling frequency, in hertz
 + ``padding``: the padding to be applied to the data
 + ``window-length``: the window length, in seconds
++ ``reference-frequency``: the reference frequency for the waveform.
++ ``start-frequency``: the lowest frequency at which the waveform should be generated.  
 
 For example:
 
 .. code-block:: yaml
 
    quality:
-      - psd-length: 8.0
-      - segment-length: 8.0
-      - lower-frequency: 11
-      - sample-rate: 1024
-      - window-length: 2.0
+     lower-frequency:
+       H1: 20
+       L1: 20
+       V1: 20
+     start-frequency: 13.333333333333334
+     psd-length: 4.0
+     reference-frequency: 20
+     sample-rate: 1024
+     segment-length: 4.0
 
+
+The ``supress`` value can be used to specify frequency ranges which should be excluded from the analysis.
+This can be used to remove regions with poor calibration from the analysis, and is performed by setting the PSD to zero at these locations.
+This must be set on a per-detector basis with the structure below:
+
+.. code-block:: yaml
+
+   quality:
+     supress:
+       V1:
+         lower: 46.0
+         upper: 51.0
+
+	
+``event time``
+++++++++++++++
+
+The geocentric gps time of the event.
+
+For example:
+
+.. code-block:: yaml
+		
+   event time: 1266618172.401773
+
+``gid``
++++++++
+
+The gracedb ID for the preferred event.
+
+.. code-block:: yaml
+		
+   gid: G365380
+
+`priors`
+++++++++
+
+The prior ranges for the event.
+
+Each parameter can have an upper and lower boundary defined; if no lower or upper bound is to be specified it should be explicitly stated as `None`.
+
+Currently-supported values here are the maximum amplitude order of the waveform (if supported) `amp order`, the chirp mass `chirp-mass`, the component mass `component`, the distance `distance`, and the mass ratio `q`.
+
+.. code-block:: yaml
+
+  priors:
+    amp order: 1
+    chirp-mass:
+    - 22.852486906183355
+    - 57.65416902042432
+    component:
+    - 1
+    - 1000
+    distance:
+    - None
+    - 10000
+    q:
+    - 0.05
+    - 1.0
+
+
+
+``calibration``
++++++++++++++++
+
+This section should provide the location of the files which define the calibration envelopes for this event.
+These should be specified relative to the root of the event's git repository, as defined in the `repository` value.
+
+For example:
+
+.. code-block:: yaml
+	
+   calibration:
+     H1: C01_offline/calibration/H1.dat
+     L1: C01_offline/calibration/L1.dat
+     V1: C01_offline/calibration/V1.dat
+
+A calibration envelope should be specified for each interferometer which will be used in the analysis.
 
 ``data``
 +++++++++
@@ -145,3 +266,21 @@ The two sections which ``asimov`` understands for this section are ``frame-types
 	  L1: 'L1:DCS-CALIB_STRAIN_CLEAN_SUB60HZ_C01'
 	  V1: 'V1:Hrec_hoft_16384Hz'
    
+``psds``
+++++++++
+
+This section records details of all of the PSDs for the event.
+These are often added by production processes to the ledger, and will not normally need to be manually specified.
+
+This value takes a nested structure, with the sampling frequency of the PSD used as the primary key, and the interferometer abbreviation as the secondary.
+
+.. code-block:: yaml
+
+   psds:
+     1024:
+       H1: /home/daniel.williams/events/O3/event_repos/S200224a/C01_offline/psds/1024/H1-psd.dat
+       L1: /home/daniel.williams/events/O3/event_repos/S200224a/C01_offline/psds/1024/L1-psd.dat
+       V1: /home/daniel.williams/events/O3/event_repos/S200224a/C01_offline/psds/1024/V1-psd.dat
+
+
+

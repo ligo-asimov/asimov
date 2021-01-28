@@ -38,10 +38,11 @@ Module documentation
    :caption: Modules
 
    api/git
+   state
    yamlformat
    pipelines
    storage
-   templates
+   config
 	     
 Indices and tables
 ------------------
