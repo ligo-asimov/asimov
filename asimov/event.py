@@ -604,7 +604,7 @@ class Production:
         #try:
         with open(os.path.join(f"{template_directory}", f"{self.pipeline}.ini"), "r") as template_file:
                 liq = Liquid(template_file.read())
-                rendered = liq.render(production=self)
+                rendered = liq.render(production=self, config=config)
         #except Exception as e:
         #    raise DescriptionException(f"There was a problem writing the configuration file.\n\n{e}",
         #                               production=self)
