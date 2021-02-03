@@ -127,9 +127,7 @@ class Bilby(Pipeline):
                 
             repo = self.production.event.repository
 
-            repo.add_file(prior_file, os.path.join("C01_offline", prior_name)
-
-
+            repo.add_file(prior_file, os.path.join("C01_offline", prior_name))
             return prior_file
 
         
