@@ -161,7 +161,18 @@ def report(event, webdir):
 
             pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
             
-            status_map = {"cancelled": "light", "finished": "success", "uploaded": "success", "processing": "primary",  "running": "primary", "stuck": "warning", "restart": "secondary", "ready": "secondary", "wait": "light", "stop": "danger", "stopped": "light"}
+            status_map = {"cancelled": "light",
+                          "finished": "success",
+                          "uploaded": "success",
+                          "processing": "primary",
+                          "running": "primary",
+                          "stuck": "warning",
+                          "restart": "secondary",
+                          "ready": "secondary",
+                          "wait": "light",
+                          "stop": "danger",
+                          "manual": "light",
+                          "stopped": "light"}
             production_list.add_item(f"{production.name}" + str(bt.Badge(f"{production.pipeline}", "info")) + str(bt.Badge(f"{production.status}")), 
                                      context=status_map[production.status])
 
