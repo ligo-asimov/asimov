@@ -375,12 +375,6 @@ class Production:
             self.psds[ifo] = os.path.join(self.event.repository.directory, psd)
 
         self.category = config.get("general", "calibration_directory")
-            
-        # if "Prod" in self.name:
-        #     self.category = "C01_offline"
-        # else:
-        #     self.category = "online"
-
         if "needs" in self.meta:
             self.dependencies = self._process_dependencies(self.meta['needs'])
         else:
