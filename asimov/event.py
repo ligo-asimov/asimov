@@ -601,8 +601,13 @@ class Production:
         if not template_directory:
             template_directory = config.get("templating", "directory")
 
+        if "template" in self.meta:
+            template = f"{self.meta['template']}.ini"
+        else:
+            template = f"{self.pipeline}.ini"
+
         #try:
-        with open(os.path.join(f"{template_directory}", f"{self.pipeline}.ini"), "r") as template_file:
+        with open(os.path.join(f"{template_directory}", template), "r") as template_file:
                 liq = Liquid(template_file.read())
                 rendered = liq.render(production=self, config=config)
         #except Exception as e:
