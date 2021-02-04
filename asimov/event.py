@@ -601,10 +601,11 @@ class Production:
         if not template_directory:
             template_directory = config.get("templating", "directory")
 
-        #try:
+            
+        config_dict = {s: dict(config.items(s)) for s in config.sections()}
         with open(os.path.join(f"{template_directory}", f"{self.pipeline}.ini"), "r") as template_file:
                 liq = Liquid(template_file.read())
-                rendered = liq.render(production=self, config=config)
+                rendered = liq.render(production=self, config=config_dict)
         #except Exception as e:
         #    raise DescriptionException(f"There was a problem writing the configuration file.\n\n{e}",
         #                               production=self)
