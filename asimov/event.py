@@ -374,10 +374,12 @@ class Production:
         for ifo, psd in self.psds.items():
             self.psds[ifo] = os.path.join(self.event.repository.directory, psd)
 
-        if "Prod" in self.name:
-            self.category = "C01_offline"
-        else:
-            self.category = "online"
+        self.category = config.get("general", "calibration_directory")
+            
+        # if "Prod" in self.name:
+        #     self.category = "C01_offline"
+        # else:
+        #     self.category = "online"
 
         if "needs" in self.meta:
             self.dependencies = self._process_dependencies(self.meta['needs'])
@@ -608,8 +610,8 @@ class Production:
 
         #try:
         with open(os.path.join(f"{template_directory}", template), "r") as template_file:
-                liq = Liquid(template_file.read())
-                rendered = liq.render(production=self, config=config)
+            liq = Liquid(template_file.read())
+            rendered = liq.render(production=self, config=config)
         #except Exception as e:
         #    raise DescriptionException(f"There was a problem writing the configuration file.\n\n{e}",
         #                               production=self)
