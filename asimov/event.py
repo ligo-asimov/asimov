@@ -374,11 +374,7 @@ class Production:
         for ifo, psd in self.psds.items():
             self.psds[ifo] = os.path.join(self.event.repository.directory, psd)
 
-        if "Prod" in self.name:
-            self.category = "C01_offline"
-        else:
-            self.category = "online"
-
+        self.category = config.get("general", "calibration_directory")
         if "needs" in self.meta:
             self.dependencies = self._process_dependencies(self.meta['needs'])
         else:
@@ -600,12 +596,19 @@ class Production:
 
         if not template_directory:
             template_directory = config.get("templating", "directory")
-
             
         config_dict = {s: dict(config.items(s)) for s in config.sections()}
-        with open(os.path.join(f"{template_directory}", f"{self.pipeline}.ini"), "r") as template_file:
-                liq = Liquid(template_file.read())
-                rendered = liq.render(production=self, config=config_dict)
+
+        if "template" in self.meta:
+            template = f"{self.meta['template']}.ini"
+        else:
+            template = f"{self.pipeline}.ini"
+
+        #try:
+        with open(os.path.join(f"{template_directory}", template), "r") as template_file:
+            liq = Liquid(template_file.read())
+            rendered = liq.render(production=self, config=config)
+
         #except Exception as e:
         #    raise DescriptionException(f"There was a problem writing the configuration file.\n\n{e}",
         #                               production=self)
