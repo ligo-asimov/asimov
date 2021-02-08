@@ -340,9 +340,11 @@ class Production:
         if "productions" in self.meta:
             self.meta.pop("productions")
 
-
-
         self.meta = update(self.meta, kwargs)
+
+        # Check that the upper frequency is included, otherwise calculate it
+        if "high-frequency" not in self.meta['quality']:
+            self.meta['quality']['high-frequency'] = int(0.875 * self.meta['quality']['sample-rate']/2)
 
         # Get the data quality recommendations
         if 'quality' in self.event.meta:
