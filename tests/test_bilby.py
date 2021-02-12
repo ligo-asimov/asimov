@@ -62,3 +62,7 @@ class BilbyTests(unittest.TestCase):
         dagfile = f"{outdir}/submit/dag_{label}.submit"
         print(f"{self.cwd}/tests/tmp/s000000xx/C01_offline/Prod3/{dagfile}")
         self.assertEqual(os.path.exists(f"{self.cwd}/tests/tmp/s000000xx/C01_offline/Prod3/{dagfile}"), 1)
+
+    def test_read_ini(self):
+        """Check that a bilby ini file can be read correctly."""
+        pass

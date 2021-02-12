@@ -49,26 +49,6 @@ class Bilby(Pipeline):
 
 
     def _activate_environment(self):
-        """
-        Activate the python virtual environment for the pipeline.
-        """
-        # env = config.get("bilby", "environment")
-        # command = ["source", f"{env}/bin/activate"]
-
-        # pipe = subprocess.Popen(command, 
-        #                         stdout=subprocess.PIPE,
-        #                         stderr=subprocess.STDOUT)
-        # out, err = pipe.communicate()
-
-        # if err:
-        #     self.production.status = "stuck"
-        #     if hasattr(self.production.event, "issue_object"):
-        #         raise PipelineException(f"The virtual environment could not be initiated.\n{command}\n{out}\n\n{err}",
-        #                                     issue=self.production.event.issue_object,
-        #                                     production=self.production.name)
-        #     else:
-        #         raise PipelineException(f"The virtual environment could not be initiated.\n{command}\n{out}\n\n{err}",
-        #                                 production=self.production.name)
         pass
 
     def _determine_prior(self):
@@ -305,3 +285,25 @@ class Bilby(Pipeline):
                 message = log_f.read()
                 messages[log.split("/")[-1]] = message
         return messages
+
+    @classmethod
+    def read_ini(cls, filepath):
+        """ 
+        Read and parse a bilby configuration file.
+
+        Note that bilby configurations are property files and not compliant ini configs.
+
+        Parameters
+        ----------
+        filepath: str
+           The path to the ini file.
+        """
+
+        with open(filepath, "r") as f:
+            file_content = '[root]\n' + f.read()
+
+        config_parser = ConfigParser.RawConfigParser()
+        config_parser.read_string(file_content)
+
+        return config_parser
+        
