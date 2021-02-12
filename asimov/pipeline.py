@@ -261,3 +261,22 @@ class Pipeline():
 
     def clean(self):
         pass
+
+    @classmethod
+    def read_ini(cls, filepath):
+        """ 
+        Read and parse a pipeline configuration file.
+
+        Parameters
+        ----------
+        filepath: str
+           The path to the ini file.
+        """
+
+        with open(filepath, "r") as f:
+            file_content = f.read()
+
+        config_parser = ConfigParser.RawConfigParser()
+        config_parser.read_string(file_content)
+
+        return config_parser
