@@ -1,5 +1,8 @@
 import os
 import ast
+
+from math import floor
+
 import asimov
 from asimov.event import Event, DescriptionException, Production
 from asimov import config
@@ -65,24 +68,42 @@ def olivaw():
     global rundir
     rundir = os.getcwd()
 
+@click.option("--namefile", "names", default=None, help="The mapping between old and new names for events.")
 @click.argument("name")
 @click.argument("superevent")
 @olivaw.command()
-def create(superevent, name):
-    data = client.superevent(name).json()
+def create(superevent, name, names=None):
+    """
+    Create a new event record on the git issue tracker from the GraceDB dev server.
+
+    Parameters
+    ----------
+    superevent : str
+       The ID of the superevent to be used from GraceDB
+    name : str
+       The name of the event to be recorded in the issue tracker
+    """
+    data = client.superevent(superevent).json()
     event_data = client.event(data['preferred_event']).json()
 
+    if names:
+        with open(names, "r") as datafile:
+            names = json.load(datafile)
+        old_superevent = names['SNAME'][name]
+    else:
+        old_superevent = superevent
+        
     event_url = f"https://catalog-dev.ligo.org/events/{data['preferred_event']}/view/"
-    
     event = Event(name=name,
-                  repository=f"git@git.ligo.org:pe/O3/{superevent}",
-                  gid=data['preferred_event'],
-                  gid_url=event_url,
+                  repository=f"git@git.ligo.org:pe/O3/{old_superevent}",
+                  #gid=data['preferred_event'],
+                  #gid_url=event_url,
                   calibration = {},
                   interferometers=event_data['instruments'].split(","),
     )
-    event.meta['old superevent'] = superevent
+    event.meta['old superevent'] = old_superevent
     event.meta['event time'] = event_data['gpstime']
+    event.meta['working directory'] = f"{config.get('general', 'rundir_default')}/{name}"
     gitlab.EventIssue.create_issue(repository, event, issue_template="/home/daniel.williams/repositories/asimov/scripts/outline.md")
 
 
@@ -92,8 +113,11 @@ def create(superevent, name):
 @click.option("--ini", "ini", default=None)
 @olivaw.command()
 def populate(event, yaml, ini):
+    """
+    Populate an event ledger with data from ini or yaml files.
+    """
 
-    gitlab_events = gitlab.find_events(repository, subset=event)
+    gitlab_events = gitlab.find_events(repository, subset=[event])
     event = gitlab_events[0]
     event_o = event.event_object
     # Check the calibration files for this event
@@ -106,29 +130,49 @@ def populate(event, yaml, ini):
     except:
         pass
 
-    if ini:
-        click.echo("Adding in data from ini file")
-        try:
-            add_ini(event_o.name, ini)
-        except Exception as e:
-            click.echo(e)
-
     # Add default data
     click.echo("Add in default channel data.")
     if yaml:
         add_data(event_o.name, yaml)
 
-    # Add a Bayeswave job
-    gitlab_events = gitlab.find_events(repository, subset=event_o.name)
-    event = gitlab_events[0]
-    event_o = event.event_object
+@click.option("--event", "event", default=None, help="The event which will be updated")
+@click.option("--pipeline", "pipeline", default=None, help="The pipeline which the job should use")
+@click.option("--family", "family", default=None, help="The family name of the production, e.g. `prod`.")
+@click.option("--comment", "comment", default=None, help="A comment to attach to the production")
+@click.option("--needs", "needs", default=None, help="A list of productions which are requirements")
+@click.option("--template", "template", default=None, help="The configuration template for the production.")
+@click.option("--status", "status", default=None, help="The initial status of the production.")
+@olivaw.command(help="Add a new production to an event")
+def production(event, pipeline, family, comment, needs, template, status):
+    """
+    Add a new production to an event.
+
+    """
+
+    gitlab_event = gitlab.find_events(repository, subset=event)
+    event = gitlab_event[0].event_object
+    #
+    event_prods = event.productions
+    names = [production.name for production in event_prods]
+    family_entries = [int(name.split(family)[1]) for name in names if family in name]
+    #
+    if "bayeswave" in needs:
+        bw_entries = [production.name for production in event_prods if "bayeswave" in production.pipeline.lower()]
+        needs = bw_entries
+    #
+    production = {"comment": comment, "pipeline": pipeline, "status": status}
+    if needs:
+        production['needs'] = needs
+    if template:
+        production['template'] = template
+    number = max(family_entries)+1
+    production_dict = {f"{family}{number}": production}
+    production = Production.from_dict(production_dict, event=event)
+    #
+    click.echo(production)
+    event.add_production(production)
+    gitlab_event[0].update_data()
     
-    if "ProdF0" not in [p['name'] for p in event_o.productions]:
-        job = Production(name="ProdF0", status="Ready", pipeline="Bayeswave", comment="PSD Production", event = event_o)
-        event_o.add_production(job)
-    event.update_data()
-
-
 
 
 @click.option("--event", "event", default=None, help="The event which will be updated")
@@ -152,12 +196,19 @@ def configurator(event, json_data=None):
     new_data = {"quality": {}, "priors": {}}
     new_data["quality"]["sample-rate"] = data["srate"]
     new_data["quality"]["lower-frequency"] = {}
-    for ifo in gitlab_event[0].event_object.meta['interferometers']:
-        new_data["quality"]["lower-frequency"][ifo] = data['f_start']
+    new_data["quality"]["upper-frequency"] = int(0.875 * data["srate"]/2)
+    new_data["quality"]["start-frequency"] = data['f_start']
     new_data["quality"]["segment-length"] = data['seglen']
     new_data["quality"]["window-length"] = data['seglen']
     new_data["quality"]["psd-length"] = data['seglen']
-    new_data["quality"]["reference-frequency"] = data['f_ref']
+
+    def decide_fref(freq):
+        if (freq >= 5) and (freq < 10):
+            return 5
+        else:
+            return floor(freq/10)*10
+
+    new_data["quality"]["reference-frequency"] = decide_fref(data['f_ref'])
 
     new_data["priors"]["amp order"] = data['amp_order']
     new_data["priors"]["chirp-mass"] = [data["chirpmass_min"], data["chirpmass_max"]]
@@ -258,8 +309,8 @@ def find_calibrations(time):
 
     
 
-#@click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
-#@olivaw.command()
+@click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
+@olivaw.command()
 def calibration(event):    
     gitlab_events = gitlab.find_events(repository, subset=event)
     # Update existing events

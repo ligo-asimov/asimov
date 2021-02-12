@@ -4,7 +4,8 @@ In the run information block please use YAML markup to specify the metadata and 
 
 # Event information and links
 
-+ [CatDev GraceDB](https://catalog-dev.ligo.org/events/{{ event_object.meta.gid }}/view/)
++ [Event PE repository](https://git.ligo.org/pe/O3/{{ event_object.meta['old superevent'] }})
+
 
 # Run information
 ```yaml
@@ -16,6 +17,6 @@ In the run information block please use YAML markup to specify the metadata and 
 
 	  
 
-/label ~trigger ~"trigger-o3a"
+/label ~trigger ~"trigger-o3b"
 /epic &1
 /milestone %1
