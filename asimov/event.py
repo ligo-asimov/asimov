@@ -270,7 +270,10 @@ class Event:
         """Serialise this object as yaml"""
         data = {}
         data['name'] = self.name
-        data['repository'] = self.repository.url
+
+        if "repository" in data:        
+            data['repository'] = self.repository.url
+            
         for key, value in self.meta.items():
             data[key] = value
         try:
@@ -290,6 +293,9 @@ class Event:
             for dupe in dupes:
                 prod_dict.pop(dupe)
             data['productions'].append({production.name: prod_dict})
+
+        if "issue" in data:
+            data.pop("issue")
 
         return yaml.dump(data, default_flow_style=False)
 
@@ -445,8 +451,10 @@ class Production:
         output[self.name]['status'] = self.status
         output[self.name]['pipeline'] = self.pipeline.lower()
         output[self.name]['comment'] = self.comment
-        output[self.name]['quality'] = self.meta['quality']
-        output[self.name]['priors'] = self.meta['priors']
+        if "quality" in self.meta:
+            output[self.name]['quality'] = self.meta['quality']
+        if "priors" in self.meta:
+            output[self.name]['priors'] = self.meta['priors']
         for key, value in self.meta.items():
             output[self.name][key] = value
         if "repository" in self.meta:
