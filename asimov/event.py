@@ -440,6 +440,8 @@ class Production:
         output[self.name]['status'] = self.status
         output[self.name]['pipeline'] = self.pipeline.lower()
         output[self.name]['comment'] = self.comment
+        output[self.name]['quality'] = self.meta['quality']
+        output[self.name]['priors'] = self.meta['priors']
         for key, value in self.meta.items():
             output[self.name][key] = value
         if "repository" in self.meta:
