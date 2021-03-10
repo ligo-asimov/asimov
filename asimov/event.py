@@ -17,7 +17,7 @@ from asimov import config
 from liquid import Liquid
 
 from ligo.gracedb.rest import GraceDb, HTTPError
-from copy import copy
+from copy import copy, deepcopy
 
 
 def update(d, u):
@@ -61,14 +61,15 @@ Please fix the error and then remove the `yaml-error` label from this issue.
         if self.issue:
             self.issue.add_label("yaml-error", state=False)
             self.issue.add_note(self.__repr__())
-
+        else:
+            print(self.__repr__())
 
 class Event:
     """
     A specific gravitational wave event or trigger.
     """
 
-    def __init__(self, name, repository, update=False, **kwargs):
+    def __init__(self, name, repository=None, update=False, **kwargs):
         """
         Parameters
         ----------
@@ -82,7 +83,7 @@ class Event:
         else:
             self.work_dir = None
 
-        if "disable_repo" not in kwargs:
+        if repository:
             self.repository = EventRepo.from_url(repository,
                                              self.name,
                                                  self.work_dir,
@@ -100,15 +101,17 @@ class Event:
         self.meta = kwargs
 
         if "issue" in kwargs:
-            self.issue_object = kwargs.pop("issue")
-            self.from_notes()
+            if kwargs['issue']:
+                self.issue_object = kwargs.pop("issue")
+                self.from_notes()
 
         self._check_required()
 
-        try:
-            self._check_calibration()
-        except DescriptionException:
-            print("No calibration envelopes found.")
+        if ("interferometers" in self.meta) and ("calibration" in self.meta):
+            try:
+                self._check_calibration()
+            except DescriptionException:
+                print("No calibration envelopes found.")
 
         self.graph = nx.DiGraph()
 
@@ -116,11 +119,12 @@ class Event:
         """
         Find all of the required metadata is provided.
         """
-        required = {"interferometers"}
-        if not (required <= self.meta.keys()):
-            raise DescriptionException(f"Some of the required parameters are missing from this issue. {required-self.meta.keys()}")
-        else:
-            return True
+        return True
+        #required = {"interferometers"}
+        #if not (required <= self.meta.keys()):
+        #    raise DescriptionException(f"Some of the required parameters are missing from this issue. {required-self.meta.keys()}")
+        #else:
+        #    return True
         
     def _check_calibration(self):
         """
@@ -188,13 +192,15 @@ class Event:
            An event.
         """
         data = yaml.safe_load(data)
-        if not {"name", "repository"} <= data.keys():
+        if not {"name",} <= data.keys():
             raise DescriptionException(f"Some of the required parameters are missing from this issue.")
 
         event = cls(**data, issue=issue, update=update)
+
         if issue:
             event.issue_object = issue
             event.from_notes()
+
         for production in data['productions']:
             try:
                 event.add_production(
@@ -336,31 +342,32 @@ class Production:
         self.status_str = status.lower()
         self.pipeline = pipeline.lower()
         self.comment = comment
-        self.meta = copy(self.event.meta)
+        self.meta = deepcopy(self.event.meta)
         if "productions" in self.meta:
             self.meta.pop("productions")
 
         self.meta = update(self.meta, kwargs)
 
         # Check that the upper frequency is included, otherwise calculate it
-        if "high-frequency" not in self.meta['quality']:
-            self.meta['quality']['high-frequency'] = int(0.875 * self.meta['quality']['sample-rate']/2)
-
+        if "quality" in self.meta:
+            if ("high-frequency" not in self.meta['quality']) and ("sample-rate" in self.meta['quality']):
+                self.meta['quality']['high-frequency'] = int(0.875 * self.meta['quality']['sample-rate']/2)
+        
         # Get the data quality recommendations
         if 'quality' in self.event.meta:
             self.quality = self.event.meta['quality']
         else:
             self.quality = {}
-        #if 'quality' in kwargs:
-        #    self.quality.update(kwargs['quality'])
-            
-        quality_required = {"lower-frequency", "psd-length", "sample-rate", "segment-length", "window-length"}
-        if not (quality_required <= self.quality.keys()):
-            raise DescriptionException(f"Some of the required parameters are missing from this production's metadata.\n{quality_required-self.meta.keys()}",
-                                       issue = self.event.issue_object,
-                                       production = self)
 
-        print(self.pipeline)
+        if ('quality' in self.meta):
+            if ('quality' in kwargs):
+               self.meta['quality'].update(kwargs['quality'])
+            self.quality = self.meta['quality']
+
+        # Gather the appropriate prior data for this production
+        if 'priors' in self.meta:
+            self.priors = self.meta['priors']
+
         # Need to fetch the correct PSDs for this sample rate
         if 'psds' in self.meta:
             if self.quality['sample-rate'] in self.meta['psds']:
@@ -369,9 +376,7 @@ class Production:
                 self.psds = {}
         else:
             self.psds = {}
-        #    raise DescriptionException(f"No PSDs were found for this event.",
-        #                               issue = self.event.issue_object,
-         #                              production = self)
+
 
         for ifo, psd in self.psds.items():
             self.psds[ifo] = os.path.join(self.event.repository.directory, psd)
