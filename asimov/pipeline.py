@@ -8,6 +8,7 @@ import htcondor
 
 from asimov import config
 from .storage import Store
+from asimov import logging
 
 class PipelineException(Exception):
     """Exception for pipeline problems."""
@@ -88,6 +89,7 @@ class Pipeline():
                 self.category = "online"
         else:
             self.category = category
+        self.logger = logger = logging.AsimovLogger(event=production.event)
 
         self._activate_environment()
 
@@ -162,7 +164,7 @@ class Pipeline():
         """
 
         psds = self.production.psds
-        calibration = self.production.meta['calibration']
+        calibration = [os.path.join(self.production.event.repository.directory, cal) for cal in self.production.meta['calibration'].values()]
         configfile = self.production.event.repository.find_prods(self.production.name, self.category)[0]
         command = [
             "--webdir", os.path.join(config.get('general', 'webroot'), self.production.event.name, self.production.name,  "results"),
@@ -172,17 +174,20 @@ class Pipeline():
             "--cosmology", config.get('pesummary', 'cosmology'),
             "--redshift_method", config.get('pesummary', 'redshift'),
             "--nsamples_for_skymap", config.get('pesummary', 'skymap_samples'),
+            #"--mcmc_samples",
             "--config", os.path.join(self.production.event.repository.directory, self.category, configfile)]
         # Samples
         command += ["--samples"]
         command += self.samples()
         # Calibration information
         command += ["--calibration"]
-        command += calibration.values()
+        command += calibration
         # PSDs
         command += ["--psd"]
         command += psds.values()
         
+        self.logger.info(f"Submitted PE summary run. Command: {config.get('pesummary', 'executable')} {' '.join(command)}", production=self.production, channels=['file'])
+
         hostname_job = htcondor.Submit({
             "executable": config.get("pesummary", "executable"),  
             "arguments": " ".join(command),
@@ -193,8 +198,8 @@ class Pipeline():
             "request_cpus": "4",
             "getenv": "true",
             "batch-name": f"PESummary/{self.production.event.name}/{self.production.name}",
-            "request_memory": "2048MB",
-            "request_disk": "2048MB",
+            "request_memory": "8192MB",
+            "request_disk": "8192MB",
         })
 
         schedulers = htcondor.Collector().locate(htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler"))
@@ -280,3 +285,6 @@ class Pipeline():
         config_parser.read_string(file_content)
 
         return config_parser
+
+    def check_progress(self):
+        pass

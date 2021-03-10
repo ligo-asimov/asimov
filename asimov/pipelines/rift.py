@@ -323,6 +323,13 @@ class Rift(Pipeline):
            This will be raised if the pipeline fails to submit the job.
         """
         os.chdir(self.production.rundir)
+        os.system("cat *_local.cache > local.cache")
+
+        for psdfile in self.production.get_psds("xml"):
+            ifo = psdfile.split("/")[-1].split("_")[1].split(".")[0]
+            os.system(f"cp {psdfile} {ifo}-psd.xml.gz")
+
+
         self.before_submit()
          
         try:
@@ -360,6 +367,7 @@ class Rift(Pipeline):
             count = 0
         if (count < 5) and (len(glob.glob(os.path.join(self.production.rundir, "marginalize_intrinsic_parameters_BasicIterationWorkflow.dag.rescue*")))>0):
             count +=1
+            #os.system("cat *_local.cache > local.cache")
             self.submit_dag()
 
     def collect_logs(self):

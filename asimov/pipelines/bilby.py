@@ -39,8 +39,8 @@ class Bilby(Pipeline):
         Check for the production of the posterior file to signal that the job has completed.
         """
         results_dir = glob.glob(f"{self.production.rundir}/result")
-        if len(results_dir)>0:
-            if len(glob.glob(os.path.join(results_dir[0], f"*_result.json"))) > 0:
+        if len(results_dir)>0: # dynesty_merge_result.json
+            if len(glob.glob(os.path.join(results_dir[0], f"*merge_result.json"))) > 0:
                 return True
             else:
                 return False
@@ -83,22 +83,64 @@ class Bilby(Pipeline):
             template = None
             
             distance_bounds = DEFAULT_DISTANCE_LOOKUPS[str(duration) + "s"]
-            mc_min = roq_params["chirpmassmin"] / scale_factor
-            mc_max = roq_params["chirpmassmax"] / scale_factor
-            comp_min = roq_params["compmin"] / scale_factor
             
+
+            if "priors" in self.production.meta:
+                priors_e = self.production.meta['priors']
+                if "chirp-mass" in priors_e:
+                    mc_min = priors_e['chirp-mass'][0]
+                    mc_max = priors_e['chirp-mass'][1]
+                else:
+                    mc_min = roq_params["chirpmassmin"] / scale_factor
+                    mc_max = roq_params["chirpmassmax"] / scale_factor
+
+                if "component" in priors_e:
+                    comp_min = priors_e['component'][0]
+                    comp_max = priors_e['component'][1]
+                else:
+                    comp_min = roq_params["compmin"] / scale_factor
+                    comp_max = 1000
+                if "q" in priors_e:
+                    q_min = priors_e['q'][0]
+                    q_max = priors_e['q'][1]
+                else:
+                    q_min = 0.05
+                    q_max = 1.00
+                if "distance" in priors_e:
+                    d_min = priors_e['distance'][0]
+                    d_max = priors_e['distance'][1]
+                else:
+                    d_min = distance_bounds[0]
+                    d_max = distance_bounds[1]
+                if "a2" in priors_e:
+                    a2_min = priors_e['a2'][0]
+                    a2_max = priors_e['a2'][0]
+                else:
+                    a2_min = 0.0
+                    a2_max = 1.0
+
+            if "event type" in self.production.meta:
+                event_type = self.production.meta['event type'].lower()
+            else:
+                event_type = "bbh"
+
             if template is None:
                 template = os.path.join(
-                    config.get("bilby", "priors"), "roq.prior.template"
-            )
+                        config.get("bilby", "priors"), f"{event_type}.prior.template"
+                )
 
             with open(template, "r") as old_prior:
                 prior_string = old_prior.read().format(
                     mc_min=mc_min,
                     mc_max=mc_max,
                     comp_min=comp_min,
-                    d_min=distance_bounds[0],
-                    d_max=distance_bounds[1],
+                    comp_max=comp_max,
+                    d_min=d_min,
+                    d_max=d_max,
+                    a2_min=a2_min,
+                    a2_max=a2_max,
+                    q_min=q_min, 
+                    q_max=q_max
                 )
             prior_name = f"{self.production.name}.prior"
             prior_file = os.path.join(os.getcwd(), prior_name)
@@ -265,9 +307,10 @@ class Bilby(Pipeline):
         """
         Collect the combined samples file for PESummary.
         """
-        return glob.glob(os.path.join(self.production.rundir, "result", "*_samples.dat"))
+        return glob.glob(os.path.join(self.production.rundir, "result", "*_merge_result.json"))
         
     def after_completion(self):
+        self.logger.info(f"Job has completed. Running PE Summary.", production=self.production, channels=['mattermost'])
         cluster = self.run_pesummary()
         self.production.meta['job id'] = int(cluster)
         self.production.status = "processing"
@@ -281,9 +324,34 @@ class Bilby(Pipeline):
         logs += glob.glob(f"{self.production.rundir}/*/*.out")
         messages = {}
         for log in logs:
-            with open(log, "r") as log_f:
-                message = log_f.read()
-                messages[log.split("/")[-1]] = message
+            try:
+                with open(log, "r") as log_f:
+                    message = log_f.read()
+                    message = message.split("\n")
+                    messages[log.split("/")[-1]] = "\n".join(message[-100:])
+            except:
+                messages[log.split("/")[-1]] = "There was a problem opening this log file."
+        return messages
+
+    def check_progress(self):
+        """
+        Check the convergence progress of a job.
+        """
+        logs = glob.glob(f"{self.production.rundir}/log_data_analysis/*.out")
+        messages = {}
+        for log in logs:
+            try:
+                with open(log, "r") as log_f:
+                    message = log_f.read()
+                    message = message.split("\n")[-1]
+                    p = re.compile(r"([\d]+)it")
+                    iterations = p.search(message)
+                    p = re.compile(r"dlogz:([\d]*\.[\d]*)")
+                    dlogz = p.search(message)
+                    if iterations:
+                        messages[log.split("/")[-1]] = (iterations.group(), dlogz.group())
+            except:
+                messages[log.split("/")[-1]] = "There was a problem opening this log file."
         return messages
 
     @classmethod
@@ -307,3 +375,14 @@ class Bilby(Pipeline):
 
         return config_parser
         
+    def resurrect(self):
+        """
+        Attempt to ressurrect a failed job.
+        """
+        try:
+            count = self.production.meta['resurrections']
+        except:
+            count = 0
+        if (count < 5) and (len(glob.glob(os.path.join(self.production.rundir, "submit", "*.rescue*")))>0):
+            count +=1
+            self.submit_dag()
