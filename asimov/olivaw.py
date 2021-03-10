@@ -163,19 +163,27 @@ def report(event, webdir):
                          author_email="daniel.williams@ligo.org", 
                          config_file="asimov.conf")
 
+        with event_report:
+            navbar = bt.Navbar("Asimov", background="navbar-dark bg-primary")
+            event_report + navbar
+
         card = bt.Card(title=f"<a href='{event.title}.html'>{event.title}</a>")
 
         toc = bt.Container()
 
         for production in event.productions:
-            toc + f"[{production.name}](#{production.name})"
+            toc + f"* [{production.name}](#{production.name}) | {production.pipeline} |"# + bt.Badge({production.pipeline}, "info")
 
         with event_report:
-            event_report + f"#{event.title}"
+            title_c = bt.Container()
+            title_c + f"#{event.title}"
+            event_report + title_c
             event_report + toc
 
         production_list = bt.ListGroup()
         for production in event.productions:
+            if production.pipeline.lower() in known_pipelines:
+                    pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
 
             event_log =  otter.Otter(f"{webdir}/{event.title}-{production.name}.html", 
                                      author="Olivaw", 
@@ -199,9 +207,6 @@ def report(event, webdir):
                           "stop": "danger",
                           "manual": "light",
                           "stopped": "light"}
-            production_list.add_item(f"{production.name}" + str(bt.Badge(f"{production.pipeline}", "info")) + str(bt.Badge(f"{production.status}")), 
-                                     context=status_map[production.status])
-
             with event_report:
                 container = bt.Container()
                 container + f"## {production.name}"
@@ -209,7 +214,28 @@ def report(event, webdir):
                 container + "### Ledger"
                 container + production.meta
 
+            if production.pipeline.lower() == "bilby":
+                container +f"### Progress"
+                progress_line = []
+                procs = pipe.check_progress()
+                for proc, val in procs.items():
+                    container + f"- {proc.split('_')[-1]}\t{val[0]}\t{val[1]}"
+                    progress_line.append(f"{val[1]}")
+            else:
+                progress_line = []
+            if production.status.lower() == "running":
+                progress = str(bt.Badge("|".join(progress_line)))
 
+            if production.status.lower() == "uploaded":
+                link = os.path.join("https://ldas-jobs.ligo.caltech.edu", config.get('general', 'webroot').replace("/home/", "~").replace("public_html/", ""), production.event.name, production.name,  "results", "home.html")
+                item_text = f"<a href='{link}'>{production.name}</a>" 
+            else:
+                item_text = f"<a href='{event.title}.html#{production.name}'>{production.name}</a>" 
+            production_list.add_item(item_text
+                                     + str(bt.Badge(f"{production.pipeline}", "info")) 
+                                     + progress
+                                     + str(bt.Badge(f"{production.status}")), 
+                                     context=status_map[production.status])
 
             logs = pipe.collect_logs()
             container + f"### Log files"
@@ -362,6 +388,9 @@ def monitor(event, update):
                     raise ValueError
                 click.echo(f"{event.event_object.name}\t{event.state}\t{production.name}\t{job.status}")
 
+                if job.status.lower() == "running":
+                    pass
+
                 if event.state == "running" and job.status.lower() == "stuck":
                     click.echo("Job is stuck on condor")
                     event.state = "stuck"
@@ -448,7 +477,10 @@ def production(event, pipeline, family, comment, needs, template, status):
         production['needs'] = needs
     if template:
         production['template'] = template
-    number = max(family_entries)+1
+    if len(family_entries)>0:
+        number = max(family_entries)+1
+    else:
+        number = 0
     production_dict = {f"{family}{number}": production}
     production = Production.from_dict(production_dict, event=event)
     #
@@ -578,10 +610,11 @@ def populate(event, yaml, ini):
         add_data(event_o.name, yaml)
 
 @click.option("--namefile", "names", default=None, help="The mapping between old and new names for events.")
+@click.option("--old", "oldname", default=None, help="The old superevent ID for this event.")
 @click.argument("name")
 @click.argument("superevent")
 @olivaw.command()
-def create(superevent, name, names=None):
+def create(superevent, name, names=None, oldname=None):
     """
     Create a new event record on the git issue tracker from the GraceDB dev server.
 
@@ -591,6 +624,10 @@ def create(superevent, name, names=None):
        The ID of the superevent to be used from GraceDB
     name : str
        The name of the event to be recorded in the issue tracker
+    names : path, optional
+        The path to the name file which maps between old and new super event IDs
+    oldname: str, optional
+        The old name of the event.
     """
     server, repository = connect_gitlab()
     from ligo.gracedb.rest import GraceDb, HTTPError 
@@ -603,6 +640,8 @@ def create(superevent, name, names=None):
         with open(names, "r") as datafile:
             names = json.load(datafile)
         old_superevent = names['SNAME'][name]
+    elif oldname:
+        old_superevent = oldname
     else:
         old_superevent = superevent
         
