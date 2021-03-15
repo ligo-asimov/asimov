@@ -61,6 +61,7 @@ class Rift(Pipeline):
                                         production=self.production.name)
         
     def after_completion(self):
+        self.logger.info(f"Job has completed. Running PE Summary.", production=self.production, channels=['mattermost'])
         cluster = self.run_pesummary()
         self.production.meta['job id'] = int(cluster)
         self.production.status = "processing"
@@ -383,3 +384,22 @@ class Rift(Pipeline):
                 message = log_f.read()
                 messages[log.split("/")[-1]] = message
         return messages
+
+    def detect_completion(self):
+        """
+        Check for the production of the posterior file to signal that the job has completed.
+        """
+        results_dir = glob.glob(f"{self.production.rundir}")
+        if len(results_dir)>0: # dynesty_merge_result.json
+            if len(glob.glob(os.path.join(results_dir[0], f"extrinsic_posterior_samples.dat"))) > 0:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def samples(self):
+        """
+        Collect the combined samples file for PESummary.
+        """
+        return glob.glob(os.path.join(self.production.rundir, "extrinsic_posterior_samples.dat"))
