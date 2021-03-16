@@ -15,7 +15,7 @@ from liquid import Liquid
 
 STATE_PREFIX = "C01"
 
-def find_events(repository, milestone=None, subset=None, update=False):
+def find_events(repository, milestone=None, subset=None, update=False, repo=True):
     """
     Search through a repository's issues and find all of the ones
     for events.
@@ -30,18 +30,18 @@ def find_events(repository, milestone=None, subset=None, update=False):
     if subset:
         for issue in issues:
             if issue.title in subset:
-                output += [EventIssue(issue, repository, update)]
+                output += [EventIssue(issue, repository, update, repo=repo)]
                 if update:
                     time.sleep(30)
     else:
         for issue in issues:
-            output += [EventIssue(issue, repository, update)]
+            output += [EventIssue(issue, repository, update, repo=repo)]
             if update:
                 time.sleep(30)
     return output
 
 
-class EventIssue(object):
+class EventIssue:
     """
     Use an issue on the gitlab issue tracker to 
     hold variable data for the program.
@@ -56,19 +56,21 @@ class EventIssue(object):
        excessive load on the git server.
     """
 
-    def __init__(self, issue, repository, update=False):
+    def __init__(self, issue, repository, update=False, repo=True):
 
         self.issue_object = issue
-        print(issue.title)
         self.title = issue.title
         self.text = issue.description
         
         self.issue_id = issue.id
         self.labels = issue.labels
         self.data = self.parse_notes()
-        self.repository = repository
+        if repo:
+            self.repository = repository
+        else:
+            self.repository = None
         self.event_object=None
-        self.event_object = Event.from_issue(self, update)
+        self.event_object = Event.from_issue(self, update, repo=repo)
         
 
     def _refresh(self):

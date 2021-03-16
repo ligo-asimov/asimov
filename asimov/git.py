@@ -92,7 +92,11 @@ class EventRepo():
             repo.git.execute(["git", "lfs", "pull"])
         except git.exc.GitCommandError:
             repo = git.Repo(directory)
-            repo.git.stash()
+            try:
+                repo.git.stash()
+            except git.exc.GitCommandError:
+                pass
+            
         if update:
             try:
                 repo.remotes[0].pull()
