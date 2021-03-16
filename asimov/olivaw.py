@@ -6,11 +6,6 @@ from math import floor
 
 import click
 
-from datetime import datetime
-import pytz
-
-tz = pytz.timezone('Europe/London')
-
 import numpy as np
 
 #from asimov import gitlab
@@ -22,7 +17,7 @@ from asimov import condor
 import asimov.pipelines
 
 # Replace this with a better logfile handling module please
-from glob import glob
+#from glob import glob
 
 
 from git.exc import GitCommandError
@@ -33,6 +28,7 @@ from asimov.cli import configuration
 from asimov.cli import report
 from asimov.cli import monitor
 from asimov.cli import review
+from asimov.cli import manage
 
 state_vector_channel = {"L1": "L1:DCS-CALIB_STATE_VECTOR_C01",
                         "H1": "H1:DCS-CALIB_STATE_VECTOR_C01",
@@ -44,10 +40,10 @@ def olivaw():
     """
     This is the main olivaw program which runs the DAGs for each event issue.
     """
-    global rundir
-    rundir = os.getcwd()
+    pass
 
-
+# Building and submission
+olivaw.add_command(manage.manage)
 # Reporting commands
 olivaw.add_command(report.report)
 # Configuration commands

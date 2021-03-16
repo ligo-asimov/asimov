@@ -1,11 +1,16 @@
 import click
 import yaml
+import glob
+from datetime import datetime
+import pytz
+
+tz = pytz.timezone('Europe/London')
 
 
 import otter
 import otter.bootstrap as bt
 
-from asimov.cli import connect_gitlab
+from asimov.cli import connect_gitlab, known_pipelines
 from asimov import gitlab
 from asimov import config
 
@@ -14,7 +19,7 @@ def report():
     pass
 
 @click.option("--location", "webdir", default=None, help="The place to save the report to")
-@click.option("--event", "event", default=None, help="The event which the report should be returned for, optional.")
+@click.argument("event", default=None, required=False)
 @report.command()
 def html(event, webdir):
     """
@@ -23,13 +28,22 @@ def html(event, webdir):
     """
     server, repository = connect_gitlab()
     if not webdir:
-        webdir = "./"
-    events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event], update=False)
+        webdir = config.get("report", "report_root")
+    events = gitlab.find_events(repository,
+                                milestone=config.get("olivaw", "milestone"),
+                                subset=[event],
+                                repo=False,
+                                update=False)
+    if len(glob.glob("asimov.conf"))>0:
+        config_file = "asimov.conf"
+    else:
+        config_file = None
+
     report = otter.Otter(f"{webdir}/index.html", 
                          author="Olivaw", 
                          title="Olivaw PE Report", 
-                         author_email="daniel.williams@ligo.org", 
-                         config_file="asimov.conf")
+                         author_email=config.get("report", "report_email"),
+                         config_file=config_file)
 
     with report:
         navbar = bt.Navbar("Asimov", background="navbar-dark bg-primary")
@@ -50,7 +64,7 @@ def html(event, webdir):
                          author="Olivaw", 
                          title=f"Olivaw PE Report | {event.title}", 
                          author_email="daniel.williams@ligo.org", 
-                         config_file="asimov.conf")
+                                    config_file=config_file)
 
         with event_report:
             navbar = bt.Navbar("Asimov", background="navbar-dark bg-primary")
@@ -78,7 +92,7 @@ def html(event, webdir):
                                      author="Olivaw", 
                                      title=f"Olivaw PE Report | {event.title} | {production.name}", 
                                      author_email="daniel.williams@ligo.org", 
-                                     config_file="asimov.conf")
+                                     config_file=config_file)
 
             
 
