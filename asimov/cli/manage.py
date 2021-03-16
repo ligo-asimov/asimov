@@ -4,8 +4,17 @@ Olivaw management commands
 
 import click
 
+from asimov.cli import connect_gitlab, known_pipelines
+from asimov import logging
+from asimov import config
+
+@click.group()
+def manage():
+    pass
+
+
 @click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
-@click.command()
+@manage.command()
 def build(event):
     """
     Create the run configuration files for a given event for jobs which are ready to run.
@@ -22,31 +31,31 @@ def build(event):
             click.echo(f"\tWorking on production {production.name}")
             if production.status in {"running", "stuck", "wait", "finished", "uploaded"}: continue
             try:
-               configuration = production.get_configuration()
+                configuration = production.get_configuration()
             except ValueError:
-               try:
-                   templates = os.path.join(rundir, config.get("templating", "directory"))
-                   production.make_config(f"{production.name}.ini", template_directory=templates)
-                   click.echo(f"Production config {production.name} created.")
-                   logger.info("Run configuration created.", production=production)
+                try:
+                    templates = os.path.join(rundir, config.get("templating", "directory"))
+                    production.make_config(f"{production.name}.ini", template_directory=templates)
+                    click.echo(f"Production config {production.name} created.")
+                    logger.info("Run configuration created.", production=production)
 
-                   try:
-                       event.event_object.repository.add_file(f"{production.name}.ini",
-                                                              os.path.join(f"{production.category}",
-                                                                           f"{production.name}.ini"))
-                       logger.info("Configuration committed to event repository.",
-                                   production=production)
-                   except Exception as e:
-                       logger.error(f"Configuration could not be committed to repository.\n{e}",
+                    try:
+                        event.event_object.repository.add_file(f"{production.name}.ini",
+                                                               os.path.join(f"{production.category}",
+                                                                            f"{production.name}.ini"))
+                        logger.info("Configuration committed to event repository.",
                                     production=production)
-                   
-               except DescriptionException as e:
-                   logger.error("Run configuration failed", production=production, channels=["file", "mattermost"])
+                    except Exception as e:
+                        logger.error(f"Configuration could not be committed to repository.\n{e}",
+                                     production=production)
+                        
+                except DescriptionException as e:
+                    logger.error("Run configuration failed", production=production, channels=["file", "mattermost"])
 
 
 @click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
 @click.option("--update", "update", default=False, help="Force the git repos to be pulled before submission occurs.")
-@click.command()
+@manage.command()
 def submit(event, update):
     """
     Submit the run configuration files for a given event for jobs which are ready to run.
