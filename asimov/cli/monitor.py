@@ -20,7 +20,7 @@ def monitor(event, update, dry_run):
                                 milestone=config.get("olivaw", "milestone"),
                                 subset=[event],
                                 update=update,
-                                repo=False)
+                                repo=True)
     
     for event in events:
         stuck = 0
