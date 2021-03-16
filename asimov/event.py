@@ -85,7 +85,7 @@ class Event:
 
         if repository:
             self.repository = EventRepo.from_url(repository,
-                                             self.name,
+                                                 self.name,
                                                  self.work_dir,
                                                  update)
         else:
@@ -386,7 +386,10 @@ class Production:
 
 
         for ifo, psd in self.psds.items():
-            self.psds[ifo] = os.path.join(self.event.repository.directory, psd)
+            if self.event.repository:
+                self.psds[ifo] = os.path.join(self.event.repository.directory, psd)
+            else:
+                self.psds[ifo] = psd
 
         self.category = config.get("general", "calibration_directory")
         if "needs" in self.meta:
