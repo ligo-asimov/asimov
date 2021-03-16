@@ -6,13 +6,7 @@ from math import floor
 
 import click
 
-import numpy as np
-
-#from asimov import gitlab
-from asimov.event import Event, DescriptionException, Production
-#from asimov import config
 from asimov import logging
-from asimov.pipeline import PipelineException
 from asimov import condor
 import asimov.pipelines
 

@@ -8,6 +8,8 @@ from asimov.cli import connect_gitlab, known_pipelines
 from asimov import logging
 from asimov import config
 from asimov import gitlab
+from asimov.event import Event, DescriptionException, Production
+from asimov.pipeline import PipelineException
 
 @click.group()
 def manage():
