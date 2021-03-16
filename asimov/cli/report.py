@@ -1,8 +1,13 @@
-import click
+"""
+Reporting functions
+"""
 import yaml
 import glob
 from datetime import datetime
 import pytz
+import os
+
+import click
 
 tz = pytz.timezone('Europe/London')
 
