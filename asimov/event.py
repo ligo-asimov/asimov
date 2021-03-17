@@ -85,7 +85,7 @@ class Event:
 
         if repository:
             self.repository = EventRepo.from_url(repository,
-                                             self.name,
+                                                 self.name,
                                                  self.work_dir,
                                                  update)
         else:
@@ -172,7 +172,7 @@ class Event:
         return f"<Event {self.name}>"
 
     @classmethod
-    def from_yaml(cls, data, issue=None, update=False):
+    def from_yaml(cls, data, issue=None, update=False, repo=True):
         """
         Parse YAML to generate this event.
 
@@ -194,7 +194,8 @@ class Event:
         data = yaml.safe_load(data)
         if not {"name",} <= data.keys():
             raise DescriptionException(f"Some of the required parameters are missing from this issue.")
-
+        if not repo:
+            data.pop("repository")
         event = cls(**data, issue=issue, update=update)
 
         if issue:
@@ -210,7 +211,7 @@ class Event:
         return event
 
     @classmethod
-    def from_issue(cls, issue, update=False):
+    def from_issue(cls, issue, update=False, repo=True):
         """
         Parse an issue description to generate this event.
 
@@ -224,7 +225,7 @@ class Event:
 
         text = issue.text.split("---")
 
-        event = cls.from_yaml(text[1], issue)
+        event = cls.from_yaml(text[1], issue, update=update, repo=repo)
         event.text = text
         # event.from_notes()
 
@@ -385,7 +386,10 @@ class Production:
 
 
         for ifo, psd in self.psds.items():
-            self.psds[ifo] = os.path.join(self.event.repository.directory, psd)
+            if self.event.repository:
+                self.psds[ifo] = os.path.join(self.event.repository.directory, psd)
+            else:
+                self.psds[ifo] = psd
 
         self.category = config.get("general", "calibration_directory")
         if "needs" in self.meta:
