@@ -66,6 +66,9 @@ def monitor(event, update, dry_run):
                     if job.status.lower() == "running":
                         pass
 
+                    if job.status.lower() == "processing":
+                        pass
+
                     if event.state == "running" and job.status.lower() == "stuck":
                         click.echo("\t\tJob is stuck on condor")
                         event.state = "stuck"
