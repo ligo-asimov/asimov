@@ -12,6 +12,7 @@ import networkx as nx
 
 from .ini import RunConfiguration
 from .git import EventRepo
+from .review import Review
 from asimov import config
 
 from liquid import Liquid
@@ -64,6 +65,9 @@ Please fix the error and then remove the `yaml-error` label from this issue.
         else:
             print(self.__repr__())
 
+
+
+            
 class Event:
     """
     A specific gravitational wave event or trigger.
@@ -106,7 +110,7 @@ class Event:
                 self.from_notes()
 
         self._check_required()
-
+        
         if ("interferometers" in self.meta) and ("calibration" in self.meta):
             try:
                 self._check_calibration()
@@ -355,6 +359,12 @@ class Production:
 
         self.meta = update(self.meta, kwargs)
 
+        if "review" in self.meta:
+            self.review = Review.from_dict(self.meta['review'], production=self)
+            self.meta.pop("review")
+        else:
+            self.review = Review()
+        
         # Check that the upper frequency is included, otherwise calculate it
         if "quality" in self.meta:
             if ("high-frequency" not in self.meta['quality']) and ("sample-rate" in self.meta['quality']):
@@ -455,6 +465,9 @@ class Production:
         output[self.name]['status'] = self.status
         output[self.name]['pipeline'] = self.pipeline.lower()
         output[self.name]['comment'] = self.comment
+
+        output[self.name]['review'] = self.review.to_dicts()
+        
         if "quality" in self.meta:
             output[self.name]['quality'] = self.meta['quality']
         if "priors" in self.meta:
