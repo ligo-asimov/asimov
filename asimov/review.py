@@ -19,21 +19,50 @@ class Review:
     def __init__(self):
         self.messages = []
 
+    def __len__(self):
+        return len(self.messages)
+
+    def __getitem__(self, item):
+        return self.messages[item]
+
+    def add(self, review_message):
+        """
+        Add a new review message to an event.
+        """
+        self.messages.append(review_message)
+        messages = sorted(messages, key=lambda k: k.timestamp)
+
+    @property
+    def status(self):
+        status = None
+        for message in self.messages:
+            if message.status:
+                status = message.status
+        return status
+
+    def to_dicts(self):
+        output = []
+        for message in self.messages:
+            output.append(message.to_dict())
+        return output
+    
     @classmethod
-    def _from_dict(cls, message):
+    def from_dict(cls, messages_list, production):
         """parse a dictionary into review"""
         messages = []
-        for message in messages:
-            self.messages.append(ReviewMessage.from_dict(message))
+        for message in messages_list:
+            messages.append(ReviewMessage.from_dict(dictionary=message,
+                                                    production=production))
         review_ob = cls()
+        messages = sorted(messages, key=lambda k: k.timestamp)
         review_ob.messages = messages
-        return messages
+        return review_ob
 
 class ReviewMessage:
     """
     A review message.
     """
-    def __init__(self, message, production, state=None, timestamp=None):
+    def __init__(self, message, production, status=None, timestamp=None):
         """
         Review messages are individual messages related to the review of a production.
 
@@ -54,13 +83,16 @@ class ReviewMessage:
 
         self.message = message
 
-        if state.upper() in STATES:
-            self.state = state.upper()
+        if status:
+            if status.upper() in STATES:
+                self.status = status.upper()
+            else:
+                raise ValueError(f"{status} is not a recognised review state.")
         else:
-            raise ValueError(f"{state} is not a recognised review state.")
+            self.status = None
 
         if timestamp:
-            self.timestamp = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+            self.timestamp = timestamp #datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
         else:
             self.timestamp = datetime.now()
 
@@ -71,7 +103,7 @@ class ReviewMessage:
         out = {}
         out['message'] = self.message
         out['timestamp'] = str(self.timestamp)
-        out['state'] = self.state
+        out['status'] = self.status
         return out
 
     @classmethod
@@ -79,12 +111,12 @@ class ReviewMessage:
         """
         Create a review message from a dictionary.
         """
-        default = {"state": None,
+        default = {"status": None,
                    "message": None,
                    "timestamp": None}
-        default = default.update(dictionary)
+        default.update(dictionary)
         message_ob = cls(message=default['message'],
                          production=production,
-                         state=default['status'],
+                         status=default['status'],
                          timestamp=default['timestamp'])
         return message_ob
