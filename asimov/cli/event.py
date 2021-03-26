@@ -7,10 +7,11 @@ def collection():
 
 @click.option("--namefile", "names", default=None, help="The mapping between old and new names for events.")
 @click.option("--old", "oldname", default=None, help="The old superevent ID for this event.")
+@click.option("--gracedb", "gracedb", flag=True)
 @click.argument("name")
 @click.argument("superevent")
 @olivaw.command()
-def create(superevent, name, names=None, oldname=None):
+def create(superevent, name, names=None, oldname=None, gracedb):
     """
     Create a new event record on the git issue tracker from the GraceDB dev server.
 
@@ -25,13 +26,15 @@ def create(superevent, name, names=None, oldname=None):
     oldname: str, optional
         The old name of the event.
     """
-    server, repository = connect_gitlab()
-    from ligo.gracedb.rest import GraceDb, HTTPError 
-    client = GraceDb(service_url=config.get("gracedb", "url"))
-    r = client.ping()
-    data = client.superevent(superevent).json()
-    event_data = client.event(data['preferred_event']).json()
 
+    if gracedb:
+        from ligo.gracedb.rest import GraceDb, HTTPError 
+        client = GraceDb(service_url=config.get("gracedb", "url"))
+        r = client.ping()
+        data = client.superevent(superevent).json()
+        event_data = client.event(data['preferred_event']).json()
+        event_url = f"https://catalog-dev.ligo.org/events/{data['preferred_event']}/view/"
+        
     if names:
         with open(names, "r") as datafile:
             names = json.load(datafile)
@@ -40,8 +43,8 @@ def create(superevent, name, names=None, oldname=None):
         old_superevent = oldname
     else:
         old_superevent = superevent
-        
-    event_url = f"https://catalog-dev.ligo.org/events/{data['preferred_event']}/view/"
+
+
     event = Event(name=name,
                   repository=f"git@git.ligo.org:pe/O3/{old_superevent}",
                   #gid=data['preferred_event'],
@@ -49,14 +52,24 @@ def create(superevent, name, names=None, oldname=None):
                   calibration = {},
                   interferometers=event_data['instruments'].split(","),
     )
-    event.meta['old superevent'] = old_superevent
-    event.meta['event time'] = event_data['gpstime']
+
+    if oldname:
+        event.meta['old superevent'] = old_superevent
+    if gracedb:
+        event.meta['event time'] = event_data['gpstime']
+        
     event.meta['working directory'] = f"{config.get('general', 'rundir_default')}/{name}"
-    gitlab.EventIssue.create_issue(repository, event, issue_template="/home/daniel.williams/repositories/asimov/scripts/outline.md")
+
+    if config.get("ledger", "engine") is "gitlab":
+        _, repository = connect_gitlab()
+        gitlab.EventIssue.create_issue(repository, event, issue_template="/home/daniel.williams/repositories/asimov/scripts/outline.md")
+    elif config.get("ledger", "engine") is "yamlfile":
+        ledger = asimov.ledger(config.get("ledger", "location"))
+        ledger.add_event(event)
 
 @click.option("--event", "event", default=None, help="The event which will be updated")
 @click.option("--pipeline", "pipeline", default=None, help="The pipeline which the job should use")
-@click.option("--family", "family", default=None, help="The family name of the production, e.g. `prod`.")
+@click.option("--family", "family", default="Prod", help="The family name of the production, e.g. `prod`.")
 @click.option("--comment", "comment", default=None, help="A comment to attach to the production")
 @click.option("--needs", "needs", default=None, help="A list of productions which are requirements")
 @click.option("--template", "template", default=None, help="The configuration template for the production.")
