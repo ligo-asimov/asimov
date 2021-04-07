@@ -1,17 +1,43 @@
+import os
+import collections
+import yaml
+import json
+from math import floor
+import ligo.gracedb
+import gwpy
+
+import click
+
+from git import GitCommandError
+
+from asimov import config
+from asimov.event import Production, Event,  DescriptionException
+from asimov import gitlab
+from asimov.cli import connect_gitlab, find_calibrations, CALIBRATION_NOTE
+
+def update(d, u):
+    for k, v in u.items():
+        if isinstance(v, collections.abc.Mapping):
+            d[k] = update(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d
+
+
 @click.group()
-def collection():
+def event():
     """
     Commands to handle collections.
     """
     pass
 
-@click.option("--namefile", "names", default=None, help="The mapping between old and new names for events.")
 @click.option("--old", "oldname", default=None, help="The old superevent ID for this event.")
-@click.option("--gracedb", "gracedb", flag=True)
+@click.option("--gid", "gid", default=None, help="The GraceDB GID for the event (for legacy events)")
+@click.option("--superevent", "superevent", default=None, help="The superevent for the event.")
+@click.option("--repository", "repo", default=None, help="The location of the repository for this event.")
 @click.argument("name")
-@click.argument("superevent")
-@olivaw.command()
-def create(superevent, name, names=None, oldname=None, gracedb):
+@event.command()
+def create(name, oldname=None, gid=None, superevent=None, repo=None):
     """
     Create a new event record on the git issue tracker from the GraceDB dev server.
 
@@ -26,39 +52,38 @@ def create(superevent, name, names=None, oldname=None, gracedb):
     oldname: str, optional
         The old name of the event.
     """
-
-    if gracedb:
+    if gid or superevent:
         from ligo.gracedb.rest import GraceDb, HTTPError 
         client = GraceDb(service_url=config.get("gracedb", "url"))
         r = client.ping()
+    if superevent:
         data = client.superevent(superevent).json()
         event_data = client.event(data['preferred_event']).json()
-        event_url = f"https://catalog-dev.ligo.org/events/{data['preferred_event']}/view/"
+        gid = data['preferred_event']
+    elif gid:
+        event_data = client.event(gid).json()
+    if gid or superevent:
+        event_url = f"{config.get('gracedb', 'url')}/events/{gid}/view/"
         
-    if names:
-        with open(names, "r") as datafile:
-            names = json.load(datafile)
-        old_superevent = names['SNAME'][name]
-    elif oldname:
-        old_superevent = oldname
-    else:
-        old_superevent = superevent
+    if not repo:
+        repo = f"git@git.ligo.org:pe/O3/{name}"
 
+    
 
     event = Event(name=name,
-                  repository=f"git@git.ligo.org:pe/O3/{old_superevent}",
-                  #gid=data['preferred_event'],
-                  #gid_url=event_url,
+                  repository=repo,
                   calibration = {},
                   interferometers=event_data['instruments'].split(","),
     )
 
     if oldname:
-        event.meta['old superevent'] = old_superevent
-    if gracedb:
+        event.meta['old superevent'] = oldname
+    if gid:
         event.meta['event time'] = event_data['gpstime']
-        
+
     event.meta['working directory'] = f"{config.get('general', 'rundir_default')}/{name}"
+
+    gitlab.EventIssue.create_issue(repository, event, issue_template="/home/daniel.williams/repositories/asimov/scripts/outline.md")
 
     if config.get("ledger", "engine") is "gitlab":
         _, repository = connect_gitlab()
@@ -67,6 +92,7 @@ def create(superevent, name, names=None, oldname=None, gracedb):
         ledger = asimov.ledger(config.get("ledger", "location"))
         ledger.add_event(event)
 
+
 @click.option("--event", "event", default=None, help="The event which will be updated")
 @click.option("--pipeline", "pipeline", default=None, help="The pipeline which the job should use")
 @click.option("--family", "family", default="Prod", help="The family name of the production, e.g. `prod`.")
@@ -74,7 +100,7 @@ def create(superevent, name, names=None, oldname=None, gracedb):
 @click.option("--needs", "needs", default=None, help="A list of productions which are requirements")
 @click.option("--template", "template", default=None, help="The configuration template for the production.")
 @click.option("--status", "status", default=None, help="The initial status of the production.")
-@olivaw.command(help="Add a new production to an event")
+@event.command(help="Add a new production to an event")
 def production(event, pipeline, family, comment, needs, template, status):
     """
     Add a new production to an event.
@@ -111,7 +137,7 @@ def production(event, pipeline, family, comment, needs, template, status):
 @click.option("--event", "event", help="The event to be populated.")
 @click.option("--yaml", "yaml", default=None)
 @click.option("--ini", "ini", default=None)
-@olivaw.command()
+@event.command()
 def populate(event, yaml, ini):
     """
     Populate an event ledger with data from ini or yaml files.
@@ -135,19 +161,13 @@ def populate(event, yaml, ini):
     if yaml:
         add_data(event_o.name, yaml)
 
-@click.option("--event", "event", default=None, help="The event which will be updated")
+@click.argument("event", default=None)
 @click.option("--json", "json_data", default=None)
-@olivaw.command(help="Add data from the configurator.")
+@event.command()
 def configurator(event, json_data=None):    
-    gitlab_event = gitlab.find_events(repository, subset=event)
-    def update(d, u):
-        for k, v in u.items():
-            if isinstance(v, collections.abc.Mapping):
-                d[k] = update(d.get(k, {}), v)
-            else:
-                d[k] = v
-        return d
-
+    """Add data from the configurator."""
+    server, repository = connect_gitlab()
+    gitlab_event = gitlab.find_events(repository, subset=event)[0]
    
     if json_data:
         with open(json_data, "r") as datafile:
@@ -173,9 +193,9 @@ def configurator(event, json_data=None):
     new_data["priors"]["amp order"] = data['amp_order']
     new_data["priors"]["chirp-mass"] = [data["chirpmass_min"], data["chirpmass_max"]]
 
-    update(gitlab_event[0].event_object.meta, new_data)
-    print(gitlab_event[0].event_object.meta)
-    gitlab_event[0].update_data()
+
+    update(gitlab_event.event_object.meta, new_data)
+    gitlab_event.update_data()
 
 
 #@click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
@@ -229,4 +249,58 @@ def checkifo(event):
 
 
 
+@click.option("--calibration", "calibration", multiple=True, default=[None], 
+              help="The location of the calibration files.")
+@click.argument("event")
+@event.command()
+def calibration(event, calibration):
+    server, repository = connect_gitlab()
+    event = gitlab.find_events(repository, subset=event)[0]
+    try:
+        event.event_object._check_calibration()
+    except DescriptionException:
+        print(event.title)
+        time = event.event_object.meta['event time'] 
+        if not calibration[0]:
+            calibrations = find_calibrations(time)
+            #for ifo, envelope in calibrations.items():
+            #    calibrations[ifo] = os.path.join(f"/home/cal/public_html/uncertainty/O3C01/{ifo}", envelope)
+        else:
+            calibrations = {}
+            for cal in calibration:
+                calibrations[cal.split(":")[0]] = cal.split(":")[1]
+        print(calibrations)
+        for ifo, envelope in calibrations.items():
+            description = f"Added calibration {envelope} for {ifo}."
+            try:
+                event.event_object.repository.add_file(envelope, f"C01_offline/calibration/{ifo}.dat", 
+                                                       commit_message=description)
+            except GitCommandError as e:
+                if "nothing to commit," in e.stderr:
+                    pass
+            calibrations[ifo] = f"C01_offline/calibration/{ifo}.dat"
+        envelopes = yaml.dump({"calibration": calibrations})
+        event.add_note(CALIBRATION_NOTE.format(envelopes))
 
+@click.argument("data")
+@click.argument("event")
+@event.command()
+def load(event, data):
+    server, repository = connect_gitlab()
+    gitlab_event = gitlab.find_events(repository, subset=event)[0]
+    def update(d, u):
+        for k, v in u.items():
+            if isinstance(v, collections.abc.Mapping):
+                d[k] = update(d.get(k, {}), v)
+            else:
+                d[k] = v
+        return d
+
+   
+    if data:
+        with open(data, "r") as datafile:
+            data = yaml.safe_load(datafile.read())
+
+        gitlab_event.event_object.meta = update(gitlab_event.event_object.meta, data)
+        gitlab_event.update_data()
+        print(gitlab_event.event_object.meta)

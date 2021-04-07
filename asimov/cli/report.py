@@ -64,6 +64,7 @@ def html(event, webdir):
     container = bt.Container()
     container + "# All PE Productions"
     for event in events:
+        click.secho(event.title, bold=True)
 
         event_report =  otter.Otter(f"{webdir}/{event.title}.html", 
                          author="Olivaw", 
@@ -133,6 +134,8 @@ def html(event, webdir):
                 progress_line = []
             if production.status.lower() == "running":
                 progress = str(bt.Badge("|".join(progress_line)))
+            else:
+                progress = ""
 
             if production.status.lower() == "uploaded":
                 link = os.path.join("https://ldas-jobs.ligo.caltech.edu", config.get('general', 'webroot').replace("/home/", "~").replace("public_html/", ""), production.event.name, production.name,  "results", "home.html")
