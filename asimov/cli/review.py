@@ -13,13 +13,32 @@ from asimov import config
 def review():
     pass
 
-@click.argument("event", default=None, required=False)
+@click.argument("event", required=True)
+@click.argument("production", required=True)
+@click.argument("status", required=False, default=None)
+@click.option("--message", "-m", "message", default=None)
 @review.command()
-def signoff(event):
+def add(event, production, status, message):
     """
     Add a review signoff or rejection to an event.
     """
-    pass
+    server, repository = connect_gitlab()
+    gitlab_events = gitlab.find_events(repository,
+                                      subset=[event],
+                                      update=False,
+                                      repo=False)
+    for event in gitlab_events:
+        production = [production_o
+                      for production_o in event.productions
+                      if production_o.name == production][0]
+        click.secho(event.title, bold=True)
+        message_o = ReviewMessage(message = message,
+                                production = production,
+                                status=status)
+        production.review.add(message_o)
+    
+    if hasattr(event, "issue_object"):
+        event.issue_object.update_data()
 
 @click.argument("production", default=None, required=False)
 @click.argument("event", default=None, required=False)

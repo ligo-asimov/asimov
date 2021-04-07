@@ -23,6 +23,8 @@ from asimov.cli import report
 from asimov.cli import monitor
 from asimov.cli import review
 from asimov.cli import manage
+from asimov.cli import event
+from asimov.cli import project
 
 state_vector_channel = {"L1": "L1:DCS-CALIB_STATE_VECTOR_C01",
                         "H1": "H1:DCS-CALIB_STATE_VECTOR_C01",
@@ -36,6 +38,11 @@ def olivaw():
     """
     pass
 
+# Project initialisation
+olivaw.add_command(project.init)
+
+olivaw.add_command(event.event)
+
 # Building and submission
 olivaw.add_command(manage.manage)
 # Reporting commands
@@ -44,5 +51,6 @@ olivaw.add_command(report.report)
 olivaw.add_command(configuration.configuration)
 # Monitoring commands
 olivaw.add_command(monitor.monitor)
+olivaw.add_command(event.event)
 # Review commands
 olivaw.add_command(review.review)

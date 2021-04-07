@@ -30,7 +30,7 @@ def monitor(event, update, dry_run):
         click.secho(f"{event.title}", bold=True)
         on_deck = [production
                    for production in event.productions
-                   if production.status in ACTIVE_STATES]
+                   if production.status.lower() in ACTIVE_STATES]
         
         for production in on_deck:
 
@@ -64,6 +64,9 @@ def monitor(event, update, dry_run):
 
                 if not dry_run:
                     if job.status.lower() == "running":
+                        pass
+
+                    if job.status.lower() == "processing":
                         pass
 
                     if event.state == "running" and job.status.lower() == "stuck":
