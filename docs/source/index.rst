@@ -6,16 +6,17 @@
 Asimov : The bot framework
 ==========================
 
-`Asimov` is a python package for producing scripts to automate parameter estimation processes for gravitational wave data on the LIGO Data Grid.
+`Asimov` is a python package to help with setting-up, automating, and monitoring parameter estimation workflows for gravitational wave signals.
 
 .. warning::
    This documentation is currently being written, so there may be places where it is somewhat defficient.
+
+Asimov is available on ``pypi`` and can be installed via ``pip install ligo-asimov``.
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents
 
-   readme
    installation
    usage
    api
