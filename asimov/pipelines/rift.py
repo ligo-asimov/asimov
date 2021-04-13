@@ -61,11 +61,12 @@ class Rift(Pipeline):
                                         production=self.production.name)
         
     def after_completion(self):
-        self.logger.info(f"Job has completed. Running PE Summary.", production=self.production, channels=['mattermost'])
+        self.logger.info(f"Job has completed. Running PE Summary.",
+                         production=self.production,
+                         channels=['mattermost'])
         cluster = self.run_pesummary()
         self.production.meta['job id'] = int(cluster)
         self.production.status = "processing"
-
 
     def _convert_psd(self, ascii_format, ifo):
         """

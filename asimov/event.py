@@ -12,6 +12,7 @@ import networkx as nx
 
 from .ini import RunConfiguration
 from .git import EventRepo
+from .review import Review
 from asimov import config
 
 from liquid import Liquid
@@ -64,6 +65,9 @@ Please fix the error and then remove the `yaml-error` label from this issue.
         else:
             print(self.__repr__())
 
+
+
+            
 class Event:
     """
     A specific gravitational wave event or trigger.
@@ -90,9 +94,7 @@ class Event:
                                                  update=update)
         else:
             self.repository = repository
-            
 
-        self.productions = []
         if "psds" in kwargs:
             self.psds = kwargs["psds"]
         else:
@@ -104,16 +106,30 @@ class Event:
             if kwargs['issue']:
                 self.issue_object = kwargs.pop("issue")
                 self.from_notes()
+        else:
+            self.issue_object = None
+
+        self.productions = []
+        self.graph = nx.DiGraph()
+        
+        if 'productions' in kwargs:
+            for production in kwargs['productions']:
+                try:
+                    self.add_production(
+                        Production.from_dict(production, event=self, issue=self.issue_object))
+                except DescriptionException as error:
+                    error.submit_comment()
+            
 
         self._check_required()
-
+        
         if ("interferometers" in self.meta) and ("calibration" in self.meta):
             try:
                 self._check_calibration()
             except DescriptionException:
                 print("No calibration envelopes found.")
 
-        self.graph = nx.DiGraph()
+        
 
     def _check_required(self):
         """
@@ -196,6 +212,7 @@ class Event:
             raise DescriptionException(f"Some of the required parameters are missing from this issue.")
         if not repo:
             data.pop("repository")
+        print(data['repository'])
         event = cls(**data, issue=issue, update=update)
 
         if issue:
@@ -266,9 +283,8 @@ class Event:
 
         self.repository.add_file("download.file", destination,
                                  commit_message = f"Downloaded {gfile} from GraceDB")
-    
-    def to_yaml(self):
-        """Serialise this object as yaml"""
+
+    def to_dict(self):
         data = {}
         data['name'] = self.name
 
@@ -297,6 +313,12 @@ class Event:
 
         if "issue" in data:
             data.pop("issue")
+
+        return data
+        
+    def to_yaml(self):
+        """Serialise this object as yaml"""
+        data = self.to_dict()
 
         return yaml.dump(data, default_flow_style=False)
 
@@ -346,7 +368,10 @@ class Production:
     def __init__(self, event, name, status, pipeline, comment=None, **kwargs):
         self.event = event
         self.name = name
-        self.status_str = status.lower()
+        if status:
+            self.status_str = status.lower()
+        else:
+            self.status_str = "none"
         self.pipeline = pipeline.lower()
         self.comment = comment
         self.meta = deepcopy(self.event.meta)
@@ -355,6 +380,12 @@ class Production:
 
         self.meta = update(self.meta, kwargs)
 
+        if "review" in self.meta:
+            self.review = Review.from_dict(self.meta['review'], production=self)
+            self.meta.pop("review")
+        else:
+            self.review = Review()
+        
         # Check that the upper frequency is included, otherwise calculate it
         if "quality" in self.meta:
             if ("high-frequency" not in self.meta['quality']) and ("sample-rate" in self.meta['quality']):
@@ -455,6 +486,9 @@ class Production:
         output[self.name]['status'] = self.status
         output[self.name]['pipeline'] = self.pipeline.lower()
         output[self.name]['comment'] = self.comment
+
+        output[self.name]['review'] = self.review.to_dicts()
+        
         if "quality" in self.meta:
             output[self.name]['quality'] = self.meta['quality']
         if "priors" in self.meta:

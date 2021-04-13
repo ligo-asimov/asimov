@@ -11,6 +11,7 @@ import click
 from git import GitCommandError
 
 from asimov import config
+from asimov.ledger import Ledger
 from asimov.event import Production, Event,  DescriptionException
 from asimov import gitlab
 from asimov.cli import connect_gitlab, find_calibrations, CALIBRATION_NOTE
@@ -39,7 +40,7 @@ def event():
 @event.command()
 def create(name, oldname=None, gid=None, superevent=None, repo=None):
     """
-    Create a new event record on the git issue tracker from the GraceDB dev server.
+    Create a new event record in the ledger..
 
     Parameters
     ----------
@@ -52,79 +53,58 @@ def create(name, oldname=None, gid=None, superevent=None, repo=None):
     oldname: str, optional
         The old name of the event.
     """
-    server, repository = connect_gitlab()
-
+    import pathlib
+    
     if gid or superevent:
         from ligo.gracedb.rest import GraceDb, HTTPError 
         client = GraceDb(service_url=config.get("gracedb", "url"))
-    r = client.ping()
+        r = client.ping()
     if superevent:
         data = client.superevent(superevent).json()
         event_data = client.event(data['preferred_event']).json()
         gid = data['preferred_event']
+        interferometers = event_data['instruments'].split(",")
     elif gid:
         event_data = client.event(gid).json()
+        interferometers = event_data['instruments'].split(",")
+    else:
+        event_data = None
+        interferometers = []
 
+    if gid or superevent:
+        event_url = f"{config.get('gracedb', 'url')}/events/{gid}/view/"
+        
     if not repo:
-        repo = f"git@git.ligo.org:pe/O3/{name}"
+        repo = None
+        #repo = f"git@git.ligo.org:pe/O3/{name}"
 
-    event_url = f"{config.get('gracedb', 'url')}/events/{gid}/view/"
     event = Event(name=name,
                   repository=repo,
                   calibration = {},
-                  interferometers=event_data['instruments'].split(","),
+                  interferometers=interferometers,
     )
+
     if oldname:
         event.meta['old superevent'] = oldname
-    event.meta['event time'] = event_data['gpstime']
-    event.meta['working directory'] = f"{config.get('general', 'rundir_default')}/{name}"
 
-    gitlab.EventIssue.create_issue(repository, event, issue_template="/home/daniel.williams/repositories/asimov/scripts/outline.md")
+    if gid:
+        event.meta['event time'] = event_data['gpstime']
+        event.meta['gid'] = gid
 
-@click.option("--event", "event", default=None, help="The event which will be updated")
-@click.option("--pipeline", "pipeline", default=None, help="The pipeline which the job should use")
-@click.option("--approximant", "approximant", default=None, help="The waveform which the job should use")
-@click.option("--family", "family", default=None, help="The family name of the production, e.g. `prod`.")
-@click.option("--comment", "comment", default=None, help="A comment to attach to the production")
-@click.option("--needs", "needs", default=None, help="A list of productions which are requirements")
-@click.option("--template", "template", default=None, help="The configuration template for the production.")
-@click.option("--status", "status", default=None, help="The initial status of the production.")
-@event.command(help="Add a new production to an event")
-def production(event, pipeline, approximant, family, comment, needs, template, status):
-    """
-    Add a new production to an event.
+    working_dir = os.path.join(config.get('general', 'rundir_default'), name)
 
-    """
-    server, repository = connect_gitlab()
-    gitlab_event = gitlab.find_events(repository, subset=event)
-    for event in gitlab_event:
-        g_event = event
-        event = event.event_object
-        #
-        event_prods = event.productions
-        names = [production.name for production in event_prods]
-        family_entries = [int(name.split(family)[1]) for name in names if family in name]
-        #
-        if "bayeswave" in needs:
-            bw_entries = [production.name for production in event_prods if "bayeswave" in production.pipeline.lower()]
-            needs = bw_entries
-        #
-        production = {"comment": comment, "pipeline": pipeline, "status": status}
-        production['approximant'] = approximant
-        if needs:
-            production['needs'] = needs
-        if template:
-            production['template'] = template
-        if len(family_entries)>0:
-            number = max(family_entries)+1
-        else:
-            number = 0
-        production_dict = {f"{family}{number}": production}
-        production = Production.from_dict(production_dict, event=event)
-        #
-        click.echo(production)
-        event.add_production(production)
-        g_event.update_data()
+    event.meta['working directory'] = working_dir
+    pathlib.Path(working_dir).mkdir(parents=True, exist_ok=True)
+
+    if config.get("ledger", "engine") == "gitlab":
+        _, repository = connect_gitlab()
+        gitlab.EventIssue.create_issue(repository,
+                                       event, issue_template="/home/daniel.williams/repositories/asimov/scripts/outline.md")
+
+    elif config.get("ledger", "engine") == "yamlfile":
+        ledger = Ledger(config.get("ledger", "location"))
+        ledger.add_event(event)
+        ledger.save()
     
 @click.option("--event", "event", help="The event to be populated.")
 @click.option("--yaml", "yaml", default=None)
