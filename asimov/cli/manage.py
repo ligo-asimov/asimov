@@ -30,7 +30,6 @@ def build(event):
         click.echo(f"Working on {event.title}")
         logger = logging.AsimovLogger(event=event.event_object)
         ready_productions = event.event_object.get_all_latest()
-        print(ready_productions)
         for production in ready_productions:
             click.echo(f"\tWorking on production {production.name}")
             if production.status in {"running", "stuck", "wait", "finished", "uploaded"}: continue

@@ -90,7 +90,10 @@ def monitor(event, update, dry_run):
                         pipe.eject_job()
                         production.status = "stopped"
 
-                    if production.status.lower() == "processing":
+                    if production.status.lower() == "finished":
+                        pipe.after_completion()
+
+                    elif production.status.lower() == "processing":
                     # Need to check the upload has completed
                         try:
                             pipe.after_processing()

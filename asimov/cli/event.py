@@ -83,44 +83,48 @@ def create(name, oldname=None, gid=None, superevent=None, repo=None):
 
 @click.option("--event", "event", default=None, help="The event which will be updated")
 @click.option("--pipeline", "pipeline", default=None, help="The pipeline which the job should use")
+@click.option("--approximant", "approximant", default=None, help="The waveform which the job should use")
 @click.option("--family", "family", default=None, help="The family name of the production, e.g. `prod`.")
 @click.option("--comment", "comment", default=None, help="A comment to attach to the production")
 @click.option("--needs", "needs", default=None, help="A list of productions which are requirements")
 @click.option("--template", "template", default=None, help="The configuration template for the production.")
 @click.option("--status", "status", default=None, help="The initial status of the production.")
 @event.command(help="Add a new production to an event")
-def production(event, pipeline, family, comment, needs, template, status):
+def production(event, pipeline, approximant, family, comment, needs, template, status):
     """
     Add a new production to an event.
 
     """
     server, repository = connect_gitlab()
     gitlab_event = gitlab.find_events(repository, subset=event)
-    event = gitlab_event[0].event_object
-    #
-    event_prods = event.productions
-    names = [production.name for production in event_prods]
-    family_entries = [int(name.split(family)[1]) for name in names if family in name]
-    #
-    if "bayeswave" in needs:
-        bw_entries = [production.name for production in event_prods if "bayeswave" in production.pipeline.lower()]
-        needs = bw_entries
-    #
-    production = {"comment": comment, "pipeline": pipeline, "status": status}
-    if needs:
-        production['needs'] = needs
-    if template:
-        production['template'] = template
-    if len(family_entries)>0:
-        number = max(family_entries)+1
-    else:
-        number = 0
-    production_dict = {f"{family}{number}": production}
-    production = Production.from_dict(production_dict, event=event)
-    #
-    click.echo(production)
-    event.add_production(production)
-    gitlab_event[0].update_data()
+    for event in gitlab_event:
+        g_event = event
+        event = event.event_object
+        #
+        event_prods = event.productions
+        names = [production.name for production in event_prods]
+        family_entries = [int(name.split(family)[1]) for name in names if family in name]
+        #
+        if "bayeswave" in needs:
+            bw_entries = [production.name for production in event_prods if "bayeswave" in production.pipeline.lower()]
+            needs = bw_entries
+        #
+        production = {"comment": comment, "pipeline": pipeline, "status": status}
+        production['approximant'] = approximant
+        if needs:
+            production['needs'] = needs
+        if template:
+            production['template'] = template
+        if len(family_entries)>0:
+            number = max(family_entries)+1
+        else:
+            number = 0
+        production_dict = {f"{family}{number}": production}
+        production = Production.from_dict(production_dict, event=event)
+        #
+        click.echo(production)
+        event.add_production(production)
+        g_event.update_data()
     
 @click.option("--event", "event", help="The event to be populated.")
 @click.option("--yaml", "yaml", default=None)
