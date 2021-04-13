@@ -8,7 +8,8 @@ import subprocess
 from ..pipeline import Pipeline, PipelineException, PipelineLogger
 from ..ini import RunConfiguration
 from ..git import AsimovFileNotFound
-from ..storage import Store
+from ..storage import Store, AlreadyPresentException
+from asimov import logging
 from asimov import config
 from shutil import copyfile
 import numpy as np
@@ -30,7 +31,7 @@ class BayesWave(Pipeline):
 
     def __init__(self, production, category=None):
         super(BayesWave, self).__init__(production, category)
-
+        self.logger = logger = logging.AsimovLogger(event=production.event)
         if not production.pipeline.lower() == "bayeswave":
             raise PipelineException
 
@@ -127,6 +128,8 @@ class BayesWave(Pipeline):
                    ini.ini_loc
         ]
             
+        self.logger.info(" ".join(command))
+
         pipe = subprocess.Popen(command, 
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
@@ -169,9 +172,10 @@ class BayesWave(Pipeline):
             
         if "supress" in self.production.meta['quality']:
             for ifo in self.production.meta['quality']['supress']:
-                self.supress_psd(ifo, 
-                                 self.production.meta['quality']['supress'][ifo]['lower'],
-                                 self.production.meta['quality']['supress'][ifo]['upper'])
+                if ifo in self.production.meta['interferometers']:
+                    self.supress_psd(ifo, 
+                                     self.production.meta['quality']['supress'][ifo]['lower'],
+                                     self.production.meta['quality']['supress'][ifo]['upper'])
         
     def before_submit(self):
         pass
@@ -335,8 +339,11 @@ class BayesWave(Pipeline):
                                     issue=self.production.event.issue_object,
                                     production=self.production.name)
         copyfile(asset, f"{ifo}-{sample_rate}-psd-suppresed.dat")
-        store.add_file(self.production.event.name, self.production.name,
+        try:
+            store.add_file(self.production.event.name, self.production.name,
                        file = f"{ifo}-{sample_rate}-psd-suppresed.dat")
+        except AlreadyPresentException:
+            pass
 
     def resurrect(self):
         """

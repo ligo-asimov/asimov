@@ -107,7 +107,10 @@ class Bilby(Pipeline):
                     q_min = 0.05
                     q_max = 1.00
                 if "distance" in priors_e:
-                    d_min = priors_e['distance'][0]
+                    if priors_e['distance'][0]:
+                        d_min = priors_e['distance'][0]
+                    else:
+                        d_min = 10
                     d_max = priors_e['distance'][1]
                 else:
                     d_min = distance_bounds[0]
@@ -208,6 +211,7 @@ class Bilby(Pipeline):
                    "--accounting", config.get("bilby", "accounting")
         ]
         print(" ".join(command))
+        self.logger.info(" ".join(command))
         pipe = subprocess.Popen(command, 
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)

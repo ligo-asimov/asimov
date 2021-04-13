@@ -87,7 +87,7 @@ class Event:
             self.repository = EventRepo.from_url(repository,
                                                  self.name,
                                                  self.work_dir,
-                                                 update)
+                                                 update=update)
         else:
             self.repository = repository
             
