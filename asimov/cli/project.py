@@ -32,11 +32,10 @@ def init(name, root, working="working", checkouts="checkouts", results="results"
 
     config.set("project", "name", name)
     config.set("project", "root", root)
-    
 
     project_name = name
 
-    ## Make the virtual environment
+    # Make the virtual environment
     builder = venv.EnvBuilder(system_site_packages=False,
                               clear=False,
                               symlinks=False,
@@ -48,22 +47,22 @@ def init(name, root, working="working", checkouts="checkouts", results="results"
 
     config.set("general", "environment", "environment")
 
-    ## Make the working directory
+    # Make the working directory
     pathlib.Path(working).mkdir(parents=True, exist_ok=True)
     config.set("general", "rundir_default", working)
 
-    ## Make the git directory
+    # Make the git directory
     pathlib.Path(checkouts).mkdir(parents=True, exist_ok=True)
     config.set("general", "git_default", checkouts)
 
-    ## Make the results store
+    # Make the results store
     storage.Store.create(root=results, name=f"{project_name} storage")
     config.set("storage", "root", results)
 
-    ## Make the ledger
+    # Make the ledger
     ledger.Ledger.create()
     config.set("ledger", "engine", "yamlfile")
-    config.set("ledger", "location", "ledger.yaml")
+    config.set("ledger", "location", "ledger.yml")
 
     with open("asimov.conf", "w") as config_file:
         config.write(config_file)

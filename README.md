@@ -23,6 +23,10 @@ Asimov records all ongoing, completed, and scheduled analyses, allowing jobs, co
 
 Asimov can provide both machine-readible and human-friendly reports of all jobs it is monitoring, while collating relevant log files and outputs.
 
+### Results management
+
+Your results are important, and Asimov provides special tools to help manage the outputs of analyses as well as ensuring their veracity.
+
 ## Do I need Asimov?
 
 Asimov makes setting-up and running parameter estimation jobs easier.

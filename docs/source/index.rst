@@ -59,7 +59,9 @@ Users' guide
    olivaw/projects
    olivaw/events
    olivaw/productions
+   olivaw/running
    olivaw/reporting
+   olivaw/review
    configuration
 
 Module documentation
