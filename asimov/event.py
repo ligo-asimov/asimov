@@ -434,6 +434,17 @@ class Production:
         """
         return needs
 
+    def results(self, filename):
+        store = Store(root=config.get("storage", "results_store"))
+        if not filename:
+            try:
+                items = store.manifest.list_resources(self.event.name, self.name)
+                return items
+            except KeyError:
+                return None
+        else:
+            return open(store.fetch_file(event, production, file, hash), "r")
+
     def get_meta(self, key):
         """
         Get the value of a metadata attribute, or return None if it doesn't
