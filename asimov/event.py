@@ -200,6 +200,7 @@ class Event:
             raise DescriptionException(f"Some of the required parameters are missing from this issue.")
         if not repo:
             data.pop("repository")
+        print(data['repository'])
         event = cls(**data, issue=issue, update=update)
 
         if issue:
