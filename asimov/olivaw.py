@@ -41,6 +41,7 @@ def olivaw():
 
 # Project initialisation
 olivaw.add_command(project.init)
+olivaw.add_command(project.clone)
 
 olivaw.add_command(event.event)
 
