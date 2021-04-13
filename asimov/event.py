@@ -270,9 +270,8 @@ class Event:
 
         self.repository.add_file("download.file", destination,
                                  commit_message = f"Downloaded {gfile} from GraceDB")
-    
-    def to_yaml(self):
-        """Serialise this object as yaml"""
+
+    def to_dict(self):
         data = {}
         data['name'] = self.name
 
@@ -301,6 +300,12 @@ class Event:
 
         if "issue" in data:
             data.pop("issue")
+
+        return data
+        
+    def to_yaml(self):
+        """Serialise this object as yaml"""
+        data = self.to_dict()
 
         return yaml.dump(data, default_flow_style=False)
 
@@ -350,7 +355,10 @@ class Production:
     def __init__(self, event, name, status, pipeline, comment=None, **kwargs):
         self.event = event
         self.name = name
-        self.status_str = status.lower()
+        if status:
+            self.status_str = status.lower()
+        else:
+            self.status_str = "none"
         self.pipeline = pipeline.lower()
         self.comment = comment
         self.meta = deepcopy(self.event.meta)
