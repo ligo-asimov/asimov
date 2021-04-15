@@ -74,6 +74,15 @@ Advanced topics
    gitlab-interface
    test-interface
 
+Developers' Guide
+-----------------
+
+.. toctree::
+   :caption: Development Guide
+
+   ../../CONTRIBUTING.rst
+   ../../CODE-OF-CONDUCT.rst
+   
 Module documentation
 --------------------
 
