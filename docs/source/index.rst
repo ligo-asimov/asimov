@@ -46,7 +46,6 @@ Tutorials
 
    starting-project
    starting-analysis
-   gitlab-interface
 
 Users' guide
 ------------
@@ -62,7 +61,18 @@ Users' guide
    olivaw/running
    olivaw/reporting
    olivaw/review
+
+Advanced topics
+---------------
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Advanced topics
+	     
    configuration
+   yamlformat
+   gitlab-interface
+   test-interface
 
 Module documentation
 --------------------
@@ -73,7 +83,6 @@ Module documentation
 
    api/git
    state
-   yamlformat
    pipelines
    storage
    config
