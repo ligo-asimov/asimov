@@ -12,7 +12,8 @@ test-python-36:
     - pip install -r requirements.txt
     - pip install coverage
     - python setup.py install
-    - coverage run -m unittest -v tests
+    - cd tests
+    - coverage run -m unittest -v
     - coverage report -m
 
 test-python-37:
@@ -22,7 +23,8 @@ test-python-37:
     - pip install -r requirements.txt
     - pip install coverage
     - python setup.py install
-    - coverage run -m unittest -v tests
+    - cd tests
+    - coverage run -m unittest -v
     - coverage report -m
 
 test-python-38:
@@ -32,7 +34,8 @@ test-python-38:
     - pip install -r requirements.txt
     - pip install coverage
     - python setup.py install
-    - coverage run -m unittest -v tests
+    - cd tests
+    - coverage run -m unittest -v
     - coverage report -m
 
 test-python-39:
@@ -42,7 +45,8 @@ test-python-39:
     - pip install -r requirements.txt
     - pip install coverage
     - python setup.py install
-    - coverage run -m unittest -v tests
+    - cd tests
+    - coverage run -m unittest -v
     - coverage report -m
     
 pages:
