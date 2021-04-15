@@ -2,6 +2,10 @@
 Provide the command line interface components for asimov.
 """
 
+import glob
+
+import numpy as np
+
 from asimov import config
 from asimov import gitlab
 
@@ -26,7 +30,7 @@ The following calibration envelopes have been found.
 """
 
 
-ACTIVE_STATES = {"running", "stuck", "finished", "processing", "stop"}
+ACTIVE_STATES = {"ready", "running", "stuck", "finished", "processing", "stop"}
 
 known_pipelines = {"bayeswave": BayesWave,
                    "bilby": Bilby,
@@ -52,49 +56,28 @@ def connect_gitlab():
 
 
 def find_calibrations(time):
-    with open("/home/daniel.williams/repositories/asimov/scripts/LLO_calibs.txt") as llo_file:
-        data_llo = llo_file.read().split("\n")
-        data_llo = [datum for datum in data_llo if datum[-16:]=="FinalResults.txt"]
-        times_llo = {int(datum.split("GPSTime_")[1].split("_C01")[0]): datum for datum in data_llo}
+    """
+    Find the calibration file for a given time.
+    """
+    if time < 1190000000:
+        dir = "/home/cal/public_html/uncertainty/O2C02"
+        virgo = "/home/carl-johan.haster/projects/O2/C02_reruns/V_calibrationUncertaintyEnvelope_magnitude5p1percent_phase40mraddeg20microsecond.txt"
+    elif time < 1290000000:
+        dir = "/home/cal/public_html/uncertainty/O3C01"
+        virgo = "/home/cbc/pe/O3/calibrationenvelopes/Virgo/V_O3a_calibrationUncertaintyEnvelope_magnitude5percent_phase35milliradians10microseconds.txt"
+    data_llo = glob.glob(f"{dir}/L1/*LLO*FinalResults.txt")
+    times_llo = {int(datum.split("GPSTime_")[1].split("_C0")[0]): datum for datum in data_llo}
     
-    with open("/home/daniel.williams/repositories/asimov/scripts/LHO_calibs.txt") as llo_file:
-        data_lho = llo_file.read().split("\n")
-        data_lho = [datum for datum in data_lho if datum[-16:]=="FinalResults.txt"]
-        times_lho = {int(datum.split("GPSTime_")[1].split("_C01")[0]): datum for datum in data_lho}
+    data_lho = glob.glob(f"{dir}/H1/*LHO*FinalResults.txt")
+    times_lho = {int(datum.split("GPSTime_")[1].split("_C0")[0]): datum for datum in data_lho}
         
     keys_llo = np.array(list(times_llo.keys())) 
     keys_lho = np.array(list(times_lho.keys())) 
 
-    return {"H1": times_lho[keys_lho[np.argmin(np.abs(keys_lho - time))]], "L1": times_llo[keys_llo[np.argmin(np.abs(keys_llo - time))]], "V1": "/home/cbc/pe/O3/calibrationenvelopes/Virgo/V_O3a_calibrationUncertaintyEnvelope_magnitude5percent_phase35milliradians10microseconds.txt"}
+    return {"H1": times_lho[keys_lho[np.argmin(np.abs(keys_lho - time))]], 
+            "L1": times_llo[keys_llo[np.argmin(np.abs(keys_llo - time))]], 
+            "V1": virgo}
 
-def calibration(event):
-    server, repository = connect_gitlab()
-    gitlab_events = gitlab.find_events(repository, subset=event)
-    # Update existing events
-    for event in gitlab_events:
-        if "disable_repo" in event.event_object.meta:
-            if event.event_object.meta['disable_repo'] == True:
-                continue
-        try:
-            event.event_object._check_calibration()
-        except DescriptionException:
-            print(event.title)
-            time = event.event_object.meta['event time'] 
-
-            calibrations = find_calibrations(time)
-            print(calibrations)
-            # try:
-            for ifo, envelope in calibrations.items():
-                description = f"Added calibration {envelope} for {ifo}."
-                try:
-                    event.event_object.repository.add_file(os.path.join(f"/home/cal/public_html/uncertainty/O3C01/{ifo}", envelope), f"C01_offline/calibration/{ifo}.dat", 
-                                                       commit_message=description)
-                except GitCommandError as e:
-                    if "nothing to commit," in e.stderr:
-                        pass
-                calibrations[ifo] = f"C01_offline/calibration/{ifo}.dat"
-            envelopes = yaml.dump({"calibration": calibrations})
-            event.add_note(CALIBRATION_NOTE.format(envelopes))
 
 
 def add_data(event, yaml_data, json_data=None):

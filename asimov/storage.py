@@ -13,7 +13,7 @@ Configuration options for the storage API can be found in the `storage` namespac
 ```
 [storage]
 root = /path/to/the/storage/root
-results_store = results/
+
 ```
 
 """
@@ -216,6 +216,7 @@ class Store:
         name : str
            A name for this Store.
         """
+        pathlib.Path(root).mkdir(parents=False, exist_ok=False)
         manifest_dir = os.path.join(root, ".manifest")
         pathlib.Path(manifest_dir).mkdir(parents=False, exist_ok=False)
         store = {}

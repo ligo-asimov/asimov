@@ -94,9 +94,7 @@ class Event:
                                                  update)
         else:
             self.repository = repository
-            
 
-        self.productions = []
         if "psds" in kwargs:
             self.psds = kwargs["psds"]
         else:
@@ -108,6 +106,20 @@ class Event:
             if kwargs['issue']:
                 self.issue_object = kwargs.pop("issue")
                 self.from_notes()
+        else:
+            self.issue_object = None
+
+        self.productions = []
+        self.graph = nx.DiGraph()
+        
+        if 'productions' in kwargs:
+            for production in kwargs['productions']:
+                try:
+                    self.add_production(
+                        Production.from_dict(production, event=self, issue=self.issue_object))
+                except DescriptionException as error:
+                    error.submit_comment()
+            
 
         self._check_required()
         
@@ -117,7 +129,7 @@ class Event:
             except DescriptionException:
                 print("No calibration envelopes found.")
 
-        self.graph = nx.DiGraph()
+        
 
     def _check_required(self):
         """
@@ -200,6 +212,7 @@ class Event:
             raise DescriptionException(f"Some of the required parameters are missing from this issue.")
         if not repo:
             data.pop("repository")
+        print(data['repository'])
         event = cls(**data, issue=issue, update=update)
 
         if issue:
@@ -270,9 +283,8 @@ class Event:
 
         self.repository.add_file("download.file", destination,
                                  commit_message = f"Downloaded {gfile} from GraceDB")
-    
-    def to_yaml(self):
-        """Serialise this object as yaml"""
+
+    def to_dict(self):
         data = {}
         data['name'] = self.name
 
@@ -301,6 +313,12 @@ class Event:
 
         if "issue" in data:
             data.pop("issue")
+
+        return data
+        
+    def to_yaml(self):
+        """Serialise this object as yaml"""
+        data = self.to_dict()
 
         return yaml.dump(data, default_flow_style=False)
 
@@ -350,7 +368,10 @@ class Production:
     def __init__(self, event, name, status, pipeline, comment=None, **kwargs):
         self.event = event
         self.name = name
-        self.status_str = status.lower()
+        if status:
+            self.status_str = status.lower()
+        else:
+            self.status_str = "none"
         self.pipeline = pipeline.lower()
         self.comment = comment
         self.meta = deepcopy(self.event.meta)
@@ -412,6 +433,17 @@ class Production:
         Process the dependencies list for this production.
         """
         return needs
+
+    def results(self, filename):
+        store = Store(root=config.get("storage", "results_store"))
+        if not filename:
+            try:
+                items = store.manifest.list_resources(self.event.name, self.name)
+                return items
+            except KeyError:
+                return None
+        else:
+            return open(store.fetch_file(event, production, file, hash), "r")
 
     def get_meta(self, key):
         """

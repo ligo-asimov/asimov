@@ -85,9 +85,10 @@ Locutus
 
 Locutus is designed to provide a simple user interface to the storage API which can be used at the command line. When ``asimov`` is installed ``locutus`` will also be installed.
 
-.. click:: module:parser
-   :prog: locutus
-   :nested: full
+..
+   .. click:: module:parser
+      :prog: locutus
+      :nested: full
 
 Manifest files
 --------------

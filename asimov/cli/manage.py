@@ -1,6 +1,7 @@
 """ 
 Olivaw management commands
 """
+import os
 
 import click
 
@@ -29,7 +30,7 @@ def build(event):
         click.echo(f"Working on {event.title}")
         logger = logging.AsimovLogger(event=event.event_object)
         ready_productions = event.event_object.get_all_latest()
-        print(event.productions)
+        print(ready_productions)
         for production in ready_productions:
             click.echo(f"\tWorking on production {production.name}")
             if production.status in {"running", "stuck", "wait", "finished", "uploaded"}: continue
@@ -37,6 +38,7 @@ def build(event):
                 configuration = production.get_configuration()
             except ValueError:
                 try:
+                    rundir = config.get("general", "rundir_default")
                     templates = os.path.join(rundir, config.get("templating", "directory"))
                     production.make_config(f"{production.name}.ini", template_directory=templates)
                     click.echo(f"Production config {production.name} created.")
