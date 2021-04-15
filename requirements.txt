@@ -10,3 +10,4 @@ python-gitlab
 pytz
 pyyaml
 requests
+gwpy

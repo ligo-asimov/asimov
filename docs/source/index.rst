@@ -1,34 +1,78 @@
-.. Asimov documentation master file, created by
-   sphinx-quickstart on Tue Mar 24 12:18:27 2020.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Asimov : The PE Automator and Manager
+=====================================
 
-Asimov : The bot framework
-==========================
+`Asimov` is a python package to help with setting-up, automating, and monitoring parameter estimation workflows for gravitational wave signals.
 
-`Asimov` is a python package for producing scripts to automate parameter estimation processes for gravitational wave data on the LIGO Data Grid.
+Asimov makes setting-up and running parameter estimation jobs easier.
+It can generate configuration files for several parameter estimation pipelines, and handle submitting these to a cluster.
+Whether you're setting-up a preliminary analysis for a single gravitational wave event, or analysing hundreds of events for a catalog, Asimov can help.
 
-.. warning::
-   This documentation is currently being written, so there may be places where it is somewhat defficient.
+Features
+--------
+
+Job monitoring and management
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Asimov is able to interact with high throughput job management tools, and can submit jobs to clusters, monitor them for problems, and initiate post-processing tasks.
+
+Uniform pipeline interface
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Asimov provides an API layer which allows a single configuration to be deployed to numerous different analysis pipelines.
+Current gravitational wave pipelines which are supported are ``lalinference``, ``bayeswave``, ``RIFT``, and ``bilby``.
+
+Centralised configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Asimov records all ongoing, completed, and scheduled analyses, allowing jobs, configurations, and results to be found easily.
+
+Reporting overview
+~~~~~~~~~~~~~~~~~~
+
+Asimov can provide both machine-readible and human-friendly reports of all jobs it is monitoring, while collating relevant log files and outputs.
+
+Quick installation
+------------------
+
+Asimov is available on ``pypi`` and can be installed via ``pip install ligo-asimov``.
+
+
+
+Tutorials
+---------
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents
+   :caption: Tutorials
 
-   readme
-   installation
-   usage
-   api
+   starting-project
+   starting-analysis
 
-Pre-built Bot scripts
----------------------
+Users' guide
+------------
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Scripts
+   :maxdepth: 2
+   :caption: Users' guide
 
-   olivaw
+   installation
+   olivaw/projects
+   olivaw/events
+   olivaw/productions
+   olivaw/running
+   olivaw/reporting
+   olivaw/review
 
+Advanced topics
+---------------
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Advanced topics
+	     
+   configuration
+   yamlformat
+   gitlab-interface
+   test-interface
 
 Module documentation
 --------------------
@@ -39,7 +83,6 @@ Module documentation
 
    api/git
    state
-   yamlformat
    pipelines
    storage
    config
