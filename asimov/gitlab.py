@@ -15,20 +15,23 @@ from liquid import Liquid
 
 STATE_PREFIX = "C01"
 
-def find_events(repository, milestone=None, subset=None, update=False, repo=True):
+def find_events(repository, milestone=None, subset=None, update=False, repo=True, label=None):
     """
     Search through a repository's issues and find all of the ones
     for events.
     """
     if subset == [None]:
         subset = None
-    event_label = config.get("gitlab", "event_label")
+    if not label:
+        event_label = config.get("gitlab", "event_label")
+    else:
+        event_label = label
     try:
         sleep_time = int(config.get("gitlab", "rest_time"))
     except:
         sleep_time = 30
     issues = repository.issues.list(labels=[event_label], 
-                                    milestone=milestone,
+                                    #milestone=milestone,
                                     per_page=1000)
     output = []
     if subset:

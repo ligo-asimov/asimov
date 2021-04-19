@@ -176,6 +176,7 @@ class BayesWave(Pipeline):
                     self.supress_psd(ifo, 
                                      self.production.meta['quality']['supress'][ifo]['lower'],
                                      self.production.meta['quality']['supress'][ifo]['upper'])
+        self.production.status = "uploaded"
         
     def before_submit(self):
         pass

@@ -29,7 +29,7 @@ def monitor(event, update, dry_run):
         finish = 0
         click.secho(f"{event.title}", bold=True)
         on_deck = [production
-                   for production in event.productions
+                   for production in event.event_object.get_all_latest()
                    if production.status.lower() in ACTIVE_STATES]
         
         for production in on_deck:
@@ -84,6 +84,7 @@ def monitor(event, update, dry_run):
                         running += 1
 
             except ValueError as e:
+                click.echo(e)
                 click.echo(f"\t\t{production.name}\t{production.status.lower()}")
                 if production.pipeline.lower() in known_pipelines:
                     click.echo("Investigating...")
@@ -94,6 +95,7 @@ def monitor(event, update, dry_run):
                         production.status = "stopped"
 
                     if production.status.lower() == "finished":
+                        click.echo("Finished")
                         pipe.after_completion()
 
                     elif production.status.lower() == "processing":
@@ -123,6 +125,7 @@ def monitor(event, update, dry_run):
 
                 if production.status == "stuck":
                     event.state = "stuck"
+                production.event.issue_object.update_data()
 
             if (running > 0) and (stuck == 0):
                 event.state = "running"
