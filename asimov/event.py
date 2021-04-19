@@ -91,7 +91,7 @@ class Event:
             self.repository = EventRepo.from_url(repository,
                                                  self.name,
                                                  self.work_dir,
-                                                 update)
+                                                 update=update)
         else:
             self.repository = repository
 
@@ -210,21 +210,21 @@ class Event:
         data = yaml.safe_load(data)
         if not {"name",} <= data.keys():
             raise DescriptionException(f"Some of the required parameters are missing from this issue.")
-        if not repo:
+        if not repo and "repository" in data:
             data.pop("repository")
-        print(data['repository'])
+        #print(data['repository'])
         event = cls(**data, issue=issue, update=update)
 
         if issue:
             event.issue_object = issue
             event.from_notes()
 
-        for production in data['productions']:
-            try:
-                event.add_production(
-                    Production.from_dict(production, event=event, issue=issue))
-            except DescriptionException as error:
-                error.submit_comment()
+        #for production in data['productions']:
+        #    try:
+        #        event.add_production(
+        #            Production.from_dict(production, event=event, issue=issue))
+        #    except DescriptionException as error:
+        #        error.submit_comment()
         return event
 
     @classmethod
@@ -303,12 +303,15 @@ class Event:
             # Remove duplicate data
             prod_dict = production.to_dict()[production.name]
             dupes = []
+            prod_names = []
             for key, value in prod_dict.items():
+                if production.name in prod_names: continue
                 if key in data:
                     if data[key] == value:
                         dupes.append(key)
             for dupe in dupes:
                 prod_dict.pop(dupe)
+            prod_names.append(production.name)
             data['productions'].append({production.name: prod_dict})
 
         if "issue" in data:

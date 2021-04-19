@@ -86,6 +86,7 @@ def create(name, oldname=None, gid=None, superevent=None, repo=None):
 
     if oldname:
         event.meta['old superevent'] = oldname
+
     if gid:
         event.meta['event time'] = event_data['gpstime']
         event.meta['gid'] = gid
@@ -104,9 +105,6 @@ def create(name, oldname=None, gid=None, superevent=None, repo=None):
         ledger = Ledger(config.get("ledger", "location"))
         ledger.add_event(event)
         ledger.save()
-
-
-
     
 @click.option("--event", "event", help="The event to be populated.")
 @click.option("--yaml", "yaml", default=None)

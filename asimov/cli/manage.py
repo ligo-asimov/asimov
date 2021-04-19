@@ -25,12 +25,11 @@ def build(event):
     If no event is specified then all of the events will be processed.
     """
     server, repository = connect_gitlab()
-    events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event], update=True)    
+    events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event], update=False)    
     for event in events:
         click.echo(f"Working on {event.title}")
         logger = logging.AsimovLogger(event=event.event_object)
         ready_productions = event.event_object.get_all_latest()
-        print(ready_productions)
         for production in ready_productions:
             click.echo(f"\tWorking on production {production.name}")
             if production.status in {"running", "stuck", "wait", "finished", "uploaded"}: continue
@@ -71,9 +70,8 @@ def submit(event, update):
     for event in events:
         logger = logging.AsimovLogger(event=event.event_object)
         ready_productions = event.event_object.get_all_latest()
-        print(ready_productions)
         for production in ready_productions:
-            if production.status.lower() in {"running", "stuck", "wait", "processing", "uploaded", "finished"}: continue
+            if production.status.lower() in {"running", "stuck", "wait", "processing", "uploaded", "finished", "manual"}: continue
             if production.status.lower() == "restart":
                 if production.pipeline.lower() in known_pipelines:
                     pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")

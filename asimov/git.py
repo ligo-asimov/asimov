@@ -102,7 +102,7 @@ class EventRepo():
                 repo.remotes[0].pull()
             except git.exc.GitCommandError:
                 pass
-        return cls(directory, url)
+        return cls(directory, url, update=update)
 
     def add_file(self, source, destination, commit_message=None):
         """
