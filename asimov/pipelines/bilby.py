@@ -59,31 +59,9 @@ class Bilby(Pipeline):
         if "prior file" in self.production.meta:
             return self.production.meta['prior file']
         else:
-
-            DEFAULT_DISTANCE_LOOKUPS = {
-                "high_mass": (1e2, 5e3),
-                "4s": (1e2, 5e3),
-                "8s": (1e2, 5e3),
-                "16s": (1e2, 4e3),
-                "32s": (1e2, 3e3),
-                "64s": (50, 2e3),
-                "128s": (1, 5e2),
-                "128s_tidal": (1, 5e2),
-                "128s_tidal_lowspin": (1, 5e2),
-            }
             duration = int(self.production.meta['quality']['segment-length'])
-            roq_folder = f"/home/cbc/ROQ_data/IMRPhenomPv2/{duration}s"
-            if os.path.isdir(roq_folder) is False:
-                self.logger.warning("Requested ROQ folder does not exist")
-                return f"{duration}s", None, duration, 20, 1024
-
-            roq_params = np.genfromtxt(os.path.join(roq_folder, "params.dat"), names=True)
-    
             scale_factor = 1 # Check this
             template = None
-            
-            distance_bounds = DEFAULT_DISTANCE_LOOKUPS[str(duration) + "s"]
-            
 
             if "priors" in self.production.meta:
                 priors_e = self.production.meta['priors']
@@ -151,8 +129,10 @@ class Bilby(Pipeline):
                 new_prior.write(prior_string)
                 
             repo = self.production.event.repository
-
-            repo.add_file(prior_file, os.path.join("C01_offline", prior_name))
+            try:
+                repo.add_file(prior_file, os.path.join("C01_offline", prior_name))
+            except:
+                pass
             return prior_file
 
         
@@ -179,7 +159,7 @@ class Bilby(Pipeline):
         """
 
         #self._activate_environment()
-        
+        cwd = os.getcwd()
         os.chdir(os.path.join(self.production.event.repository.directory,
                               self.category))
         gps_file = self.production.get_timefile()
@@ -200,9 +180,11 @@ class Bilby(Pipeline):
             job_label = self.production.name
 
         prior_file = self._determine_prior()
-        
-        os.chdir(self.production.event.meta['working directory'])   
+        #os.chdir(self.production.event.meta['working directory'])   
         # TODO: Check if bilby supports loading a gps time file
+
+        os.chdir(cwd)
+        
         command = ["bilby_pipe",
                    os.path.join(self.production.event.repository.directory, self.category,  ini),
                    "--label", job_label,

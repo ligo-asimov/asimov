@@ -7,6 +7,7 @@ import subprocess
 from ..pipeline import Pipeline, PipelineException, PipelineLogger
 from ..ini import RunConfiguration
 from asimov import config
+from asimov import logging
 
 class LALInference(Pipeline):
     """
@@ -26,6 +27,8 @@ class LALInference(Pipeline):
     def __init__(self, production, category=None):
         super(LALInference, self).__init__(production, category)
 
+        self.logger = logger = logging.AsimovLogger(event=production.event)
+        
         if not production.pipeline.lower() == "lalinference":
             raise PipelineException
 
@@ -63,6 +66,8 @@ class LALInference(Pipeline):
         PipelineException
            Raised if the construction of the DAG fails.
         """
+
+        # Change to the location of the ini file.
         os.chdir(os.path.join(self.production.event.repository.directory,
                               self.category))
         gps_file = self.production.get_timefile()
@@ -70,7 +75,7 @@ class LALInference(Pipeline):
 
         if not user:
             if self.production.get_meta("user"):
-                user = self.production.get_meta("user")
+                user = self.productevenion.get_meta("user")
         else:
             user = ini._get_user()
             self.production.set_meta("user", user)
@@ -104,7 +109,7 @@ class LALInference(Pipeline):
                    "-r", self.production.rundir,
                    ini.ini_loc
         ]
-            
+        self.logger.info(" ".join(command))
         pipe = subprocess.Popen(command, 
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
@@ -112,13 +117,16 @@ class LALInference(Pipeline):
         if err or "Successfully created DAG file." not in str(out):
             self.production.status = "stuck"
             if hasattr(self.production.event, "issue_object"):
+                self.logger.error(f"DAG file could not be created.\n{command}\n{out}\n\n{err}")
                 raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
                                             issue=self.production.event.issue_object,
                                             production=self.production.name)
             else:
+                self.logger.error(f"DAG file could not be created.\n{command}\n{out}\n\n{err}")
                 raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
                                         production=self.production.name)
         else:
+            self.logger.info("DAG created")
             if hasattr(self.production.event, "issue_object"):
                 return PipelineLogger(message=out,
                                       issue=self.production.event.issue_object,

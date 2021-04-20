@@ -88,10 +88,13 @@ class Event:
             self.work_dir = None
 
         if repository:
-            self.repository = EventRepo.from_url(repository,
-                                                 self.name,
-                                                 self.work_dir,
-                                                 update=update)
+            if "git@" in repository or "https://" in repository:
+                self.repository = EventRepo.from_url(repository,
+                                                     self.name,
+                                                     self.work_dir,
+                                                     update=update)
+            else:
+                self.repository = EventRepo(repository)
         else:
             self.repository = repository
 
@@ -102,12 +105,11 @@ class Event:
             
         self.meta = kwargs
 
+        self.issue_object = None
         if "issue" in kwargs:
             if kwargs['issue']:
                 self.issue_object = kwargs.pop("issue")
                 self.from_notes()
-        else:
-            self.issue_object = None
 
         self.productions = []
         self.graph = nx.DiGraph()
@@ -127,7 +129,7 @@ class Event:
             try:
                 self._check_calibration()
             except DescriptionException:
-                print("No calibration envelopes found.")
+                pass
 
         
 
@@ -480,7 +482,7 @@ class Production:
     @status.setter
     def status(self, value):
         self.status_str = value.lower()
-        if hasattr(self.event, "issue_object"):
+        if self.event.issue_object != None:
             self.event.issue_object.update_data()
 
     @property
@@ -523,7 +525,8 @@ class Production:
         elif "working directory" in self.event.meta:
             value = os.path.join(self.event.meta['working directory'], self.name)
             self.meta["rundir"] = value
-            self.event.issue_object.update_data()
+            if self.event.issue_object != None:
+                self.event.issue_object.update_data()
             return value
         else:
             return None
@@ -535,7 +538,7 @@ class Production:
         """
         if "rundir" not in self.meta:
             self.meta["rundir"] = value
-            if hasattr(self.event, "issue_object"):
+            if self.event.issue_object != None:
                 self.event.issue_object.update_data()
         else:
             raise ValueError
