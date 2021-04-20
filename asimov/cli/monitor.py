@@ -29,7 +29,7 @@ def monitor(event, update, dry_run):
         finish = 0
         click.secho(f"{event.title}", bold=True)
         on_deck = [production
-                   for production in event.event_object.get_all_latest()
+                   for production in event.productions
                    if production.status.lower() in ACTIVE_STATES]
         
         for production in on_deck:

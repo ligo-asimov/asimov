@@ -110,6 +110,20 @@ class Event:
             if kwargs['issue']:
                 self.issue_object = kwargs.pop("issue")
                 self.from_notes()
+        else:
+            self.issue_object = None
+
+        self.productions = []
+        self.graph = nx.DiGraph()
+        
+        if 'productions' in kwargs:
+            for production in kwargs['productions']:
+                try:
+                    self.add_production(
+                        Production.from_dict(production, event=self, issue=self.issue_object))
+                except DescriptionException as error:
+                    error.submit_comment()
+            
 
         self.productions = []
         self.graph = nx.DiGraph()
