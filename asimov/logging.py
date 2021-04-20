@@ -105,3 +105,21 @@ class AsimovLogger():
         """
 
         self.log("error", message, production, channels)
+
+    def warning(self, message, production=None, channels="file"):
+        """
+        Record an warning message.
+
+        Parameters
+        ----------
+
+        production : ``asimov.event.Production``, optional
+           The production this message is for.
+        message : str
+           The free-form message for the log message.
+        channels : list, or str, {"file", "mattermost", "gitlab"}, optional
+           The list of places where the log message should be sent.
+           Defaults to file only.
+        """
+
+        self.log("warning", message, production, channels)

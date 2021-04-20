@@ -104,9 +104,6 @@ def create(name, oldname=None, gid=None, superevent=None, repo=None):
         ledger = Ledger(config.get("ledger", "location"))
         ledger.add_event(event)
         ledger.save()
-
-
-
     
 @click.option("--event", "event", help="The event to be populated.")
 @click.option("--yaml", "yaml", default=None)

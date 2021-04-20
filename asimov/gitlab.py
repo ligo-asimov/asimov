@@ -15,16 +15,23 @@ from liquid import Liquid
 
 STATE_PREFIX = "C01"
 
-def find_events(repository, milestone=None, subset=None, update=False, repo=True):
+def find_events(repository, milestone=None, subset=None, update=False, repo=True, label=None):
     """
     Search through a repository's issues and find all of the ones
     for events.
     """
     if subset == [None]:
         subset = None
-    event_label = config.get("gitlab", "event_label")
+    if not label:
+        event_label = config.get("gitlab", "event_label")
+    else:
+        event_label = label
+    try:
+        sleep_time = int(config.get("gitlab", "rest_time"))
+    except:
+        sleep_time = 30
     issues = repository.issues.list(labels=[event_label], 
-                                    milestone=milestone,
+                                    #milestone=milestone,
                                     per_page=1000)
     output = []
     if subset:
@@ -32,12 +39,12 @@ def find_events(repository, milestone=None, subset=None, update=False, repo=True
             if issue.title in subset:
                 output += [EventIssue(issue, repository, update, repo=repo)]
                 if update:
-                    time.sleep(30)
+                    time.sleep(sleep_time)
     else:
         for issue in issues:
             output += [EventIssue(issue, repository, update, repo=repo)]
             if update:
-                time.sleep(30)
+                time.sleep(sleep_time)
     return output
 
 
@@ -74,9 +81,12 @@ class EventIssue:
         
 
     def _refresh(self):
-        self.issue_object = self.repository.issues.get(self.issue_object.iid)
-        if self.event_object:
-            self.event_object.text = self.issue_object.description.split("---")
+        if self.repository:
+            self.issue_object = self.repository.issues.get(self.issue_object.iid)
+            if self.event_object:
+                self.event_object.text = self.issue_object.description.split("---")
+        else:
+            pass
 
     @classmethod
     def create_issue(cls, repository, event_object, issue_template=None):

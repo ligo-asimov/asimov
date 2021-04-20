@@ -84,6 +84,7 @@ def monitor(event, update, dry_run):
                         running += 1
 
             except ValueError as e:
+                click.echo(e)
                 click.echo(f"\t\t{production.name}\t{production.status.lower()}")
                 if production.pipeline.lower() in known_pipelines:
                     click.echo("Investigating...")
@@ -93,7 +94,11 @@ def monitor(event, update, dry_run):
                         pipe.eject_job()
                         production.status = "stopped"
 
-                    if production.status.lower() == "processing":
+                    if production.status.lower() == "finished":
+                        click.echo("Finished")
+                        pipe.after_completion()
+
+                    elif production.status.lower() == "processing":
                     # Need to check the upload has completed
                         try:
                             pipe.after_processing()
@@ -120,6 +125,7 @@ def monitor(event, update, dry_run):
 
                 if production.status == "stuck":
                     event.state = "stuck"
+                production.event.issue_object.update_data()
 
             if (running > 0) and (stuck == 0):
                 event.state = "running"

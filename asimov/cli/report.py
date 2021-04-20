@@ -34,11 +34,13 @@ def html(event, webdir):
     server, repository = connect_gitlab()
     if not webdir:
         webdir = config.get("report", "report_root")
+    click.echo("Getting events...")
     events = gitlab.find_events(repository,
                                 milestone=config.get("olivaw", "milestone"),
                                 subset=[event],
                                 repo=False,
                                 update=False)
+    click.echo("Got events")
     if len(glob.glob("asimov.conf"))>0:
         config_file = "asimov.conf"
     else:
@@ -91,6 +93,7 @@ def html(event, webdir):
 
         production_list = bt.ListGroup()
         for production in event.productions:
+            click.echo(f"{event.title}\t{production.name}")
             if production.pipeline.lower() in known_pipelines:
                     pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
 

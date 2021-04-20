@@ -76,6 +76,7 @@ class CondorJob(object):
                 jobs = schedd.xquery(constraint="ClusterId == {}".format(self.cluster))
                 for job in jobs:
                     data = job
+                    break
             except RuntimeError as e:
                 print(e)
         if len(list(data.keys()))==0:
