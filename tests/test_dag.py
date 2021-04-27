@@ -1,12 +1,29 @@
 import os
 import unittest
 import asimov.event
+import git
 
 class DAGTests(unittest.TestCase):
     """All the tests to check production DAGs are generated successfully."""
     @classmethod
     def setUpClass(cls):
         cls.cwd = os.getcwd()
+        repo = git.Repo.init(cls.cwd+"/tests/test_data/s000000xx/")
+        os.chdir(cls.cwd+"/tests/test_data/s000000xx/")
+        os.system("git add C01_offline/Prod3_test.ini C01_offline/s000000xx_gpsTime.txt")
+        os.system("git commit -m 'test'")
+        os.chdir(cls.cwd)
+    
+    @classmethod
+    def tearDownClass(cls):
+        """Destroy all the products of this test."""
+        os.system("rm asimov.conf")
+        os.system(f"rm -rf {cls.cwd}/tests/tmp/")
+        os.system(f"rm -rf {cls.cwd}/tests/test_data/s000000xx/.git")
+        try:
+            shutil.rmtree("/tmp/S000000xx")
+        except:
+            pass
         
     def setUp(self):
         pass
