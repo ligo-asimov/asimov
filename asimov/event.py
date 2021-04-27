@@ -470,7 +470,7 @@ class Production:
 
     @property
     def finished(self):
-        finished_states = ["finished", "uploaded"]
+        finished_states = ["uploaded"]
         return self.status in finished_states
         
     @property
