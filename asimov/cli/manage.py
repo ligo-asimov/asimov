@@ -78,11 +78,11 @@ def submit(event, update):
                     pipe.clean()
                     pipe.submit_dag()
             else:
-                try:
-                    configuration = production.get_configuration()
-                except ValueError as e:
-                    #build(event)
-                    logger.error(f"Error while trying to submit a configuration. {e}", production=production, channels="gitlab")
+                #try:
+                #    configuration = production.get_configuration()
+                #except ValueError as e:
+                #    #build(event)
+                #    logger.error(f"Error while trying to submit a configuration. {e}", production=production, channels="gitlab")
                 if production.pipeline.lower() in known_pipelines:
                     pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
                     try:

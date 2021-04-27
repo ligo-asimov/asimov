@@ -151,15 +151,15 @@ def html(event, webdir):
                                      + str(bt.Badge(f"{production.status}")), 
                                      context=status_map[production.status])
 
-            logs = pipe.collect_logs()
-            container + f"### Log files"
-            container + f"<a href='{event.title}-{production.name}.html'>Log file page</a>"
-            with event_log:
+            # logs = pipe.collect_logs()
+            # container + f"### Log files"
+            # container + f"<a href='{event.title}-{production.name}.html'>Log file page</a>"
+            # with event_log:
 
-                for log, message in logs.items():
-                    log_card = bt.Card(title=f"{log}")
-                    log_card.add_content("<div class='card-body'><pre>"+message+"</pre></div>")
-                    event_log + log_card
+            #     for log, message in logs.items():
+            #         log_card = bt.Card(title=f"{log}")
+            #         log_card.add_content("<div class='card-body'><pre>"+message+"</pre></div>")
+            #         event_log + log_card
 
             with event_report:
                 event_report + container

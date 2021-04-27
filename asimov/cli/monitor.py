@@ -31,7 +31,7 @@ def monitor(event, update, dry_run):
         on_deck = [production
                    for production in event.event_object.get_all_latest()
                    if production.status.lower() in ACTIVE_STATES]
-        
+        click.echo(f"\t{on_deck}")
         for production in on_deck:
 
             click.secho(f"\t{production.name}", bold=True)
@@ -94,7 +94,7 @@ def monitor(event, update, dry_run):
                         pipe.eject_job()
                         production.status = "stopped"
 
-                    if production.status.lower() == "finished":
+                    elif production.status.lower() == "finished":
                         click.echo("Finished")
                         pipe.after_completion()
 
@@ -104,8 +104,8 @@ def monitor(event, update, dry_run):
                             pipe.after_processing()
                         except ValueError as e:
                             click.echo(e)
-                            production.status = "stuck"
-                            stuck += 1
+                            #production.status = "stuck"
+                            #stuck += 1
                             production.meta['stage'] = "after processing"
 
                     elif pipe.detect_completion() and production.status.lower() == "running":
@@ -114,14 +114,18 @@ def monitor(event, update, dry_run):
                         finish += 1
                         production.status = "finished"
                         pipe.after_completion()
-                        
+
                     else:
                         # It looks like the job has been evicted from the cluster
                         click.echo(f"Attempting to rescue {production.name}")
                         #event.state = "stuck"
                         #production.status = "stuck"
                         #production.meta['stage'] = 'production'
-                        pipe.resurrect()
+                        try:
+                            pipe.resurrect()
+                        except:
+                            production.status = "stuck"
+                            production.meta['error'] = "resurrection error"
 
                 if production.status == "stuck":
                     event.state = "stuck"

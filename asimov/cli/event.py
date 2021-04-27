@@ -146,13 +146,13 @@ def configurator(event, json_data=None):
             data = json.load(datafile)
 
     new_data = {"quality": {}, "priors": {}}
-    new_data["quality"]["sample-rate"] = data["srate"]
+    new_data["quality"]["sample-rate"] = int(data["srate"])
     new_data["quality"]["lower-frequency"] = {}
     new_data["quality"]["upper-frequency"] = int(0.875 * data["srate"]/2)
     new_data["quality"]["start-frequency"] = data['f_start']
-    new_data["quality"]["segment-length"] = data['seglen']
-    new_data["quality"]["window-length"] = data['seglen']
-    new_data["quality"]["psd-length"] = data['seglen']
+    new_data["quality"]["segment-length"] = int(data['seglen'])
+    new_data["quality"]["window-length"] = int(data['seglen'])
+    new_data["quality"]["psd-length"] = int(data['seglen'])
 
     def decide_fref(freq):
         if (freq >= 5) and (freq < 10):
