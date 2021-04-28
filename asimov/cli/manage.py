@@ -98,3 +98,21 @@ def submit(event, update):
                         production.status = "stuck"
                         logger.error(f"The pipeline failed to submit the DAG file to the cluster. {e}",
                                      production=production)
+
+
+@click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
+@click.option("--update", "update", default=False, help="Force the git repos to be pulled before submission occurs.")
+@manage.command()
+def results(event, update):
+    """
+    Find all available results for a given event.
+    """
+    server, repository = connect_gitlab()
+    events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event], update=update, repo=False)
+    for event in events:
+        click.secho(f"{event.title}")
+        logger = logging.AsimovLogger(event=event.event_object)
+        for production in event.productions:
+            if production.pipeline.lower() in known_pipelines:
+                #pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
+                print(production.results())

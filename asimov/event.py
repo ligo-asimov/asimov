@@ -14,6 +14,7 @@ from .ini import RunConfiguration
 from .git import EventRepo
 from .review import Review
 from asimov import config
+from asimov.storage import Store
 
 from liquid import Liquid
 
@@ -439,7 +440,7 @@ class Production:
         """
         return needs
 
-    def results(self, filename):
+    def results(self, filename=None):
         store = Store(root=config.get("storage", "results_store"))
         if not filename:
             try:
