@@ -370,6 +370,7 @@ class Rift(Pipeline):
         except:
             count = 0
         count = len(glob.glob(os.path.join(self.production.rundir, "marginalize_intrinsic_parameters_BasicIterationWorkflow.dag.rescue*")))
+        if "allow ressurect" in self.production.meta: count=0
         if (count < 90) and (len(glob.glob(os.path.join(self.production.rundir, "marginalize_intrinsic_parameters_BasicIterationWorkflow.dag.rescue*")))>0):
             count +=1
             #os.system("cat *_local.cache > local.cache")

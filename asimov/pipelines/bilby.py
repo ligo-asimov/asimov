@@ -95,7 +95,7 @@ class Bilby(Pipeline):
                     d_max = distance_bounds[1]
                 if "a2" in priors_e:
                     a2_min = priors_e['a2'][0]
-                    a2_max = priors_e['a2'][0]
+                    a2_max = priors_e['a2'][1]
                 else:
                     a2_min = 0.0
                     a2_max = 1.0
@@ -182,8 +182,6 @@ class Bilby(Pipeline):
         prior_file = self._determine_prior()
         #os.chdir(self.production.event.meta['working directory'])   
         # TODO: Check if bilby supports loading a gps time file
-
-        os.chdir(cwd)
         
         command = ["bilby_pipe",
                    os.path.join(self.production.event.repository.directory, self.category,  ini),
@@ -198,6 +196,7 @@ class Bilby(Pipeline):
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
         out, err = pipe.communicate()
+        os.chdir(cwd)
         if err or "DAG generation complete, to submit jobs" not in str(out):
             self.production.status = "stuck"
             if hasattr(self.production.event, "issue_object"):

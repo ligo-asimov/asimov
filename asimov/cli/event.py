@@ -5,6 +5,11 @@ import json
 from math import floor
 import ligo.gracedb
 import gwpy
+import gwpy.timeseries
+from gwdatafind import find_urls
+from gwpy.segments import DataQualityFlag
+from glue.lal import Cache
+import numpy as np
 
 import click
 
@@ -106,7 +111,7 @@ def create(name, oldname=None, gid=None, superevent=None, repo=None):
         ledger.add_event(event)
         ledger.save()
     
-@click.option("--event", "event", help="The event to be populated.")
+@click.argument("event")
 @click.option("--yaml", "yaml", default=None)
 @click.option("--ini", "ini", default=None)
 @event.command()
@@ -120,7 +125,8 @@ def populate(event, yaml, ini):
     event_o = event.event_object
     # Check the calibration files for this event
     click.echo("Check the calibration.")
-    calibration(event_o.name)
+    click.echo(event_o.name)
+    calibration(event=event_o.name)
     # Check the IFOs for this event
     click.echo("Check the IFO list")
     try:
@@ -172,6 +178,8 @@ def configurator(event, json_data=None):
 
 #@click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
 #@olivaw.command()
+@click.argument("event")
+@event.command()
 def checkifo(event):
     server, repository = connect_gitlab()
     gitlab_events = gitlab.find_events(repository, subset=event)
@@ -186,12 +194,17 @@ def checkifo(event):
 
         active_ifo = []
         for ifo in ["L1", "H1", "V1"]:
-    
+            frametypes = event.event_object.meta['data']['frame-types']
             urls = find_urls(site=f"{ifo[0]}", frametype=frametypes[ifo], gpsstart=gpsstart, gpsend=gpsend)
             datacache = Cache.from_urls(urls)
             if len(datacache) == 0:
                 print(f"No {ifo} data found.")
                 continue
+
+            state_vector_channel = {"L1": "L1:DCS-CALIB_STATE_VECTOR_C01",
+                        "H1": "H1:DCS-CALIB_STATE_VECTOR_C01",
+                        "V1": "V1:DQ_ANALYSIS_STATE_VECTOR"}
+
             state = gwpy.timeseries.StateVector.read(
                 datacache, state_vector_channel[ifo], start=gpsstart, end=gpsend,
                 pad=0  # padding data so that errors are not raised even if found data are not continuous.

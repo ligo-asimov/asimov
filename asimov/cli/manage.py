@@ -2,7 +2,7 @@
 Olivaw management commands
 """
 import os
-
+import pathlib
 import click
 
 from asimov.cli import connect_gitlab, known_pipelines
@@ -113,6 +113,32 @@ def results(event, update):
         click.secho(f"{event.title}")
         logger = logging.AsimovLogger(event=event.event_object)
         for production in event.productions:
-            if production.pipeline.lower() in known_pipelines:
-                #pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
-                print(production.results())
+            try:
+                for result, meta in production.results().items():
+                    print(f"{production.event.name}/{production.name}/{result}, {production.results(result)}")
+            except:
+                pass
+            # print(production.results())
+
+@click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
+@click.option("--update", "update", default=False, help="Force the git repos to be pulled before submission occurs.")
+@click.option("--root", "root")
+@manage.command()
+def resultslinks(event, update, root):
+    """
+    Find all available results for a given event.
+    """
+    server, repository = connect_gitlab()
+    events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event], update=update, repo=False)
+    for event in events:
+        click.secho(f"{event.title}")
+        logger = logging.AsimovLogger(event=event.event_object)
+        for production in event.productions:
+            try:
+                for result, meta in production.results().items():
+                    print(f"{production.event.name}/{production.name}/{result}, {production.results(result)}")
+                    pathlib.Path(os.path.join(root, production.event.name, production.name)).mkdir(parents=True, exist_ok=True)
+                    os.symlink(f"{production.results(result)}", f"{root}/{production.event.name}/{production.name}/{result.split('/')[-1]}")
+            except AttributeError:
+                pass
+            # print(production.results())

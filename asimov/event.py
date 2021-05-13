@@ -131,7 +131,6 @@ class Event:
                 self._check_calibration()
             except DescriptionException:
                 pass
-
         
 
     def _check_required(self):
@@ -440,7 +439,7 @@ class Production:
         """
         return needs
 
-    def results(self, filename=None):
+    def results(self, filename=None, handle=False, hash=None):
         store = Store(root=config.get("storage", "results_store"))
         if not filename:
             try:
@@ -448,8 +447,33 @@ class Production:
                 return items
             except KeyError:
                 return None
+        elif handle:
+            return open(store.fetch_file(self.event.name, self.name, filename, hash), "r")
         else:
-            return open(store.fetch_file(event, production, file, hash), "r")
+            return store.fetch_file(self.event.name, self.name, filename, hash=hash)
+
+    @property
+    def rel_psds(self):
+        """
+        Return the relative path to a PSD for a given event repo.
+        """
+        rels = {}
+        for ifo, psds in self.psds.items():
+            psd = self.psds[ifo]
+            psd = psd.split("/")
+            rels[ifo] = "/".join(psd[-3:])
+        return rels
+
+    @property
+    def reference_frame(self):
+        """
+        Calculate the appropriate reference frame.
+        """
+        ifos = self.meta['interferometers']
+        if len(ifos) == 1:
+            return ifos[0]
+        else:
+            return "".join(ifos[:2])
 
     def get_meta(self, key):
         """
