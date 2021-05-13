@@ -111,6 +111,20 @@ class Event:
             if kwargs['issue']:
                 self.issue_object = kwargs.pop("issue")
                 self.from_notes()
+        else:
+            self.issue_object = None
+
+        self.productions = []
+        self.graph = nx.DiGraph()
+        
+        if 'productions' in kwargs:
+            for production in kwargs['productions']:
+                try:
+                    self.add_production(
+                        Production.from_dict(production, event=self, issue=self.issue_object))
+                except DescriptionException as error:
+                    error.submit_comment()
+            
 
         self.productions = []
         self.graph = nx.DiGraph()
@@ -130,8 +144,7 @@ class Event:
             try:
                 self._check_calibration()
             except DescriptionException:
-                pass
-        
+                pass        
 
     def _check_required(self):
         """
@@ -214,7 +227,6 @@ class Event:
             raise DescriptionException(f"Some of the required parameters are missing from this issue.")
         if not repo and "repository" in data:
             data.pop("repository")
-        #print(data['repository'])
         event = cls(**data, issue=issue, update=update)
 
         if issue:
@@ -438,6 +450,7 @@ class Production:
         Process the dependencies list for this production.
         """
         return needs
+
 
     def results(self, filename=None, handle=False, hash=None):
         store = Store(root=config.get("storage", "results_store"))
