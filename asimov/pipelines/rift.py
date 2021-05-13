@@ -34,7 +34,7 @@ class Rift(Pipeline):
             raise PipelineException
         
         if "bootstrap" in self.production.meta:
-            self.bootstrap = self.production.meta
+            self.bootstrap = self.production.meta['bootstrap']
         else:
             self.bootstrap = False
 
@@ -232,36 +232,38 @@ class Rift(Pipeline):
         # Placeholder LI grid bootstrapping; conditional on it existing and location specification
         
         if self.bootstrap:
-
-            # Find the appropriate production in the ledger
-            productions = self.production.event.productions
-            bootstrap_production = [production for production in productions if production.name == self.bootstrap]
-
-            if len(bootstrap_production) == 0:
-                raise PipelineException(f"Unable to find the bootstrapping production for {self.production.name}.",
-                                        issue=self.production.event.issue_object,
-                                        production=self.production.name)
+            if self.bootstrap == "manual":
+                bootstrap_file = os.path.join(self.production.event.repository.directory, "C01_offline", f"{self.production.name}_bootstrap.xml.gz")
             else:
-                bootstrap_production = bootstrap_production[0]
-            
-            shutil.copy(f"{bootstrap_production.rundir}/posterior_samples.dat", f"{self.production.rundir}/LI_samples.dat")
-            convcmd = ["convert_output_format_inferance2ile",
-                       "--posterior-samples", f"{self.production.rundir}/LI_samples.dat",
-                       "--output-xml", f"bootstrap-grid.xml.gz",
-                       "--fmin", f"{self.production.meta['bootstrap fmin']}"] 
-            pipe = subprocess.Popen(convcmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-            out,err = pipe.communicate()
-            if err:
-                self.production.status = "stuck"
-                if hasattr(self.production.event, "issue_object"):
-                    raise PipelineException(f"Unable to convert LI posterior into ILE starting grid.\n{convcmd}\n{out}\n\n{err}",
+                # Find the appropriate production in the ledger
+                productions = self.production.event.productions
+                bootstrap_production = [production for production in productions if production.name == self.bootstrap]
+
+                if len(bootstrap_production) == 0:
+                    raise PipelineException(f"Unable to find the bootstrapping production for {self.production.name}.",
                                             issue=self.production.event.issue_object,
                                             production=self.production.name)
                 else:
-                    raise PipelineException(f"Unable to convert LI posterior into ILE starting grid.\n{convcmd}\n{out}\n\n{err}",
-                                        production=self.production.name)
-            else:
-                command += ["--manual-initial-grid", os.path.join(self.production.rundir, "bootstrap-grid.xml.gz")]
+                    bootstrap_production = bootstrap_production[0]
+
+                shutil.copy(f"{bootstrap_production.rundir}/posterior_samples.dat", f"{self.production.rundir}/LI_samples.dat")
+                convcmd = ["convert_output_format_inferance2ile",
+                           "--posterior-samples", f"{self.production.rundir}/LI_samples.dat",
+                           "--output-xml", f"bootstrap-grid.xml.gz",
+                           "--fmin", f"{self.production.meta['bootstrap fmin']}"] 
+                pipe = subprocess.Popen(convcmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+                out,err = pipe.communicate()
+                if err:
+                    self.production.status = "stuck"
+                    if hasattr(self.production.event, "issue_object"):
+                        raise PipelineException(f"Unable to convert LI posterior into ILE starting grid.\n{convcmd}\n{out}\n\n{err}",
+                                                issue=self.production.event.issue_object,
+                                                production=self.production.name)
+                    else:
+                        raise PipelineException(f"Unable to convert LI posterior into ILE starting grid.\n{convcmd}\n{out}\n\n{err}",
+                                            production=self.production.name)
+                bootstrap_file = os.path.join(self.production.rundir, "bootstrap-grid.xml.gz")
+            command += ["--manual-initial-grid", bootstrap_file]
         
         self.logger.info(command, production = self.production)
         os.chdir(self.production.event.meta['working directory'])
@@ -367,10 +369,16 @@ class Rift(Pipeline):
             count = self.production.meta['resurrections']
         except:
             count = 0
-        if (count < 5) and (len(glob.glob(os.path.join(self.production.rundir, "marginalize_intrinsic_parameters_BasicIterationWorkflow.dag.rescue*")))>0):
+        count = len(glob.glob(os.path.join(self.production.rundir, "marginalize_intrinsic_parameters_BasicIterationWorkflow.dag.rescue*")))
+        if "allow ressurect" in self.production.meta: count=0
+        if (count < 90) and (len(glob.glob(os.path.join(self.production.rundir, "marginalize_intrinsic_parameters_BasicIterationWorkflow.dag.rescue*")))>0):
             count +=1
             #os.system("cat *_local.cache > local.cache")
             self.submit_dag()
+        else:
+            raise PipelineException("This job was resurrected too many times.",
+                                    issue=self.production.event.issue_object,
+                                    production=self.production.name)
 
     def collect_logs(self):
         """

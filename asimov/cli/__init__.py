@@ -38,7 +38,7 @@ known_pipelines = {"bayeswave": BayesWave,
                    "lalinference": LALInference}
 
 
-def connect_gitlab():
+def connect_gitlab(configs=None):
     """
     Connect to the gitlab server.
 
@@ -49,6 +49,10 @@ def connect_gitlab():
     repository: `Gitlab.project`
        The gitlab project.
     """
+    if configs:
+        config=configs
+    else:
+        from asimov import config
     server = gitlab.gitlab.Gitlab('https://git.ligo.org',
                               private_token=config.get("gitlab", "token"))
     repository = server.projects.get(config.get("olivaw", "tracking_repository"))

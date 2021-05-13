@@ -9,32 +9,50 @@ test-python-36:
   stage: test
   image: python:3.6
   script:
+    - git config --global user.email "you@example.com"
+    - git config --global user.name "Your Name"
     - pip install -r requirements.txt
     - pip install coverage
     - python setup.py install
-    - coverage run -m unittest -v
-    - coverage report -m
+    - python -m unittest discover tests/
+#    - coverage report -m
 
 test-python-37:
   stage: test
   image: python:3.7
   script:
+    - git config --global user.email "you@example.com"
+    - git config --global user.name "Your Name"
     - pip install -r requirements.txt
     - pip install coverage
     - python setup.py install
-    - coverage run -m unittest -v
-    - coverage report -m
+    - python -m unittest discover tests/
+#    - coverage report -m
 
 test-python-38:
   stage: test
   image: python:3.8
   script:
+    - git config --global user.email "you@example.com"
+    - git config --global user.name "Your Name"
     - pip install -r requirements.txt
     - pip install coverage
     - python setup.py install
-    - coverage run -m unittest -v
-    - coverage report -m
+    - python -m unittest discover tests/
+#    - coverage report -m
 
+test-python-39:
+  stage: test
+  image: python:3.9
+  script:
+    - git config --global user.email "you@example.com"
+    - git config --global user.name "Your Name"
+    - pip install -r requirements.txt
+    - pip install coverage
+    - python setup.py install
+    - python -m unittest discover tests/
+#    - coverage report -m
+    
 pages:
   stage: build
   script:
