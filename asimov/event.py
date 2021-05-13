@@ -14,6 +14,7 @@ from .ini import RunConfiguration
 from .git import EventRepo
 from .review import Review
 from asimov import config
+from asimov.storage import Store
 
 from liquid import Liquid
 
@@ -88,10 +89,13 @@ class Event:
             self.work_dir = None
 
         if repository:
-            self.repository = EventRepo.from_url(repository,
-                                                 self.name,
-                                                 self.work_dir,
-                                                 update)
+            if "git@" in repository or "https://" in repository:
+                self.repository = EventRepo.from_url(repository,
+                                                     self.name,
+                                                     self.work_dir,
+                                                     update=update)
+            else:
+                self.repository = EventRepo(repository)
         else:
             self.repository = repository
 
@@ -102,6 +106,7 @@ class Event:
             
         self.meta = kwargs
 
+        self.issue_object = None
         if "issue" in kwargs:
             if kwargs['issue']:
                 self.issue_object = kwargs.pop("issue")
@@ -121,15 +126,25 @@ class Event:
                     error.submit_comment()
             
 
+        self.productions = []
+        self.graph = nx.DiGraph()
+        
+        if 'productions' in kwargs:
+            for production in kwargs['productions']:
+                try:
+                    self.add_production(
+                        Production.from_dict(production, event=self, issue=self.issue_object))
+                except DescriptionException as error:
+                    error.submit_comment()
+            
+
         self._check_required()
         
         if ("interferometers" in self.meta) and ("calibration" in self.meta):
             try:
                 self._check_calibration()
             except DescriptionException:
-                print("No calibration envelopes found.")
-
-        
+                pass        
 
     def _check_required(self):
         """
@@ -210,21 +225,20 @@ class Event:
         data = yaml.safe_load(data)
         if not {"name",} <= data.keys():
             raise DescriptionException(f"Some of the required parameters are missing from this issue.")
-        if not repo:
+        if not repo and "repository" in data:
             data.pop("repository")
-        print(data['repository'])
         event = cls(**data, issue=issue, update=update)
 
         if issue:
             event.issue_object = issue
             event.from_notes()
 
-        for production in data['productions']:
-            try:
-                event.add_production(
-                    Production.from_dict(production, event=event, issue=issue))
-            except DescriptionException as error:
-                error.submit_comment()
+        #for production in data['productions']:
+        #    try:
+        #        event.add_production(
+        #            Production.from_dict(production, event=event, issue=issue))
+        #    except DescriptionException as error:
+        #        error.submit_comment()
         return event
 
     @classmethod
@@ -303,12 +317,15 @@ class Event:
             # Remove duplicate data
             prod_dict = production.to_dict()[production.name]
             dupes = []
+            prod_names = []
             for key, value in prod_dict.items():
+                if production.name in prod_names: continue
                 if key in data:
                     if data[key] == value:
                         dupes.append(key)
             for dupe in dupes:
                 prod_dict.pop(dupe)
+            prod_names.append(production.name)
             data['productions'].append({production.name: prod_dict})
 
         if "issue" in data:
@@ -434,7 +451,8 @@ class Production:
         """
         return needs
 
-    def results(self, filename):
+
+    def results(self, filename=None, handle=False, hash=None):
         store = Store(root=config.get("storage", "results_store"))
         if not filename:
             try:
@@ -442,8 +460,33 @@ class Production:
                 return items
             except KeyError:
                 return None
+        elif handle:
+            return open(store.fetch_file(self.event.name, self.name, filename, hash), "r")
         else:
-            return open(store.fetch_file(event, production, file, hash), "r")
+            return store.fetch_file(self.event.name, self.name, filename, hash=hash)
+
+    @property
+    def rel_psds(self):
+        """
+        Return the relative path to a PSD for a given event repo.
+        """
+        rels = {}
+        for ifo, psds in self.psds.items():
+            psd = self.psds[ifo]
+            psd = psd.split("/")
+            rels[ifo] = "/".join(psd[-3:])
+        return rels
+
+    @property
+    def reference_frame(self):
+        """
+        Calculate the appropriate reference frame.
+        """
+        ifos = self.meta['interferometers']
+        if len(ifos) == 1:
+            return ifos[0]
+        else:
+            return "".join(ifos[:2])
 
     def get_meta(self, key):
         """
@@ -467,7 +510,7 @@ class Production:
 
     @property
     def finished(self):
-        finished_states = ["finished", "uploaded"]
+        finished_states = ["uploaded"]
         return self.status in finished_states
         
     @property
@@ -477,7 +520,7 @@ class Production:
     @status.setter
     def status(self, value):
         self.status_str = value.lower()
-        if hasattr(self.event, "issue_object"):
+        if self.event.issue_object != None:
             self.event.issue_object.update_data()
 
     @property
@@ -520,7 +563,8 @@ class Production:
         elif "working directory" in self.event.meta:
             value = os.path.join(self.event.meta['working directory'], self.name)
             self.meta["rundir"] = value
-            self.event.issue_object.update_data()
+            if self.event.issue_object != None:
+                self.event.issue_object.update_data()
             return value
         else:
             return None
@@ -532,7 +576,7 @@ class Production:
         """
         if "rundir" not in self.meta:
             self.meta["rundir"] = value
-            if hasattr(self.event, "issue_object"):
+            if self.event.issue_object != None:
                 self.event.issue_object.update_data()
         else:
             raise ValueError

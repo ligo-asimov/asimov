@@ -31,7 +31,6 @@ def monitor(event, update, dry_run):
         on_deck = [production
                    for production in event.productions
                    if production.status.lower() in ACTIVE_STATES]
-        
         for production in on_deck:
 
             click.secho(f"\t{production.name}", bold=True)
@@ -84,6 +83,7 @@ def monitor(event, update, dry_run):
                         running += 1
 
             except ValueError as e:
+                click.echo(e)
                 click.echo(f"\t\t{production.name}\t{production.status.lower()}")
                 if production.pipeline.lower() in known_pipelines:
                     click.echo("Investigating...")
@@ -93,14 +93,18 @@ def monitor(event, update, dry_run):
                         pipe.eject_job()
                         production.status = "stopped"
 
-                    if production.status.lower() == "processing":
+                    elif production.status.lower() == "finished":
+                        click.echo("Finished")
+                        pipe.after_completion()
+
+                    elif production.status.lower() == "processing":
                     # Need to check the upload has completed
                         try:
                             pipe.after_processing()
                         except ValueError as e:
                             click.echo(e)
-                            production.status = "stuck"
-                            stuck += 1
+                            #production.status = "stuck"
+                            #stuck += 1
                             production.meta['stage'] = "after processing"
 
                     elif pipe.detect_completion() and production.status.lower() == "running":
@@ -109,17 +113,22 @@ def monitor(event, update, dry_run):
                         finish += 1
                         production.status = "finished"
                         pipe.after_completion()
-                        
+
                     else:
                         # It looks like the job has been evicted from the cluster
                         click.echo(f"Attempting to rescue {production.name}")
                         #event.state = "stuck"
                         #production.status = "stuck"
                         #production.meta['stage'] = 'production'
-                        pipe.resurrect()
+                        try:
+                            pipe.resurrect()
+                        except:
+                            production.status = "stuck"
+                            production.meta['error'] = "resurrection error"
 
                 if production.status == "stuck":
                     event.state = "stuck"
+                production.event.issue_object.update_data()
 
             if (running > 0) and (stuck == 0):
                 event.state = "running"

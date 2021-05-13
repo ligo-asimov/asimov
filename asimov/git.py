@@ -102,7 +102,7 @@ class EventRepo():
                 repo.remotes[0].pull()
             except git.exc.GitCommandError:
                 pass
-        return cls(directory, url)
+        return cls(directory, url, update=update)
 
     def add_file(self, source, destination, commit_message=None):
         """
@@ -137,8 +137,16 @@ class EventRepo():
         
         self.repo.git.add(destination)
         self.repo.git.commit("-m", commit_message)
-        self.repo.git.push()
-        time.sleep(15)
+        try:
+            self.repo.git.push()
+            time.sleep(15)
+        except git.exc.GitCommandError as e:
+            if "There is no tracking information for the current branch." in str(e):
+                pass
+            elif "Either specify the URL from the command-line or configure a remote repository using" in str(e):
+                pass
+            else:
+                raise e
     
     def find_timefile(self, category="C01_offline"):
         """
@@ -178,8 +186,8 @@ class EventRepo():
         """
 
         self.update()
-        os.chdir(os.path.join(self.directory, category))
-        prods = glob.glob(f"{name}.ini")
+        #os.chdir(os.path.join(self.directory, category))
+        prods = glob.glob(f"{os.path.join(self.directory, category)}/{name}*.ini")
         return prods
 
     def upload_prod(self, production, rundir, preferred=False, category="C01_offline", rootdir="public_html/LVC/projects/O3/C01/", rename = False):
@@ -296,8 +304,14 @@ class EventRepo():
         if stash:
             self.repo.git.stash()
 
-        print("Running a git pull")
-            
         self.repo.git.checkout(branch)
-        self.repo.git.pull()
-        self.repo.git.execute(["git", "lfs", "fetch"])
+        try:
+            self.repo.git.pull()
+            self.repo.git.execute(["git", "lfs", "fetch"])
+        except git.exc.GitCommandError as e:
+            if "There is no tracking information for the current branch." in str(e):
+                pass
+            elif "Either specify the URL from the command-line or configure a remote repository using" in str(e):
+                pass
+            else:
+                raise e

@@ -124,12 +124,13 @@ def clone(location):
     if config.get("ledger", "engine") == "yamlfile":
         shutil.copyfile(os.path.join(location, config.get("ledger", "location")), "ledger.yml")
     elif config.get("ledger", "engine") == "gitlab":
-        _, repository = connect_gitlab()
+
+        _, repository = connect_gitlab(config)
 
         events = gitlab.find_events(repository,
-                                milestone=config.get("olivaw", "milestone"),
-                                subset=[event],
                                 update=False,
+                                subset=[None],
+                                label=config.get("gitlab", "event_label"),
                                 repo=False)
 
         total = []
