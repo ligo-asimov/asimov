@@ -120,4 +120,4 @@ productions:
     status: wait
 """
         event = asimov.event.Event.from_yaml(TEST_YAML.format(self.cwd))
-        self.assertEqual(len(event.get_all_latest()), 3)
+        self.assertEqual(len(event.get_all_latest()), 2)
