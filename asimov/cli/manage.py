@@ -33,7 +33,7 @@ def build(event):
         ready_productions = event.event_object.get_all_latest()
         for production in ready_productions:
             click.echo(f"\tWorking on production {production.name}")
-            if production.status in {"running", "stuck", "wait", "finished", "uploaded", "cancelled", "stopped"}: continue
+            if production.status in {"running", "stuck", "wait", "finished", "uploaded"}: continue
             try:
                 configuration = production.get_configuration()
             except ValueError:
@@ -72,7 +72,7 @@ def submit(event, update):
         logger = logging.AsimovLogger(event=event.event_object)
         ready_productions = event.event_object.get_all_latest()
         for production in ready_productions:
-            if production.status.lower() in {"running", "stuck", "wait", "processing", "uploaded", "finished", "stopped", "cancelled", "manual"}: continue
+            if production.status.lower() in {"running", "stuck", "wait", "processing", "uploaded", "finished", "manual"}: continue
             if production.status.lower() == "restart":
                 if production.pipeline.lower() in known_pipelines:
                     pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
