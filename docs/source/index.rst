@@ -71,6 +71,7 @@ Advanced topics
 	     
    configuration
    yamlformat
+   build-process
    gitlab-interface
    test-interface
 
