@@ -57,51 +57,52 @@ class BayesWave(Pipeline):
         PipelineException
            Raised if the construction of the DAG fails.
         """
-        # TODO: BayesWave ini file needs the following sections (with example values) to be read from the LALInference ini file:
-        #   [input]
-        #   seglen=8.0
-        #   window=2.0
-        #   flow=11
-        #   srate=1024
-        #   PSDlength=8.0
-        #   ifo-list=['H1', 'L1', 'V1']
-        #   [datafind]
-        #   frtype-list={'H1': 'H1_HOFT_CLEAN_SUB60HZ_C01', 'L1': 'L1_HOFT_CLEAN_SUB60HZ_C01','V1': 'V1Online'}
-        #   channel-list={'H1': 'H1:DCS-CALIB_STRAIN_CLEAN_SUB60HZ_C01', 'L1': 'L1:DCS-CALIB_STRAIN_CLEAN_SUB60HZ_C01','V1': 'V1:Hrec_hoft_16384Hz'}
+        if self.production.event.repository:
+            os.chdir(os.path.join(self.production.event.repository.directory,
+                                  self.category))
+            try:
+                gps_file = self.production.get_timefile()
+            except AsimovFileNotFound:
+                if "event time" in self.production.meta:
+                    gps_time = self.production.get_meta("event time")
+                    with open("gpstime.txt", "w") as f:
+                        f.write(str(gps_time))
+                    gps_file = os.path.join(f"{self.production.category}", f"gpstime.txt")
+                    self.production.event.repository.add_file(f"gpstime.txt", gps_file)
+                else:
+                    raise PipelineException("Cannot find the event time.")
+        else:
+            gps_time = self.production.get_meta("event time")
+            with open("gpstime.txt", "w") as f:
+                f.write(str(gps_time))
+                gps_file = os.path.join("gpstime.txt")
 
-        os.chdir(os.path.join(self.production.event.repository.directory,
-                              self.category))
-        try:
-            gps_file = self.production.get_timefile()
-        except AsimovFileNotFound:
-            if "event time" in self.production.meta:
-                gps_time = self.production.get_meta("event time")
-                with open("gpstime.txt", "w") as f:
-                    f.write(str(gps_time))
-                gps_file = os.path.join(f"{self.production.category}", f"gpstime.txt")
-                self.production.event.repository.add_file(f"gpstime.txt", gps_file)
+        if self.production.event.repository:
+            ini = self.production.get_configuration()
+            if not user:
+                if self.production.get_meta("user"):
+                    user = self.production.get_meta("user")
+                else:
+                    user = ini._get_user()
+                self.production.set_meta("user", user)
+
+            ini.update_accounting(user)
+
+            if 'queue' in self.production.meta:
+                queue = self.production.meta['queue']
             else:
-                raise PipelineException("Cannot find the event time.")
-        # FIXME currently no distinction between bayeswave and lalinference ini files
-        ini = self.production.get_configuration()
+                queue = 'Priority_PE'
 
-        if not user:
-            if self.production.get_meta("user"):
-                user = self.production.get_meta("user")
+            ini.set_queue(queue)
+
+            ini.save()
+
+            ini = ini.ini_loc
+
         else:
-            user = ini._get_user()
-            self.production.set_meta("user", user)
+            ini = f"{self.production.name}.ini"
 
-        ini.update_accounting(user)
 
-        if 'queue' in self.production.meta:
-            queue = self.production.meta['queue']
-        else:
-            queue = 'Priority_PE'
-
-        ini.set_queue(queue)
-
-        ini.save()
 
         if self.production.rundir:
             rundir = self.production.rundir
@@ -125,7 +126,7 @@ class BayesWave(Pipeline):
                    #"-l", f"{gps_file}",
                    f"--trigger-time={gps_time}",
                    "-r", self.production.rundir,
-                   ini.ini_loc
+                   ini
         ]
             
         self.logger.info(" ".join(command))

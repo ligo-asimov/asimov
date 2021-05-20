@@ -163,15 +163,22 @@ class Rift(Pipeline):
         """
 
         self._activate_environment()
-
+        
         os.chdir(self.production.event.meta['working directory'])
         #os.chdir(os.path.join(self.production.event.repository.directory,
         #                      self.category))
 
-        gps_file = self.production.get_timefile()
-        coinc_file = self.production.get_coincfile()
-        
-        ini = self.production.get_configuration()
+        if self.production.event.repository:
+            gps_file = self.production.get_timefile()
+            coinc_file = self.production.get_coincfile()
+            coinc_file = os.path.join(self.production.event.repository.directory, "C01_offline",
+                                               coinc_file)
+            ini = self.production.get_configuration().ini_loc
+            ini = os.path.join(self.production.event.repository.directory, "C01_offline",  ini)
+        else:
+            gps_file = "gpstime.txt"
+            ini = f"{self.production.name}.ini"
+            coinc_file = "coinc.xml"
 
         if self.production.get_meta("user"):
                 user = self.production.get_meta("user")
@@ -189,7 +196,7 @@ class Rift(Pipeline):
 
         approximant = self.production.meta['approximant']
 
-        ini.save()
+        #ini.save()
 
         if self.production.rundir:
             rundir = self.production.rundir
@@ -216,8 +223,7 @@ class Rift(Pipeline):
             
         
         command = [os.path.join(config.get("pipelines", "environment"), "bin", "util_RIFT_pseudo_pipe.py"),
-                   "--use-coinc", os.path.join(self.production.event.repository.directory, "C01_offline",
-                                               coinc_file),
+                   "--use-coinc", coinc_file,
                    "--l-max", f"{lmax}",
                    "--calibration", f"{calibration}",
                    "--add-extrinsic",
@@ -225,7 +231,7 @@ class Rift(Pipeline):
                    "--cip-explode-jobs", str(cip),
                    "--use-rundir", self.production.name,
                    "--ile-force-gpu",
-                   "--use-ini", os.path.join(self.production.event.repository.directory, "C01_offline",  ini.ini_loc)
+                   "--use-ini", ini
         ]
         self.logger.info(" ".join(command), production = self.production)
 
@@ -271,7 +277,6 @@ class Rift(Pipeline):
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
         out, err = pipe.communicate()
-
         if err:
             self.production.status = "stuck"
             if hasattr(self.production.event, "issue_object"):
