@@ -48,9 +48,6 @@ class Bilby(Pipeline):
             return False
 
 
-    def _activate_environment(self):
-        pass
-
     def _determine_prior(self):
         """
         Determine the correct choice of prior file for this production.
@@ -158,7 +155,6 @@ class Bilby(Pipeline):
            Raised if the construction of the DAG fails.
         """
 
-        #self._activate_environment()
         cwd = os.getcwd()
 
 
