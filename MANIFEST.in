@@ -1,1 +1,3 @@
 include asimov/asimov.conf
+include asimov/configs/*.ini
+include asimov/priors/*.template
