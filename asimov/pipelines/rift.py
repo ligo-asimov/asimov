@@ -37,28 +37,6 @@ class Rift(Pipeline):
             self.bootstrap = self.production.meta['bootstrap']
         else:
             self.bootstrap = False
-
-    def _activate_environment(self):
-        """
-        Activate the python virtual environment for the pipeline.
-        """
-        env = config.get("rift", "environment")
-        command = ["/bin/bash", "-c", "source", f"{env}/bin/activate"]
-
-        pipe = subprocess.Popen(command, 
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
-        out, err = pipe.communicate()
-
-        if err:
-            self.production.status = "stuck"
-            if hasattr(self.production.event, "issue_object"):
-                raise PipelineException(f"The virtual environment could not be initiated.\n{command}\n{out}\n\n{err}",
-                                            issue=self.production.event.issue_object,
-                                            production=self.production.name)
-            else:
-                raise PipelineException(f"The virtual environment could not be initiated.\n{command}\n{out}\n\n{err}",
-                                        production=self.production.name)
         
     def after_completion(self):
         self.logger.info(f"Job has completed. Running PE Summary.",
@@ -161,8 +139,6 @@ class Rift(Pipeline):
 
         
         """
-
-        self._activate_environment()
         
         os.chdir(self.production.event.meta['working directory'])
         #os.chdir(os.path.join(self.production.event.repository.directory,

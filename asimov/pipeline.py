@@ -90,33 +90,6 @@ class Pipeline():
         else:
             self.category = category
         self.logger = logger = logging.AsimovLogger(event=production.event)
-
-        self._activate_environment()
-
-    def _activate_environment(self):
-        """
-        Activate the virtual environment for this pipeline.
-        If no specific environment is required to build DAG files
-        or run scripts in this runner then this method can be 
-        left without overloading.
-        """
-        env = config.get("pipelines", "environment")
-        command = ["/bin/bash", "-c", "source", f"{env}/bin/activate"]
-
-        pipe = subprocess.Popen(command, 
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
-        out, err = pipe.communicate()
-
-        if err:
-            self.production.status = "stuck"
-            if hasattr(self.production.event, "issue_object"):
-                raise PipelineException(f"The virtual environment could not be initiated.\n{command}\n{out}\n\n{err}",
-                                            issue=self.production.event.issue_object,
-                                            production=self.production.name)
-            else:
-                raise PipelineException(f"The virtual environment could not be initiated.\n{command}\n{out}\n\n{err}",
-                                        production=self.production.name)
         
 
     def detect_completion(self):
