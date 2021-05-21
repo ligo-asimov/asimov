@@ -143,11 +143,12 @@ class Pipeline():
             "--webdir", os.path.join(config.get('general', 'webroot'), self.production.event.name, self.production.name,  "results"),
             "--labels", self.production.name,
             "--gw",
-            "--sensitivity",
             "--cosmology", config.get('pesummary', 'cosmology'),
             "--redshift_method", config.get('pesummary', 'redshift'),
             "--nsamples_for_skymap", config.get('pesummary', 'skymap_samples'),
-            #"--mcmc_samples",
+            "--evolve_spins", "True",
+            "--multi_process", "4",
+            "--regenerate", "mass_1_source mass_2_source chirp_mass_source total_mass_source final_mass_source final_mass_source_non_evolved radiated_energy",
             "--config", os.path.join(self.production.event.repository.directory, self.category, configfile)]
         # Samples
         command += ["--samples"]
