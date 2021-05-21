@@ -147,7 +147,7 @@ class Pipeline():
             "--cosmology", config.get('pesummary', 'cosmology'),
             "--redshift_method", config.get('pesummary', 'redshift'),
             "--nsamples_for_skymap", config.get('pesummary', 'skymap_samples'),
-            #"--mcmc_samples",
+            "--evolve_spins", "True",
             "--config", os.path.join(self.production.event.repository.directory, self.category, configfile)]
         # Samples
         command += ["--samples"]
