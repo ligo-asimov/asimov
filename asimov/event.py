@@ -421,7 +421,7 @@ class Production:
                self.meta['quality'].update(kwargs['quality'])
             self.quality = self.meta['quality']
             
-        if ('quality' in self.meta):
+        if ('quality' in self.meta) and ("event time" in self.meta):
             if "segment start" not in self.meta['quality']:
                 self.meta['quality']['segment start'] = self.meta['event time'] - self.meta['quality']['segment-length'] + 2
                 self.event.meta['quality']['segment start'] = self.meta['quality']['segment start']
