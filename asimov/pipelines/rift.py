@@ -209,6 +209,10 @@ class Rift(Pipeline):
                    "--ile-force-gpu",
                    "--use-ini", ini
         ]
+        # If a starting frequency is specified, add it
+        if "start-frequency" in self.production.meta:
+            command += ["--fmin-template", self.production.quality['start-frequency']]
+        
         self.logger.info(" ".join(command), production = self.production)
 
         # Placeholder LI grid bootstrapping; conditional on it existing and location specification
