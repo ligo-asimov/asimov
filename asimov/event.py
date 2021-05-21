@@ -432,7 +432,10 @@ class Production:
         else:
             self.psds = {}
 
+        if "segment start" not in self.meta['quality']:
+            self.meta['quality']['segment start'] = self.meta['event time'] - self.meta['quality']['segment-length'] + 2
 
+            
         for ifo, psd in self.psds.items():
             if self.event.repository:
                 self.psds[ifo] = os.path.join(self.event.repository.directory, psd)
