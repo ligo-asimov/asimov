@@ -705,7 +705,11 @@ class Production:
         """
 
         if not template_directory:
-            template_directory = config.get("templating", "directory")
+            try:
+                template_directory = config.get("templating", "directory")
+            except:
+                from pkg_resources import resource_string
+                template_directory = resource_string("asimov", 'configs')
             
         config_dict = {s: dict(config.items(s)) for s in config.sections()}
 
