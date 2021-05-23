@@ -65,37 +65,30 @@ class Bilby(Pipeline):
                 if "chirp-mass" in priors_e:
                     mc_min = priors_e['chirp-mass'][0]
                     mc_max = priors_e['chirp-mass'][1]
-                else:
-                    mc_min = roq_params["chirpmassmin"] / scale_factor
-                    mc_max = roq_params["chirpmassmax"] / scale_factor
 
                 if "component" in priors_e:
                     comp_min = priors_e['component'][0]
                     comp_max = priors_e['component'][1]
-                else:
-                    comp_min = roq_params["compmin"] / scale_factor
-                    comp_max = 1000
+
                 if "q" in priors_e:
                     q_min = priors_e['q'][0]
                     q_max = priors_e['q'][1]
-                else:
-                    q_min = 0.05
-                    q_max = 1.00
+
                 if "distance" in priors_e:
                     if priors_e['distance'][0]:
                         d_min = priors_e['distance'][0]
                     else:
                         d_min = 10
                     d_max = priors_e['distance'][1]
-                else:
-                    d_min = distance_bounds[0]
-                    d_max = distance_bounds[1]
+
                 if "a2" in priors_e:
                     a2_min = priors_e['a2'][0]
                     a2_max = priors_e['a2'][1]
-                else:
-                    a2_min = 0.0
-                    a2_max = 1.0
+
+                if "a1" in priors_e:
+                    a1_min = priors_e['a1'][0]
+                    a1_max = priors_e['a1'][1]
+
 
             if "event type" in self.production.meta:
                 event_type = self.production.meta['event type'].lower()
