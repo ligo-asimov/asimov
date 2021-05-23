@@ -101,6 +101,8 @@ class Bilby(Pipeline):
                 event_type = self.production.meta['event type'].lower()
             else:
                 event_type = "bbh"
+                self.production.meta['event type'] = event_type
+                self.production.event.event_issue.update_data()
 
             if template is None:
                 try:
