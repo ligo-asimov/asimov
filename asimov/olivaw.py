@@ -27,11 +27,6 @@ from asimov.cli import event
 from asimov.cli import project
 from asimov.cli import production
 
-state_vector_channel = {"L1": "L1:DCS-CALIB_STATE_VECTOR_C01",
-                        "H1": "H1:DCS-CALIB_STATE_VECTOR_C01",
-                        "V1": "V1:DQ_ANALYSIS_STATE_VECTOR"}
-
-
 @click.group()
 def olivaw():
     """
