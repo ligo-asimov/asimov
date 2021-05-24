@@ -190,7 +190,6 @@ class Bilby(Pipeline):
         command = ["bilby_pipe",
                    ini,
                    "--label", job_label,
-                   "--prior-file", prior_file,
                    "--outdir", self.production.rundir,
                    "--accounting", config.get("bilby", "accounting")
         ]
