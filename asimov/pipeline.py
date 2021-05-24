@@ -188,13 +188,19 @@ class Pipeline():
         """
         Store the PE Summary results
         """
-        results = os.path.join(config.get('general', 'webroot'), 
-                               self.production.event.name, 
-                               self.production.name,  
-                               "results", "samples", f"{self.production.name}_pesummary.dat")
-        store = Store(root=config.get("storage", "directory"))
-        store.add_file(self.production.event.name, self.production.name,
-                       file = results)
+
+        files = [f"{self.production.name}_pesummary.dat",
+                 "posterior_samples.h5",
+                 f"{self.production.name}_skymap.fits"]
+
+        for filename in files:
+            results = os.path.join(config.get('general', 'webroot'),
+                                   self.production.event.name,
+                                   self.production.name,
+                                   "results", "samples", filename)
+            store = Store(root=config.get("storage", "directory"))
+            store.add_file(self.production.event.name, self.production.name,
+                           file=results)
 
     def after_processing(self):
         """
