@@ -406,6 +406,7 @@ class Production:
         # Check that the upper frequency is included, otherwise calculate it
         if "quality" in self.meta:
             if ("high-frequency" not in self.meta['quality']) and ("sample-rate" in self.meta['quality']):
+                # Account for the PSD roll-off with the 0.875 factor
                 self.meta['quality']['high-frequency'] = int(0.875 * self.meta['quality']['sample-rate']/2)
         
         # Get the data quality recommendations
