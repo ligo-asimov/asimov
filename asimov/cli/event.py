@@ -5,7 +5,7 @@ import json
 from math import floor
 import ligo.gracedb
 import gwpy
-
+import ast
 import gwpy.timeseries
 from gwdatafind import find_urls
 from gwpy.segments import DataQualityFlag
@@ -103,8 +103,10 @@ def create(name, oldname=None, gid=None, superevent=None, repo=None):
 
     if config.get("ledger", "engine") == "gitlab":
         _, repository = connect_gitlab()
+        from pkg_resources import resource_filename
+        issue_template = resource_filename('asimov', 'gitlabissue.md')
         gitlab.EventIssue.create_issue(repository,
-                                       event, issue_template="/home/daniel.williams/repositories/asimov/scripts/outline.md")
+                                       event, issue_template=issue_template)
 
     elif config.get("ledger", "engine") == "yamlfile":
         ledger = Ledger(config.get("ledger", "location"))
@@ -154,6 +156,7 @@ def configurator(event, json_data=None):
     new_data = {"quality": {}, "priors": {}}
     new_data["quality"]["sample-rate"] = int(data["srate"])
     new_data["quality"]["lower-frequency"] = {}
+    # Factor 0.875 to account for PSD roll off
     new_data["quality"]["upper-frequency"] = int(0.875 * data["srate"]/2)
     new_data["quality"]["start-frequency"] = data['f_start']
     new_data["quality"]["segment-length"] = int(data['seglen'])
@@ -201,9 +204,10 @@ def checkifo(event):
                 print(f"No {ifo} data found.")
                 continue
 
-            state_vector_channel = {"L1": "L1:DCS-CALIB_STATE_VECTOR_C01",
-                        "H1": "H1:DCS-CALIB_STATE_VECTOR_C01",
-                        "V1": "V1:DQ_ANALYSIS_STATE_VECTOR"}
+            if "state vector" in event.meta:
+                state_vector_channel = event.meta['state vector']
+            else:                
+                state_vector_channel = ast.literal_eval(config.get("data", "state-vector"))
 
             state = gwpy.timeseries.StateVector.read(
                 datacache, state_vector_channel[ifo], start=gpsstart, end=gpsend,
