@@ -139,8 +139,8 @@ class Rift(Pipeline):
 
         
         """
-        
-        os.chdir(self.production.event.meta['working directory'])
+        cwd = os.getcwd()
+        #os.chdir(self.production.event.meta['working directory'])
         #os.chdir(os.path.join(self.production.event.repository.directory,
         #                      self.category))
 
@@ -153,7 +153,7 @@ class Rift(Pipeline):
             ini = os.path.join(self.production.event.repository.directory, "C01_offline",  ini)
         else:
             gps_file = "gpstime.txt"
-            ini = f"{self.production.name}.ini"
+            ini = os.path.join(self.production.event.meta['working directory'], f"{self.production.name}.ini")
             coinc_file = "coinc.xml"
 
         if self.production.get_meta("user"):
@@ -205,10 +205,11 @@ class Rift(Pipeline):
                    "--add-extrinsic",
                    "--approx", f"{approximant}",
                    "--cip-explode-jobs", str(cip),
-                   "--use-rundir", self.production.name,
+                   "--use-rundir", rundir,
                    "--ile-force-gpu",
                    "--use-ini", ini
         ]
+        print(" ".join(command))
         # If a starting frequency is specified, add it
         if "start-frequency" in self.production.meta:
             command += ["--fmin-template", self.production.quality['start-frequency']]
@@ -219,7 +220,10 @@ class Rift(Pipeline):
         
         if self.bootstrap:
             if self.bootstrap == "manual":
-                bootstrap_file = os.path.join(self.production.event.repository.directory, "C01_offline", f"{self.production.name}_bootstrap.xml.gz")
+                if self.production.event.repository:
+                    bootstrap_file = os.path.join(self.production.event.repository.directory, "C01_offline", f"{self.production.name}_bootstrap.xml.gz")
+                else:
+                    bootstrap_file = "{self.production.name}_bootstrap.xml.gz"
             else:
                 # Find the appropriate production in the ledger
                 productions = self.production.event.productions
@@ -271,21 +275,21 @@ class Rift(Pipeline):
                 raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
                                         production=self.production.name)
         else:
-            #os.makedirs(self.production.rundir, exist_ok=True)
-            os.chdir(self.production.rundir)
-            for psdfile in self.production.get_psds("xml"):
-                ifo = psdfile.split("/")[-1].split("_")[1].split(".")[0]
-                os.system(f"cp {psdfile} {ifo}-psd.xml.gz")
+            if self.production.event.repository:
+                os.chdir(self.production.rundir)
+                for psdfile in self.production.get_psds("xml"):
+                    ifo = psdfile.split("/")[-1].split("_")[1].split(".")[0]
+                    os.system(f"cp {psdfile} {ifo}-psd.xml.gz")
 
-            #os.system("cat *_local.cache > local.cache")
+                #os.system("cat *_local.cache > local.cache")
 
-            if hasattr(self.production.event, "issue_object"):
-                return PipelineLogger(message=out,
-                                      issue=self.production.event.issue_object,
-                                      production=self.production.name)
-            else:
-                return PipelineLogger(message=out,
-                                      production=self.production.name)
+                if hasattr(self.production.event, "issue_object"):
+                    return PipelineLogger(message=out,
+                                          issue=self.production.event.issue_object,
+                                          production=self.production.name)
+                else:
+                    return PipelineLogger(message=out,
+                                          production=self.production.name)
     
     def submit_dag(self):
         """
