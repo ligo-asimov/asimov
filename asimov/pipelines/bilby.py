@@ -103,8 +103,14 @@ class Bilby(Pipeline):
                 event_type = "bbh"
 
             if template is None:
+                try:
+                    prior_dir = config.get("bilby", "priors")
+                except:
+                    from pkg_resources import resource_string
+                    prior_dir = resource_string("asimov", 'priors')
+                    
                 template = os.path.join(
-                        config.get("bilby", "priors"), f"{event_type}.prior.template"
+                        prior_dir, f"{event_type}.prior.template"
                 )
 
             with open(template, "r") as old_prior:
