@@ -408,7 +408,9 @@ class Production:
             if ("high-frequency" not in self.meta['quality']) and ("sample-rate" in self.meta['quality']):
                 # Account for the PSD roll-off with the 0.875 factor
                 self.meta['quality']['high-frequency'] = int(0.875 * self.meta['quality']['sample-rate']/2)
-        
+
+
+                
         # Get the data quality recommendations
         if 'quality' in self.event.meta:
             self.quality = self.event.meta['quality']
@@ -419,7 +421,13 @@ class Production:
             if ('quality' in kwargs):
                self.meta['quality'].update(kwargs['quality'])
             self.quality = self.meta['quality']
+            
+        if ('quality' in self.meta) and ("event time" in self.meta):
+            if "segment start" not in self.meta['quality']:
+                self.meta['quality']['segment start'] = self.meta['event time'] - self.meta['quality']['segment-length'] + 2
+                self.event.meta['quality']['segment start'] = self.meta['quality']['segment start']
 
+            
         # Gather the appropriate prior data for this production
         if 'priors' in self.meta:
             self.priors = self.meta['priors']
@@ -434,6 +442,7 @@ class Production:
             self.psds = {}
 
 
+            
         for ifo, psd in self.psds.items():
             if self.event.repository:
                 self.psds[ifo] = os.path.join(self.event.repository.directory, psd)
