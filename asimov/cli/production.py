@@ -52,7 +52,10 @@ def create(event, pipeline, family, comment, needs, template, status, approximan
     family_entries = [int(name.split(family)[1]) for name in names if family in name]
     #
     if "bayeswave" in needs:
-        bw_entries = [production.name for production in event_prods if "bayeswave" in production.pipeline.lower()]
+        bw_entries = [production.name for production in event_prods 
+                      if ("bayeswave" in production.pipeline.lower())
+                      and (production.review.status not in {"REJECTED", "DEPRECATED"}
+        ]
         needs = bw_entries
     #
     production = {"comment": comment, "pipeline": pipeline, "status": status}
