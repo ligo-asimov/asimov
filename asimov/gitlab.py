@@ -17,21 +17,20 @@ from .ledger import Ledger
 STATE_PREFIX = "C01"
 
 
+
 class GitlabLedger(Ledger):
     """
     Connect to a gitlab-based issue tracker.
     """
 
-    def __init__(
-        self, configs, milestone=None, subset=None, update=False, repo=True, label=None
-    ):
+    def __init__(self, repository, milestone=None, subset=None, update=False, repo=True, label=None):
         """
         Search through a repository's issues and find all of the ones
         for events.
         """
 
-        _, self.repository = self._connect_gitlab()
-
+        self.repository = repository
+        
         if subset == [None]:
             subset = None
         if not label:
@@ -40,83 +39,52 @@ class GitlabLedger(Ledger):
             event_label = label
         try:
             sleep_time = int(config.get("gitlab", "rest_time"))
-        except configparser.NoOptionError:
+        except:
             sleep_time = 30
-        issues = self.repository.issues.list(labels=[event_label], per_page=1000)
+        issues = repository.issues.list(labels=[event_label], 
+                                        per_page=1000)
         output = []
         if subset:
             for issue in issues:
                 if issue.title in subset:
-                    output += [EventIssue(issue, self.repository, update, repo=repo)]
+                    output += [EventIssue(issue, repository, update, repo=repo)]
                     if update:
                         time.sleep(sleep_time)
         else:
             for issue in issues:
-                output += [EventIssue(issue, self.repository, update, repo=repo)]
+                output += [EventIssue(issue, repository, update, repo=repo)]
                 if update:
                     time.sleep(sleep_time)
 
-        self.data["events"] = output
-        self.events = {ev["name"]: ev for ev in self.data["events"]}
-
-    def _connect_gitlab(self):
-        """
-        Connect to the gitlab server.
-
-        Returns
-        -------
-        server : `Gitlab`
-           The gitlab server.
-        repository: `Gitlab.project`
-           The gitlab project.
-        """
-        server = gitlab.gitlab.Gitlab(
-            config.get("gitlab", "server"), private_token=config.get("gitlab", "token")
-        )
-        repository = server.projects.get(config.get("gitlab", "tracking_repository"))
-        return server, repository
+        self.data['events'] = output
+        self.events = {ev['name']: ev for ev in self.data['events']}
 
     def get_event(self, event=None):
         if event:
             return self.events[event]
         else:
             return self.events.values()
-
+        
     @classmethod
-    def add_event(self, event_object, issue_template=None):
+    def add_event(self, repository, event_object, issue_template=None):
         """
         Create an issue for an event.
         """
 
-        if not issue_template:
-            from pkg_resources import resource_filename
-
-            issue_template = resource_filename("asimov", "gitlabissue.md")
-
-        with open(issue_template, "r") as template_file:
-            liq = Liquid(template_file.read())
-            rendered = liq.render(
-                event_object=event_object, yaml=event_object.to_yaml()
-            )
-
-        self.repository.issues.create(
-            {"title": event_object.name, "description": rendered}
-        )
-
-    def update_event(self, event):
-        event.update_data()
-
-    def save(self):
-        pass
-
+        if issue_template:
+            with open(issue_template, "r") as template_file:
+                liq = Liquid(template_file.read())
+                rendered = liq.render(event_object=event_object, yaml = event_object.to_yaml())
+        else:
+            rendered = event_object.to_yaml()
+            
+        repository.issues.create({'title': event_object.name,
+                                       'description': rendered})
+    
     @classmethod
     def create(cls):
-        raise NotImplementedError(
-            "You must create a gitlab issue tracker manually first."
-        )
-
+        raise NotImplementedError("You must create a gitlab issue tracker manually first.")
     pass
-
 
 class EventIssue(Event):
     """
@@ -135,8 +103,8 @@ class EventIssue(Event):
 
     def __init__(self, issue, repository, update=False, repo=True):
 
-        self.from_issue(self, issue, update, repo)
-
+        super(EventIssue, self).from_issue(self, update, repo)
+        
         self.issue_object = issue
         self.title = issue.title
         self.text = issue.description
@@ -144,26 +112,7 @@ class EventIssue(Event):
         self.issue_id = issue.id
         self.labels = issue.labels
         self.data = self.parse_notes()
-
-    def from_issue(self, issue, update=False, repo=True):
-        """
-        Parse an issue description to generate this event.
-
-
-        Parameters
-        ----------
-        update : bool
-           Flag to determine if the repository is updated when loaded.
-           Defaults to False.
-        """
-
-        text = issue.text.split("---")
-
-        event = self.from_yaml(text[1], issue, update=update, repo=repo)
-        event.text = text
-        # event.from_notes()
-
-        return event
+        
 
     def _refresh(self):
         if self.repository:
@@ -171,7 +120,7 @@ class EventIssue(Event):
             self.text = self.issue_object.description.split("---")
         else:
             pass
-
+            
     @property
     def state(self):
         """
