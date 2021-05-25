@@ -164,7 +164,7 @@ class BayesWave(Pipeline):
                  return False
          else:
             self.logger.info("Bayeswave job completion was not detected.")
-             return False
+            return False
             
     def after_completion(self):
         try:
