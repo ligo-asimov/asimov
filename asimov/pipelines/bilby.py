@@ -104,13 +104,10 @@ class Bilby(Pipeline):
             if template is None:
                 template_filename = f"{event_type}.prior.template"
                 try:
-                    prior_dir = os.path.join(config.get("bilby", "priors"), template_filename)
+                    template = os.path.join(config.get("bilby", "priors"), template_filename)
                 except:
                     from pkg_resources import resource_filename
-                    prior_dir = resource_filename("asimov", f'priors/{template_filename}')
-                template = os.path.join(
-                        prior_dir, template
-                )
+                    template = resource_filename("asimov", f'priors/{template_filename}')
 
             with open(template, "r") as old_prior:
                 prior_string = old_prior.read().format(**prior_parameters)
