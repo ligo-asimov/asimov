@@ -27,14 +27,12 @@ class EventTests(unittest.TestCase):
         """Check that the ini file is correctly generated."""
 
         for production in self.event.productions:
-            production.make_config(f"{self.event.name}_{production.name}.ini",
-                                   template_directory="test_templates")
+            production.make_config(f"{self.event.name}_{production.name}.ini")
 
     def test_commandline(self):
         """Check that the correct commandline is run."""
         for production in self.event.productions:
-            production.make_config(f"{production.name}.ini",
-                                   template_directory="test_templates")
+            production.make_config(f"{production.name}.ini")
             if production.pipeline.lower() in known_pipelines:
                 try:
                     pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
