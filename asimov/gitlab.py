@@ -102,7 +102,7 @@ class EventIssue(Event):
 
     def __init__(self, issue, repository, update=False, repo=True):
 
-        super(EventIssue, self).from_issue(self, update, repo)
+        self.from_issue(self, issue, update, repo)
         
         self.issue_object = issue
         self.title = issue.title
@@ -111,6 +111,26 @@ class EventIssue(Event):
         self.issue_id = issue.id
         self.labels = issue.labels
         self.data = self.parse_notes()
+
+    def from_issue(self, issue, update=False, repo=True):
+        """
+        Parse an issue description to generate this event.
+
+
+        Parameters
+        ----------
+        update : bool 
+           Flag to determine if the repository is updated when loaded.
+           Defaults to False.
+        """
+
+        text = issue.text.split("---")
+
+        event = cls.from_yaml(text[1], issue, update=update, repo=repo)
+        event.text = text
+        # event.from_notes()
+
+        return event
         
 
     def _refresh(self):
