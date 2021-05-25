@@ -39,6 +39,7 @@ class BayesWave(Pipeline):
             self.category = config.get("general", "category")
         except:
             self.category = "C01_offline"
+            self.logger.info("Assuming C01_offline calibration.")
 
     def build_dag(self, user=None):
         """
@@ -137,7 +138,7 @@ class BayesWave(Pipeline):
         out, err = pipe.communicate()
         if "To submit:" not in str(out):
             self.production.status = "stuck"
-            if hasattr(self.production.event, "issue_object"):
+            
                 raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
                                             issue=self.production.event.issue_object,
                                             production=self.production.name)
@@ -146,6 +147,7 @@ class BayesWave(Pipeline):
                                         production=self.production.name)
         else:
             if hasattr(self.production.event, "issue_object"):
+                self.logger(
                 return PipelineLogger(message=out,
                                       issue=self.production.event.issue_object,
                                       production=self.production.name)
@@ -161,6 +163,7 @@ class BayesWave(Pipeline):
              else:
                  return False
          else:
+            self.logger.info("Bayeswave job completion was not detected.")
              return False
             
     def after_completion(self):
@@ -296,7 +299,6 @@ class BayesWave(Pipeline):
                 
             self.production.event.meta['psds'][sample_rate][det] = destination
             # Let's have a better way of doing this
-            # TODO improve the event metadata interface
             self.production.event.issue_object.update_data()
             copyfile(asset, f"{det}-{sample_rate}-psd.dat")
             try:
@@ -346,6 +348,7 @@ class BayesWave(Pipeline):
                        file = f"{ifo}-{sample_rate}-psd-suppresed.dat")
         except AlreadyPresentException:
             pass
+        self.logger.info(f"PSD supression applied to {ifo} between {fmin} and {fmax}")
 
     def resurrect(self):
         """
@@ -354,3 +357,6 @@ class BayesWave(Pipeline):
         count = len(glob.glob(os.path.join(self.production.rundir, ".dag.rescue*")))
         if (count < 5) and (count > 0):
             self.submit_dag()
+            self.logger.info(f"Bayeswave job was resurrected for the {count} time.")
+        else:
+            self.logger.error("Bayeswave resurrection not completed as there have already been 5 attempts")
