@@ -175,7 +175,7 @@ class Rift(Pipeline):
         #ini.save()
 
         if self.production.rundir:
-            rundir = self.production.rundir
+            rundir = os.path.relpath(self.production.rundir, os.getcwd())
         else:
             rundir = os.path.join(os.path.expanduser("~"),
                                   self.production.event.name,

@@ -39,8 +39,8 @@ def build(event):
             except ValueError:
                 try:
                     rundir = config.get("general", "rundir_default")
-                    templates = os.path.join(rundir, config.get("templating", "directory"))
-                    production.make_config(f"{production.name}.ini", template_directory=templates)
+                    
+                    production.make_config(f"{production.name}.ini")
                     click.echo(f"Production config {production.name} created.")
                     logger.info("Run configuration created.", production=production)
 
