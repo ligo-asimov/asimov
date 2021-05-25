@@ -148,7 +148,6 @@ class BayesWave(Pipeline):
                                         production=self.production.name)
         else:
             if hasattr(self.production.event, "issue_object"):
-                self.logger(
                 return PipelineLogger(message=out,
                                       issue=self.production.event.issue_object,
                                       production=self.production.name)
