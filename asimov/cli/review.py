@@ -5,7 +5,7 @@ import os
 
 import click
 
-from asimov.cli import connect_gitlab, known_pipelines
+from asimov.cli import known_pipelines
 from asimov import gitlab
 from asimov import config
 

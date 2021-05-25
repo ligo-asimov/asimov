@@ -17,8 +17,6 @@ from asimov import storage
 from asimov import ledger
 from asimov import gitlab
 
-from asimov.cli import connect_gitlab
-
 @click.command()
 @click.argument("name")
 @click.option("--root", default=os.getcwd(),
