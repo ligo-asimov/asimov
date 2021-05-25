@@ -102,14 +102,14 @@ class Bilby(Pipeline):
                     self.production.event.issue_object.update_data()
 
             if template is None:
+                template_filename = f"{event_type}.prior.template"
                 try:
-                    prior_dir = config.get("bilby", "priors")
+                    prior_dir = os.path.join(config.get("bilby", "priors"), template_filename)
                 except:
-                    from pkg_resources import resource_string
-                    prior_dir = resource_string("asimov", 'priors')
-                    
+                    from pkg_resources import resource_filename
+                    prior_dir = resource_filename("asimov", f'priors/{template_filename}')
                 template = os.path.join(
-                        prior_dir, f"{event_type}.prior.template"
+                        prior_dir, template
                 )
 
             with open(template, "r") as old_prior:
