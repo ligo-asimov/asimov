@@ -726,7 +726,7 @@ class Production:
                 template_file = os.path.join(f"{template_directory}", template)
             except:
                 from pkg_resources import resource_filename
-                template_file = resource_string("asimov", f'configs/{template}')
+                template_file = resource_filename("asimov", f'configs/{template}')
 
         config_dict = {s: dict(config.items(s)) for s in config.sections()}
 
