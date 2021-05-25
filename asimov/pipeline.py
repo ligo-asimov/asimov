@@ -90,33 +90,6 @@ class Pipeline():
         else:
             self.category = category
         self.logger = logger = logging.AsimovLogger(event=production.event)
-
-        self._activate_environment()
-
-    def _activate_environment(self):
-        """
-        Activate the virtual environment for this pipeline.
-        If no specific environment is required to build DAG files
-        or run scripts in this runner then this method can be 
-        left without overloading.
-        """
-        env = config.get("pipelines", "environment")
-        command = ["/bin/bash", "-c", "source", f"{env}/bin/activate"]
-
-        pipe = subprocess.Popen(command, 
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
-        out, err = pipe.communicate()
-
-        if err:
-            self.production.status = "stuck"
-            if hasattr(self.production.event, "issue_object"):
-                raise PipelineException(f"The virtual environment could not be initiated.\n{command}\n{out}\n\n{err}",
-                                            issue=self.production.event.issue_object,
-                                            production=self.production.name)
-            else:
-                raise PipelineException(f"The virtual environment could not be initiated.\n{command}\n{out}\n\n{err}",
-                                        production=self.production.name)
         
 
     def detect_completion(self):
@@ -170,11 +143,12 @@ class Pipeline():
             "--webdir", os.path.join(config.get('general', 'webroot'), self.production.event.name, self.production.name,  "results"),
             "--labels", self.production.name,
             "--gw",
-            "--sensitivity",
             "--cosmology", config.get('pesummary', 'cosmology'),
             "--redshift_method", config.get('pesummary', 'redshift'),
             "--nsamples_for_skymap", config.get('pesummary', 'skymap_samples'),
-            #"--mcmc_samples",
+            "--evolve_spins", "True",
+            "--multi_process", "4",
+            "--regenerate", "mass_1_source mass_2_source chirp_mass_source total_mass_source final_mass_source final_mass_source_non_evolved radiated_energy",
             "--config", os.path.join(self.production.event.repository.directory, self.category, configfile)]
         # Samples
         command += ["--samples"]
@@ -214,13 +188,19 @@ class Pipeline():
         """
         Store the PE Summary results
         """
-        results = os.path.join(config.get('general', 'webroot'), 
-                               self.production.event.name, 
-                               self.production.name,  
-                               "results", "samples", f"{self.production.name}_pesummary.dat")
-        store = Store(root=config.get("storage", "directory"))
-        store.add_file(self.production.event.name, self.production.name,
-                       file = results)
+
+        files = [f"{self.production.name}_pesummary.dat",
+                 "posterior_samples.h5",
+                 f"{self.production.name}_skymap.fits"]
+
+        for filename in files:
+            results = os.path.join(config.get('general', 'webroot'),
+                                   self.production.event.name,
+                                   self.production.name,
+                                   "results", "samples", filename)
+            store = Store(root=config.get("storage", "directory"))
+            store.add_file(self.production.event.name, self.production.name,
+                           file=results)
 
     def after_processing(self):
         """

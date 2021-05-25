@@ -37,28 +37,6 @@ class Rift(Pipeline):
             self.bootstrap = self.production.meta['bootstrap']
         else:
             self.bootstrap = False
-
-    def _activate_environment(self):
-        """
-        Activate the python virtual environment for the pipeline.
-        """
-        env = config.get("rift", "environment")
-        command = ["/bin/bash", "-c", "source", f"{env}/bin/activate"]
-
-        pipe = subprocess.Popen(command, 
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
-        out, err = pipe.communicate()
-
-        if err:
-            self.production.status = "stuck"
-            if hasattr(self.production.event, "issue_object"):
-                raise PipelineException(f"The virtual environment could not be initiated.\n{command}\n{out}\n\n{err}",
-                                            issue=self.production.event.issue_object,
-                                            production=self.production.name)
-            else:
-                raise PipelineException(f"The virtual environment could not be initiated.\n{command}\n{out}\n\n{err}",
-                                        production=self.production.name)
         
     def after_completion(self):
         self.logger.info(f"Job has completed. Running PE Summary.",
@@ -161,17 +139,22 @@ class Rift(Pipeline):
 
         
         """
-
-        self._activate_environment()
-
-        os.chdir(self.production.event.meta['working directory'])
+        cwd = os.getcwd()
+        #os.chdir(self.production.event.meta['working directory'])
         #os.chdir(os.path.join(self.production.event.repository.directory,
         #                      self.category))
 
-        gps_file = self.production.get_timefile()
-        coinc_file = self.production.get_coincfile()
-        
-        ini = self.production.get_configuration()
+        if self.production.event.repository:
+            gps_file = self.production.get_timefile()
+            coinc_file = self.production.get_coincfile()
+            coinc_file = os.path.join(self.production.event.repository.directory, "C01_offline",
+                                               coinc_file)
+            ini = self.production.get_configuration().ini_loc
+            ini = os.path.join(self.production.event.repository.directory, "C01_offline",  ini)
+        else:
+            gps_file = "gpstime.txt"
+            ini = os.path.join(self.production.event.meta['working directory'], f"{self.production.name}.ini")
+            coinc_file = os.path.join(cwd, "coinc.xml")
 
         if self.production.get_meta("user"):
                 user = self.production.get_meta("user")
@@ -189,10 +172,10 @@ class Rift(Pipeline):
 
         approximant = self.production.meta['approximant']
 
-        ini.save()
+        #ini.save()
 
         if self.production.rundir:
-            rundir = self.production.rundir
+            rundir = os.path.relpath(self.production.rundir, os.getcwd())
         else:
             rundir = os.path.join(os.path.expanduser("~"),
                                   self.production.event.name,
@@ -216,62 +199,44 @@ class Rift(Pipeline):
             
         
         command = [os.path.join(config.get("pipelines", "environment"), "bin", "util_RIFT_pseudo_pipe.py"),
-                   "--use-coinc", os.path.join(self.production.event.repository.directory, "C01_offline",
-                                               coinc_file),
+                   "--use-coinc", coinc_file,
                    "--l-max", f"{lmax}",
                    "--calibration", f"{calibration}",
                    "--add-extrinsic",
                    "--approx", f"{approximant}",
                    "--cip-explode-jobs", str(cip),
-                   "--use-rundir", self.production.name,
+                   "--use-rundir", rundir,
                    "--ile-force-gpu",
-                   "--use-ini", os.path.join(self.production.event.repository.directory, "C01_offline",  ini.ini_loc)
+                   "--use-ini", ini
         ]
+        print(" ".join(command))
+        # If a starting frequency is specified, add it
+        if "start-frequency" in self.production.meta:
+            command += ["--fmin-template", self.production.quality['start-frequency']]
+        
         self.logger.info(" ".join(command), production = self.production)
 
         # Placeholder LI grid bootstrapping; conditional on it existing and location specification
         
         if self.bootstrap:
             if self.bootstrap == "manual":
-                bootstrap_file = os.path.join(self.production.event.repository.directory, "C01_offline", f"{self.production.name}_bootstrap.xml.gz")
+                if self.production.event.repository:
+                    bootstrap_file = os.path.join(self.production.event.repository.directory, "C01_offline", f"{self.production.name}_bootstrap.xml.gz")
+                else:
+                    bootstrap_file = "{self.production.name}_bootstrap.xml.gz"
             else:
-                # Find the appropriate production in the ledger
-                productions = self.production.event.productions
-                bootstrap_production = [production for production in productions if production.name == self.bootstrap]
-
-                if len(bootstrap_production) == 0:
-                    raise PipelineException(f"Unable to find the bootstrapping production for {self.production.name}.",
+                raise PipelineException(f"Unable to find the bootstrapping production for {self.production.name}.",
                                             issue=self.production.event.issue_object,
                                             production=self.production.name)
-                else:
-                    bootstrap_production = bootstrap_production[0]
 
-                shutil.copy(f"{bootstrap_production.rundir}/posterior_samples.dat", f"{self.production.rundir}/LI_samples.dat")
-                convcmd = ["convert_output_format_inferance2ile",
-                           "--posterior-samples", f"{self.production.rundir}/LI_samples.dat",
-                           "--output-xml", f"bootstrap-grid.xml.gz",
-                           "--fmin", f"{self.production.meta['bootstrap fmin']}"] 
-                pipe = subprocess.Popen(convcmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-                out,err = pipe.communicate()
-                if err:
-                    self.production.status = "stuck"
-                    if hasattr(self.production.event, "issue_object"):
-                        raise PipelineException(f"Unable to convert LI posterior into ILE starting grid.\n{convcmd}\n{out}\n\n{err}",
-                                                issue=self.production.event.issue_object,
-                                                production=self.production.name)
-                    else:
-                        raise PipelineException(f"Unable to convert LI posterior into ILE starting grid.\n{convcmd}\n{out}\n\n{err}",
-                                            production=self.production.name)
-                bootstrap_file = os.path.join(self.production.rundir, "bootstrap-grid.xml.gz")
             command += ["--manual-initial-grid", bootstrap_file]
-        
+
         self.logger.info(command, production = self.production)
         os.chdir(self.production.event.meta['working directory'])
         pipe = subprocess.Popen(command, 
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
         out, err = pipe.communicate()
-
         if err:
             self.production.status = "stuck"
             if hasattr(self.production.event, "issue_object"):
@@ -286,21 +251,21 @@ class Rift(Pipeline):
                 raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
                                         production=self.production.name)
         else:
-            #os.makedirs(self.production.rundir, exist_ok=True)
-            os.chdir(self.production.rundir)
-            for psdfile in self.production.get_psds("xml"):
-                ifo = psdfile.split("/")[-1].split("_")[1].split(".")[0]
-                os.system(f"cp {psdfile} {ifo}-psd.xml.gz")
+            if self.production.event.repository:
+                os.chdir(self.production.rundir)
+                for psdfile in self.production.get_psds("xml"):
+                    ifo = psdfile.split("/")[-1].split("_")[1].split(".")[0]
+                    os.system(f"cp {psdfile} {ifo}-psd.xml.gz")
 
-            #os.system("cat *_local.cache > local.cache")
+                #os.system("cat *_local.cache > local.cache")
 
-            if hasattr(self.production.event, "issue_object"):
-                return PipelineLogger(message=out,
-                                      issue=self.production.event.issue_object,
-                                      production=self.production.name)
-            else:
-                return PipelineLogger(message=out,
-                                      production=self.production.name)
+                if hasattr(self.production.event, "issue_object"):
+                    return PipelineLogger(message=out,
+                                          issue=self.production.event.issue_object,
+                                          production=self.production.name)
+                else:
+                    return PipelineLogger(message=out,
+                                          production=self.production.name)
     
     def submit_dag(self):
         """

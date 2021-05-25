@@ -406,8 +406,11 @@ class Production:
         # Check that the upper frequency is included, otherwise calculate it
         if "quality" in self.meta:
             if ("high-frequency" not in self.meta['quality']) and ("sample-rate" in self.meta['quality']):
+                # Account for the PSD roll-off with the 0.875 factor
                 self.meta['quality']['high-frequency'] = int(0.875 * self.meta['quality']['sample-rate']/2)
-        
+
+
+                
         # Get the data quality recommendations
         if 'quality' in self.event.meta:
             self.quality = self.event.meta['quality']
@@ -418,7 +421,13 @@ class Production:
             if ('quality' in kwargs):
                self.meta['quality'].update(kwargs['quality'])
             self.quality = self.meta['quality']
+            
+        if ('quality' in self.meta) and ("event time" in self.meta):
+            if "segment start" not in self.meta['quality']:
+                self.meta['quality']['segment start'] = self.meta['event time'] - self.meta['quality']['segment-length'] + 2
+                self.event.meta['quality']['segment start'] = self.meta['quality']['segment start']
 
+            
         # Gather the appropriate prior data for this production
         if 'priors' in self.meta:
             self.priors = self.meta['priors']
@@ -433,6 +442,7 @@ class Production:
             self.psds = {}
 
 
+            
         for ifo, psd in self.psds.items():
             if self.event.repository:
                 self.psds[ifo] = os.path.join(self.event.repository.directory, psd)
@@ -704,24 +714,24 @@ class Production:
            Defaults to the directory specified in the asimov configuration file.
         """
 
-        if not template_directory:
-            template_directory = config.get("templating", "directory")
-            
-        config_dict = {s: dict(config.items(s)) for s in config.sections()}
 
         if "template" in self.meta:
             template = f"{self.meta['template']}.ini"
         else:
             template = f"{self.pipeline}.ini"
 
-        #try:
-        with open(os.path.join(f"{template_directory}", template), "r") as template_file:
+        try:
+            template_directory = config.get("templating", "directory")
+            template_file = os.path.join(f"{template_directory}", template)
+        except:
+            from pkg_resources import resource_filename
+            template_file = resource_filename("asimov", f'configs/{template}')
+        
+        config_dict = {s: dict(config.items(s)) for s in config.sections()}
+
+        with open(template_file, "r") as template_file:
             liq = Liquid(template_file.read())
             rendered = liq.render(production=self, config=config)
-
-        #except Exception as e:
-        #    raise DescriptionException(f"There was a problem writing the configuration file.\n\n{e}",
-        #                               production=self)
 
         with open(filename, "w") as output_file:
             output_file.write(rendered)

@@ -33,14 +33,14 @@ def build(event):
         ready_productions = event.event_object.get_all_latest()
         for production in ready_productions:
             click.echo(f"\tWorking on production {production.name}")
-            if production.status in {"running", "stuck", "wait", "finished", "uploaded"}: continue
+            if production.status in {"running", "stuck", "wait", "finished", "uploaded", "cancelled", "stopped"}: continue
             try:
                 configuration = production.get_configuration()
             except ValueError:
                 try:
                     rundir = config.get("general", "rundir_default")
-                    templates = os.path.join(rundir, config.get("templating", "directory"))
-                    production.make_config(f"{production.name}.ini", template_directory=templates)
+                    
+                    production.make_config(f"{production.name}.ini")
                     click.echo(f"Production config {production.name} created.")
                     logger.info("Run configuration created.", production=production)
 
@@ -72,7 +72,7 @@ def submit(event, update):
         logger = logging.AsimovLogger(event=event.event_object)
         ready_productions = event.event_object.get_all_latest()
         for production in ready_productions:
-            if production.status.lower() in {"running", "stuck", "wait", "processing", "uploaded", "finished", "manual"}: continue
+            if production.status.lower() in {"running", "stuck", "wait", "processing", "uploaded", "finished", "manual", "cancelled", "stopped"}: continue
             if production.status.lower() == "restart":
                 if production.pipeline.lower() in known_pipelines:
                     pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")

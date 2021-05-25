@@ -1,0 +1,79 @@
+calibration:
+  H1: C01_offline/calibration/H1.dat
+  L1: C01_offline/calibration/L1.dat
+  V1: C01_offline/calibration/V1.dat
+data:
+  channels:
+    H1: H1:DCS-CALIB_STRAIN_CLEAN_SUB60HZ_C01
+    L1: L1:DCS-CALIB_STRAIN_CLEAN_SUB60HZ_C01
+    V1: V1:Hrec_hoft_16384Hz
+  frame-types:
+    H1: H1_HOFT_CLEAN_SUB60HZ_C01
+    L1: L1_HOFT_CLEAN_SUB60HZ_C01
+    V1: V1Online
+event time: 1240340820.67627
+gid: G330687
+interferometers:
+- H1
+- L1
+full name: GW190426_190642
+name: GW190426
+old superevent: S190426l
+priors:
+  amp order: 10
+  chirp-mass:
+  - 33.4551223382697
+  - 233.46087529193179
+  component:
+  - 1
+  - 1000
+  distance:
+  - 10
+  - 20000
+  q:
+  - 0.05
+  - 1.0
+  a2:
+  - 0.0
+  - 0.99
+productions:
+- ProdF0:
+    comment: Bayeswave PSD job
+    pipeline: bayeswave
+    status: ready
+    rundir: {wd}/ProdF0
+- ProdF5:
+    approximant: IMRPhenomXPHM
+    comment: Bilby job
+    pipeline: bilby
+    status: ready
+    rundir: {wd}/ProdF5
+- ProdF6:
+    approximant: SEOBNRv4HM
+    comment: Rift test job
+    pipeline: rift
+    status: ready
+    user: marie.curie
+    rundir: {wd}/ProdF6
+psds:
+  1024:
+    H1: C01_offline/psds/1024/H1-psd.dat
+    L1: C01_offline/psds/1024/L1-psd.dat
+quality:
+  high-frequency: 448
+  lower-frequency:
+    H1: 20
+    L1: 20
+  psd-length: 4
+  reference-frequency: 3
+  sample-rate: 1024
+  segment-length: 4
+  start-frequency: 3.493012900304671
+  supress:
+    V1:
+      lower: 49.5
+      upper: 50.5
+  upper-frequency: 448
+  window-length: 4
+repository: git@git.ligo.org:pe/O3/S190426l
+working directory: {wd}

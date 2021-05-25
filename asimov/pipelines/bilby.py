@@ -48,9 +48,6 @@ class Bilby(Pipeline):
             return False
 
 
-    def _activate_environment(self):
-        pass
-
     def _determine_prior(self):
         """
         Determine the correct choice of prior file for this production.
@@ -63,66 +60,57 @@ class Bilby(Pipeline):
             scale_factor = 1 # Check this
             template = None
 
+            prior_parameters = {}
+            
             if "priors" in self.production.meta:
                 priors_e = self.production.meta['priors']
                 if "chirp-mass" in priors_e:
-                    mc_min = priors_e['chirp-mass'][0]
-                    mc_max = priors_e['chirp-mass'][1]
-                else:
-                    mc_min = roq_params["chirpmassmin"] / scale_factor
-                    mc_max = roq_params["chirpmassmax"] / scale_factor
+                    prior_parameters['mc_min'] = priors_e['chirp-mass'][0]
+                    prior_parameters['mc_max'] = priors_e['chirp-mass'][1]
 
                 if "component" in priors_e:
-                    comp_min = priors_e['component'][0]
-                    comp_max = priors_e['component'][1]
-                else:
-                    comp_min = roq_params["compmin"] / scale_factor
-                    comp_max = 1000
+                    prior_parameters['comp_min'] = priors_e['component'][0]
+                    prior_parameters['comp_max'] = priors_e['component'][1]
+
                 if "q" in priors_e:
-                    q_min = priors_e['q'][0]
-                    q_max = priors_e['q'][1]
-                else:
-                    q_min = 0.05
-                    q_max = 1.00
+                    prior_parameters['q_min'] = priors_e['q'][0]
+                    prior_parameters['q_max'] = priors_e['q'][1]
+
                 if "distance" in priors_e:
                     if priors_e['distance'][0]:
-                        d_min = priors_e['distance'][0]
+                        prior_parameters['d_min'] = priors_e['distance'][0]
                     else:
-                        d_min = 10
-                    d_max = priors_e['distance'][1]
-                else:
-                    d_min = distance_bounds[0]
-                    d_max = distance_bounds[1]
+                        prior_parameters['d_min'] = 10
+                    prior_parameters['d_max'] = priors_e['distance'][1]
+
                 if "a2" in priors_e:
-                    a2_min = priors_e['a2'][0]
-                    a2_max = priors_e['a2'][1]
-                else:
-                    a2_min = 0.0
-                    a2_max = 1.0
+                    prior_parameters['a2_min'] = priors_e['a2'][0]
+                    prior_parameters['a2_max'] = priors_e['a2'][1]
+
+                if "a1" in priors_e:
+                    prior_parameters['a1_min'] = priors_e['a1'][0]
+                    prior_parameters['a1_max'] = priors_e['a1'][1]
+
 
             if "event type" in self.production.meta:
                 event_type = self.production.meta['event type'].lower()
             else:
                 event_type = "bbh"
+                self.production.meta['event type'] = event_type
+
+                if self.production.event.issue_object:
+                    self.production.event.issue_object.update_data()
 
             if template is None:
-                template = os.path.join(
-                        config.get("bilby", "priors"), f"{event_type}.prior.template"
-                )
+                template_filename = f"{event_type}.prior.template"
+                try:
+                    template = os.path.join(config.get("bilby", "priors"), template_filename)
+                except:
+                    from pkg_resources import resource_filename
+                    template = resource_filename("asimov", f'priors/{template_filename}')
 
             with open(template, "r") as old_prior:
-                prior_string = old_prior.read().format(
-                    mc_min=mc_min,
-                    mc_max=mc_max,
-                    comp_min=comp_min,
-                    comp_max=comp_max,
-                    d_min=d_min,
-                    d_max=d_max,
-                    a2_min=a2_min,
-                    a2_max=a2_max,
-                    q_min=q_min, 
-                    q_max=q_max
-                )
+                prior_string = old_prior.read().format(**prior_parameters)
             prior_name = f"{self.production.name}.prior"
             prior_file = os.path.join(os.getcwd(), prior_name)
             with open(prior_file, "w") as new_prior:
@@ -158,14 +146,20 @@ class Bilby(Pipeline):
            Raised if the construction of the DAG fails.
         """
 
-        #self._activate_environment()
         cwd = os.getcwd()
-        os.chdir(os.path.join(self.production.event.repository.directory,
-                              self.category))
-        gps_file = self.production.get_timefile()
-        ini = self.production.event.repository.find_prods(self.production.name,
-                                                          self.category)[0]
 
+
+        if self.production.event.repository:
+            os.chdir(os.path.join(self.production.event.repository.directory,
+                                  self.category))
+            ini = self.production.event.repository.find_prods(self.production.name,
+                                                          self.category)[0]
+            ini = os.path.join(self.production.event.repository.directory, self.category,  ini)
+            gps_file = self.production.get_timefile()
+        else:
+            gps_file = "gpstime.txt"
+            ini = f"{self.production.name}.ini"
+            
         if self.production.rundir:
             rundir = self.production.rundir
         else:
@@ -184,9 +178,8 @@ class Bilby(Pipeline):
         # TODO: Check if bilby supports loading a gps time file
         
         command = ["bilby_pipe",
-                   os.path.join(self.production.event.repository.directory, self.category,  ini),
+                   ini,
                    "--label", job_label,
-                   "--prior-file", prior_file,
                    "--outdir", self.production.rundir,
                    "--accounting", config.get("bilby", "accounting")
         ]
