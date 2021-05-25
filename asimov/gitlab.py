@@ -15,40 +15,77 @@ from liquid import Liquid
 
 STATE_PREFIX = "C01"
 
-def find_events(repository, milestone=None, subset=None, update=False, repo=True, label=None):
+
+
+class GitlabLedger(Ledger):
     """
-    Search through a repository's issues and find all of the ones
-    for events.
+    Connect to a gitlab-based issue tracker.
     """
-    if subset == [None]:
-        subset = None
-    if not label:
-        event_label = config.get("gitlab", "event_label")
-    else:
-        event_label = label
-    try:
-        sleep_time = int(config.get("gitlab", "rest_time"))
-    except:
-        sleep_time = 30
-    issues = repository.issues.list(labels=[event_label], 
-                                    #milestone=milestone,
-                                    per_page=1000)
-    output = []
-    if subset:
-        for issue in issues:
-            if issue.title in subset:
+
+    def __init__(self, repository, milestone=None, subset=None, update=False, repo=True, label=None):
+        """
+        Search through a repository's issues and find all of the ones
+        for events.
+        """
+
+        self.repository = repository
+        
+        if subset == [None]:
+            subset = None
+        if not label:
+            event_label = config.get("gitlab", "event_label")
+        else:
+            event_label = label
+        try:
+            sleep_time = int(config.get("gitlab", "rest_time"))
+        except:
+            sleep_time = 30
+        issues = repository.issues.list(labels=[event_label], 
+                                        per_page=1000)
+        output = []
+        if subset:
+            for issue in issues:
+                if issue.title in subset:
+                    output += [EventIssue(issue, repository, update, repo=repo)]
+                    if update:
+                        time.sleep(sleep_time)
+        else:
+            for issue in issues:
                 output += [EventIssue(issue, repository, update, repo=repo)]
                 if update:
                     time.sleep(sleep_time)
-    else:
-        for issue in issues:
-            output += [EventIssue(issue, repository, update, repo=repo)]
-            if update:
-                time.sleep(sleep_time)
-    return output
 
+        self.data['events'] = output
+        self.events = {ev['name']: ev for ev in self.data['events']}
 
-class EventIssue:
+    def get_event(self, event=None):
+        if event:
+            return self.events[event]
+        else:
+            return self.events.values()
+        
+    @classmethod
+    def add_event(self, repository, event_object, issue_template=None):
+        """
+        Create an issue for an event.
+        """
+
+        if issue_template:
+            with open(issue_template, "r") as template_file:
+                liq = Liquid(template_file.read())
+                rendered = liq.render(event_object=event_object, yaml = event_object.to_yaml())
+        else:
+            rendered = event_object.to_yaml()
+            
+        repository.issues.create({'title': event_object.name,
+                                       'description': rendered})
+    
+    @classmethod
+    def create(cls):
+        raise NotImplementedError("You must create a gitlab issue tracker manually first.")
+    pass
+
+class EventIssue(Event):
     """
     Use an issue on the gitlab issue tracker to 
     hold variable data for the program.
@@ -65,6 +102,8 @@ class EventIssue:
 
     def __init__(self, issue, repository, update=False, repo=True):
 
+        super(EventIssue, self).from_issue(self, update, repo)
+        
         self.issue_object = issue
         self.title = issue.title
         self.text = issue.description
@@ -72,43 +111,15 @@ class EventIssue:
         self.issue_id = issue.id
         self.labels = issue.labels
         self.data = self.parse_notes()
-        if repo:
-            self.repository = repository
-        else:
-            self.repository = None
-        self.event_object=None
-        self.event_object = Event.from_issue(self, update, repo=repo)
         
 
     def _refresh(self):
         if self.repository:
             self.issue_object = self.repository.issues.get(self.issue_object.iid)
-            if self.event_object:
-                self.event_object.text = self.issue_object.description.split("---")
+            self.text = self.issue_object.description.split("---")
         else:
             pass
-
-    @classmethod
-    def create_issue(cls, repository, event_object, issue_template=None):
-        """
-        Create an issue for an event.
-        """
-
-        if issue_template:
-            with open(issue_template, "r") as template_file:
-                liq = Liquid(template_file.read())
-                rendered = liq.render(event_object=event_object, yaml = event_object.to_yaml())
-        else:
-            rendered = event_object.to_yaml()
             
-        repository.issues.create({'title': event_object.name,
-                                       'description': rendered})
-            
-    @property
-    def productions(self):
-        """List the productions on this event."""
-        return self.event_object.productions
-        
     @property
     def state(self):
         """
