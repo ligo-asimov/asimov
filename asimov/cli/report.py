@@ -11,10 +11,9 @@ from pkg_resources import resource_filename
 import otter
 import otter.bootstrap as bt
 
-from asimov import config, current_ledger
-
-tz = pytz.timezone("Europe/London")
-
+from asimov.cli import known_pipelines
+from asimov import gitlab
+from asimov import config
 
 @click.group()
 def report():

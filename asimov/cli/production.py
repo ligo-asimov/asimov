@@ -3,12 +3,10 @@ from copy import copy
 import click
 import yaml
 
-from asimov import config
-from asimov import current_ledger as ledger
-
-from asimov.event import Production
+from asimov import config, ledger
 from asimov.storage import Store
-
+from asimov.event import Production, Event,  DescriptionException
+from asimov import gitlab
 
 @click.group()
 def production():
@@ -58,7 +56,7 @@ def create(event, pipeline, family, comment, needs, template, status, approximan
 
     """
 
-    event = ledger.get_event(event)[0]
+    event = ledger.get_event(event)
     #
     event_prods = event.productions
     names = [production.name for production in event_prods]

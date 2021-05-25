@@ -7,11 +7,11 @@ import pathlib
 
 import click
 
-from asimov import current_ledger as ledger
-import asimov
-from asimov import LOGGER_LEVEL
-from asimov import condor
-from asimov.event import DescriptionException
+from asimov.cli import known_pipelines
+from asimov import logging
+from asimov import config
+from asimov import gitlab
+from asimov.event import Event, DescriptionException, Production
 from asimov.pipeline import PipelineException
 
 

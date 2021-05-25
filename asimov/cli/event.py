@@ -10,10 +10,18 @@ import numpy as np
 from glue.lal import Cache
 from gwdatafind import find_urls
 
-from asimov import config
-from asimov import current_ledger as ledger
-from asimov.utils import find_calibrations, update
-from asimov.event import DescriptionException, Event
+from asimov import config, ledger
+from asimov.event import Production, Event,  DescriptionException
+from asimov import gitlab
+from asimov.cli import find_calibrations, CALIBRATION_NOTE
+
+def update(d, u):
+    for k, v in u.items():
+        if isinstance(v, collections.abc.Mapping):
+            d[k] = update(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d
 
 
 @click.group()
@@ -126,41 +134,30 @@ def create(name=None, oldname=None, gid=None, superevent=None, repo=None, search
     event.meta["working directory"] = working_dir
     pathlib.Path(working_dir).mkdir(parents=True, exist_ok=True)
     ledger.update_event(event)
-
-
-@click.argument("delete")
+    
+@click.argument("event")
+@click.option("--yaml", "yaml", default=None)
+@click.option("--ini", "ini", default=None)
 @event.command()
 def delete(event):
     """
     Delete an event from the ledger.
     """
-    ledger.delete_event(event_name=event)
 
+    event = ledger.get_event(event)
+    # Check the calibration files for this event
+    click.echo("Check the calibration.")
+    click.echo(event.name)
+    calibration(event=event.name)
+    # Check the IFOs for this event
+    click.echo("Check the IFO list")
+    try:
+        checkifo(event.name)
+    except:
+        pass
 
-# @click.argument("event")
-# @click.option("--yaml", "yaml", default=None)
-# @click.option("--ini", "ini", default=None)
-# @event.command()
-# def populate(event, yaml, ini):
-#     """
-#     Populate an event ledger with data from ini or yaml files.
-#     """
-
-#     event = ledger.get_event(event)
-#     # Check the calibration files for this event
-#     click.echo("Check the calibration.")
-#     click.echo(event.name)
-#     calibration(event=event.name)
-#     # Check the IFOs for this event
-#     click.echo("Check the IFO list")
-#     try:
-#         checkifo(event.name)
-#     except:
-#         pass
-
-#     if yaml:
-#         add_data(event.name, yaml)
-
+    if yaml:
+        add_data(event.name, yaml)
 
 @click.argument("event", default=None)
 @click.option("--json", "json_data", default=None)
@@ -195,6 +192,7 @@ def configurator(event, json_data=None):
     new_data["priors"]["amp order"] = data["amp_order"]
     new_data["priors"]["chirp-mass"] = [data["chirpmass_min"], data["chirpmass_max"]]
 
+
     update(event.meta, new_data)
     ledger.update_event(event)
 
@@ -207,36 +205,28 @@ def checkifo(event):
     event = ledger.get_event(event)
     if "event time" not in event.event_object.meta:
         print(f"Time not found {event.event_object.name}")
-    time = event.event_object.meta["event time"]
-    gpsstart = time - 600
-    gpsend = time + 600
-    bits = ["Bit 0", "Bit 1", "Bit 2"]
+    time = event.event_object.meta['event time']
+    gpsstart=time-600
+    gpsend=time+600
+    bits = ['Bit 0', 'Bit 1', 'Bit 2']
 
     active_ifo = []
     for ifo in ["L1", "H1", "V1"]:
-        frametypes = event.event_object.meta["data"]["frame-types"]
-        urls = find_urls(
-            site=f"{ifo[0]}",
-            frametype=frametypes[ifo],
-            gpsstart=gpsstart,
-            gpsend=gpsend,
-        )
+        frametypes = event.event_object.meta['data']['frame-types']
+        urls = find_urls(site=f"{ifo[0]}", frametype=frametypes[ifo], gpsstart=gpsstart, gpsend=gpsend)
         datacache = Cache.from_urls(urls)
         if len(datacache) == 0:
             print(f"No {ifo} data found.")
             continue
 
         if "state vector" in event.meta:
-            state_vector_channel = event.meta["state vector"]
-        else:
+            state_vector_channel = event.meta['state vector']
+        else:                
             state_vector_channel = ast.literal_eval(config.get("data", "state-vector"))
 
         state = gwpy.timeseries.StateVector.read(
-            datacache,
-            state_vector_channel[ifo],
-            start=gpsstart,
-            end=gpsend,
-            pad=0,  # padding data so that errors are not raised even if found data are not continuous.
+            datacache, state_vector_channel[ifo], start=gpsstart, end=gpsend,
+            pad=0  # padding data so that errors are not raised even if found data are not continuous.
         )
         if not np.issubdtype(state.dtype, np.unsignedinteger):
             # if data are not unsigned integers, cast to them now so that
@@ -253,33 +243,28 @@ def checkifo(event):
         for bit in bits:
             segments -= ~flags[bit].active
 
-        if len(segments) > 0:
-            active_ifo += [ifo]
+        if len(segments)>0: active_ifo += [ifo]
     click.echo(event.name)
-    if event.meta["interferometers"] != active_ifo:
+    if event.meta['interferometers'] != active_ifo:
         print(f"Gitlab data\t{event.meta['interferometers']}")
         print(f"Recommended IFOS\t{active_ifo}")
 
-    event.meta["interferometers"] = active_ifo
+    event.meta['interferometers'] = active_ifo
     ledger.update_event(event)
 
 
-@click.option(
-    "--calibration",
-    "calibration",
-    multiple=True,
-    default=[None],
-    help="The location of the calibration files.",
-)
+
+@click.option("--calibration", "calibration", multiple=True, default=[None], 
+              help="The location of the calibration files.")
 @click.argument("event")
 @event.command()
 def calibration(event, calibration):
-    event = ledger.get_event(event)[0]
+    event = ledger.get_event(event)
     try:
         event._check_calibration()
     except DescriptionException:
-        print(event.name)
-        time = event.meta["event time"]
+        print(event.title)
+        time = event.meta['event time'] 
         if not calibration[0]:
             calibrations = find_calibrations(time)
         else:
@@ -287,19 +272,28 @@ def calibration(event, calibration):
             for cal in calibration:
                 calibrations[cal.split(":")[0]] = cal.split(":")[1]
         print(calibrations)
-        update(event.meta["data"]["calibration"], calibrations)
+        for ifo, envelope in calibrations.items():
+            description = f"Added calibration {envelope} for {ifo}."
+            try:
+                event.repository.add_file(envelope, f"C01_offline/calibration/{ifo}.dat", 
+                                                       commit_message=description)
+            except GitCommandError as e:
+                if "nothing to commit," in e.stderr:
+                    pass
+            calibrations[ifo] = f"C01_offline/calibration/{ifo}.dat"
+        event.meta['calibration'] = calibrations
         ledger.update_event(event)
 
 
-# @click.argument("data")
-# @click.argument("event")
-# @event.command()
-# def load(event, data):
-#     event = ledger.get_event(event)
+@click.argument("data")
+@click.argument("event")
+@event.command()
+def load(event, data):
+    event = ledger.get_event(event)
 
-#     with open(data, "r") as datafile:
-#         data = yaml.safe_load(datafile.read())
+    with open(data, "r") as datafile:
+        data = yaml.safe_load(datafile.read())
+        
+        event.meta = update(event.meta, data)
 
-#         event.meta = update(event.meta, data)
-
-#     ledger.update_event(event)
+    ledger.update_event(event)

@@ -5,10 +5,9 @@ import os
 
 import click
 
-from asimov import config, current_ledger
-from asimov.pipelines import known_pipelines
-from asimov.review import ReviewMessage
-
+from asimov.cli import known_pipelines
+from asimov import gitlab
+from asimov import config
 
 @click.group()
 def review():

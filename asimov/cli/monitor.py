@@ -3,56 +3,11 @@ import configparser
 import sys
 import click
 
-from asimov import condor, config, logger, LOGGER_LEVEL
-from asimov import current_ledger as ledger
-from asimov.cli import ACTIVE_STATES, manage, report
-
-logger = logger.getChild("cli").getChild("monitor")
-logger.setLevel(LOGGER_LEVEL)
-
-
-@click.option("--dry-run", "-n", "dry_run", is_flag=True)
-@click.command()
-def start(dry_run):
-    """Set up a cron job on condor to monitor the project."""
-
-    try:
-        minute_expression = config.get("asimov start", "cron_minute")
-    except (configparser.NoOptionError, configparser.NoSectionError):
-        minute_expression = "*/15"
-
-    submit_description = {
-        "executable": shutil.which("asimov"),
-        "arguments": "monitor --chain",
-        "accounting_group": config.get("asimov start", "accounting"),
-        "output": "asimov_cron.out",
-        "on_exit_remove": "false",
-        "universe": "local",
-        "error": "asimov_cron.err",
-        "log": "asimov_cron.log",
-        "request_cpus": "1",
-        "cron_minute": minute_expression,
-        "getenv": "true",
-        "batch_name": f"asimov/monitor/{ledger.data['project']['name']}",
-        "request_memory": "8192MB",
-        "request_disk": "8192MB",
-    }
-    cluster = condor.submit_job(submit_description)
-    ledger.data["cronjob"] = cluster
-    ledger.save()
-    click.secho(f"  \t  ● Asimov is running ({cluster})", fg="green")
-    logger.info(f"Running asimov cronjob as  {cluster}")
-
-
-@click.option("--dry-run", "-n", "dry_run", is_flag=True)
-@click.command()
-def stop(dry_run):
-    """Set up a cron job on condor to monitor the project."""
-    cluster = ledger.data["cronjob"]
-    condor.delete_job(cluster)
-    click.secho("  \t  ● Asimov has been stopped", fg="red")
-    logger.info(f"Stopped asimov cronjob {cluster}")
-
+from asimov.cli import ACTIVE_STATES, known_pipelines
+from asimov import gitlab
+from asimov import config
+from asimov import logging
+from asimov import condor
 
 @click.argument("event", default=None, required=False)
 @click.option(

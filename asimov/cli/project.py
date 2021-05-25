@@ -16,19 +16,17 @@ import click
 from asimov import config, storage, logger, LOGGER_LEVEL
 from asimov.ledger import Ledger
 
-logger = logger.getChild("cli").getChild("project")
-logger.setLevel(LOGGER_LEVEL)
-
-
-def make_project(
-    name,
-    root,
-    working="working",
-    checkouts="checkouts",
-    results="results",
-    logs="logs",
-    user=None,
-):
+@click.command()
+@click.argument("name")
+@click.option("--root", default=os.getcwd(),
+              help="Location to create the project, default is the current directory.")
+@click.option("--working", default="working",
+              help="The location to store working directories, default is a directory called 'working' inside the current directory.")
+@click.option("--checkouts", default="checkouts",
+              help="The location to store cloned git repositories.")
+@click.option("--results", default="results",
+              help="The location where the results store should be created.")
+def init(name, root, working="working", checkouts="checkouts", results="results"):
     """
     Create a new project called NAME.
 
