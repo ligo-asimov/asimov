@@ -60,34 +60,36 @@ class Bilby(Pipeline):
             scale_factor = 1 # Check this
             template = None
 
+            prior_parameters = {}
+            
             if "priors" in self.production.meta:
                 priors_e = self.production.meta['priors']
                 if "chirp-mass" in priors_e:
-                    mc_min = priors_e['chirp-mass'][0]
-                    mc_max = priors_e['chirp-mass'][1]
+                    prior_parameters['mc_min'] = priors_e['chirp-mass'][0]
+                    prior_parameters['mc_max'] = priors_e['chirp-mass'][1]
 
                 if "component" in priors_e:
-                    comp_min = priors_e['component'][0]
-                    comp_max = priors_e['component'][1]
+                    prior_parameters['comp_min'] = priors_e['component'][0]
+                    prior_parameters['comp_max'] = priors_e['component'][1]
 
                 if "q" in priors_e:
-                    q_min = priors_e['q'][0]
-                    q_max = priors_e['q'][1]
+                    prior_parameters['q_min'] = priors_e['q'][0]
+                    prior_parameters['q_max'] = priors_e['q'][1]
 
                 if "distance" in priors_e:
                     if priors_e['distance'][0]:
-                        d_min = priors_e['distance'][0]
+                        prior_parameters['d_min'] = priors_e['distance'][0]
                     else:
-                        d_min = 10
-                    d_max = priors_e['distance'][1]
+                        prior_parameters['d_min'] = 10
+                    prior_parameters['d_max'] = priors_e['distance'][1]
 
                 if "a2" in priors_e:
-                    a2_min = priors_e['a2'][0]
-                    a2_max = priors_e['a2'][1]
+                    prior_parameters['a2_min'] = priors_e['a2'][0]
+                    prior_parameters['a2_max'] = priors_e['a2'][1]
 
                 if "a1" in priors_e:
-                    a1_min = priors_e['a1'][0]
-                    a1_max = priors_e['a1'][1]
+                    prior_parameters['a1_min'] = priors_e['a1'][0]
+                    prior_parameters['a1_max'] = priors_e['a1'][1]
 
 
             if "event type" in self.production.meta:
@@ -95,7 +97,9 @@ class Bilby(Pipeline):
             else:
                 event_type = "bbh"
                 self.production.meta['event type'] = event_type
-                self.production.event.issue_object.update_data()
+
+                if self.production.event.issue_object:
+                    self.production.event.issue_object.update_data()
 
             if template is None:
                 try:
@@ -109,18 +113,7 @@ class Bilby(Pipeline):
                 )
 
             with open(template, "r") as old_prior:
-                prior_string = old_prior.read().format(
-                    mc_min=mc_min,
-                    mc_max=mc_max,
-                    comp_min=comp_min,
-                    comp_max=comp_max,
-                    d_min=d_min,
-                    d_max=d_max,
-                    a2_min=a2_min,
-                    a2_max=a2_max,
-                    q_min=q_min, 
-                    q_max=q_max
-                )
+                prior_string = old_prior.read().format(**prior_parameters)
             prior_name = f"{self.production.name}.prior"
             prior_file = os.path.join(os.getcwd(), prior_name)
             with open(prior_file, "w") as new_prior:
