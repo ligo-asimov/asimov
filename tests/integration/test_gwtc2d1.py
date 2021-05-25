@@ -21,7 +21,7 @@ class EventTests(unittest.TestCase):
         with open("GW190426190642.yaml", "r") as f:
             TEST_YAML = f.read()
         TEST_YAML = TEST_YAML.format(wd=os.getcwd())
-        self.event = asimov.event.Event.from_yaml(TEST_YAML, repo=True)
+        self.event = asimov.event.Event.from_yaml(TEST_YAML, repo=False)
 
     def test_ini_generation(self):
         """Check that the ini file is correctly generated."""

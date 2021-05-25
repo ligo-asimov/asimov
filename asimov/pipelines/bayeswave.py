@@ -138,16 +138,16 @@ class BayesWave(Pipeline):
         out, err = pipe.communicate()
         if "To submit:" not in str(out):
             self.production.status = "stuck"
-            
+
+            if "issue_object" in self.production.event:
                 raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
-                                            issue=self.production.event.issue_object,
-                                            production=self.production.name)
+                                        issue=self.production.event.issue_object,
+                                        production=self.production.name)
             else:
                 raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
                                         production=self.production.name)
         else:
             if hasattr(self.production.event, "issue_object"):
-                self.logger(
                 return PipelineLogger(message=out,
                                       issue=self.production.event.issue_object,
                                       production=self.production.name)
@@ -164,7 +164,7 @@ class BayesWave(Pipeline):
                  return False
          else:
             self.logger.info("Bayeswave job completion was not detected.")
-             return False
+            return False
             
     def after_completion(self):
         try:

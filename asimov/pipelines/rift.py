@@ -154,7 +154,7 @@ class Rift(Pipeline):
         else:
             gps_file = "gpstime.txt"
             ini = os.path.join(self.production.event.meta['working directory'], f"{self.production.name}.ini")
-            coinc_file = "coinc.xml"
+            coinc_file = os.path.join(cwd, "coinc.xml")
 
         if self.production.get_meta("user"):
                 user = self.production.get_meta("user")
