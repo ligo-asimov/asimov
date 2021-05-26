@@ -76,6 +76,23 @@ class GitlabLedger(Ledger):
         repository = server.projects.get(config.get("gitlab", "tracking_repository"))
         return server, repository
 
+    def _connect_gitlab(self):
+        """
+        Connect to the gitlab server.
+
+        Returns
+        -------
+        server : `Gitlab`
+           The gitlab server.
+        repository: `Gitlab.project`
+           The gitlab project.
+        """
+        server = gitlab.gitlab.Gitlab(config.get("gitlab", "server"),
+                                      private_token=config.get("gitlab", "token"))
+        repository = server.projects.get(config.get("gitlab", "tracking_repository"))
+        return server, repository
+
+        
     def get_event(self, event=None):
         if event:
             return self.events[event]
