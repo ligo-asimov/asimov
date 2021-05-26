@@ -5,6 +5,10 @@ import datetime
 import time
 import configparser
 
+from asimov import config
+from .event import Event
+from .ledger import Ledger
+from . import config
 import gitlab
 import yaml
 from liquid import Liquid
@@ -23,13 +27,13 @@ class GitlabLedger(Ledger):
     Connect to a gitlab-based issue tracker.
     """
 
-    def __init__(self, repository, milestone=None, subset=None, update=False, repo=True, label=None):
+    def __init__(self, configs, milestone=None, subset=None, update=False, repo=True, label=None):
         """
         Search through a repository's issues and find all of the ones
         for events.
         """
 
-        self.repository = repository
+        _, self.repository = self._connect_gitlab()
         
         if subset == [None]:
             subset = None
@@ -59,6 +63,23 @@ class GitlabLedger(Ledger):
         self.data['events'] = output
         self.events = {ev['name']: ev for ev in self.data['events']}
 
+    def _connect_gitlab(self):
+        """
+        Connect to the gitlab server.
+
+        Returns
+        -------
+        server : `Gitlab`
+           The gitlab server.
+        repository: `Gitlab.project`
+           The gitlab project.
+        """
+        server = gitlab.gitlab.Gitlab(config.get("gitlab", "server"),
+                                      private_token=config.get("gitlab", "token"))
+        repository = server.projects.get(config.get("gitlab", "tracking_repository"))
+        return server, repository
+
+        
     def get_event(self, event=None):
         if event:
             return self.events[event]
@@ -66,21 +87,28 @@ class GitlabLedger(Ledger):
             return self.events.values()
         
     @classmethod
-    def add_event(self, repository, event_object, issue_template=None):
+    def add_event(self, event_object, issue_template=None):
         """
         Create an issue for an event.
         """
-
-        if issue_template:
-            with open(issue_template, "r") as template_file:
-                liq = Liquid(template_file.read())
-                rendered = liq.render(event_object=event_object, yaml = event_object.to_yaml())
-        else:
-            rendered = event_object.to_yaml()
+        
+        if not  issue_template:
+            from pkg_resources import resource_filename
+            issue_template = resource_filename('asimov', 'gitlabissue.md')
             
-        repository.issues.create({'title': event_object.name,
+        with open(issue_template, "r") as template_file:
+            liq = Liquid(template_file.read())
+            rendered = liq.render(event_object=event_object, yaml = event_object.to_yaml())
+            
+        self.repository.issues.create({'title': event_object.name,
                                        'description': rendered})
-    
+
+    def update_event(self, event):
+        event.update_data()
+
+    def save(self):
+        pass
+        
     @classmethod
     def create(cls):
         raise NotImplementedError("You must create a gitlab issue tracker manually first.")

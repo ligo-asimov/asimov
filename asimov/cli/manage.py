@@ -9,7 +9,7 @@ import click
 
 from asimov.cli import known_pipelines
 from asimov import logging
-from asimov import config
+from asimov import config, ledger
 from asimov import gitlab
 from asimov.event import Event, DescriptionException, Production
 from asimov.pipeline import PipelineException
@@ -41,11 +41,10 @@ def build(event, dryrun):
     Create the run configuration files for a given event for jobs which are ready to run.
     If no event is specified then all of the events will be processed.
     """
-    logger = asimov.logger.getChild("cli").getChild("manage.build")
-    logger.setLevel(LOGGER_LEVEL)
-    for event in ledger.get_event(event):
 
-        click.echo(f"● Working on {event.name}")
+    for event in ledger.get_event(event):
+        click.echo(f"Working on {event.name}")
+        logger = logging.AsimovLogger(event=event)
         ready_productions = event.get_all_latest()
         for production in ready_productions:
             logger.info(f"{event.name}/{production.name}")
@@ -71,38 +70,24 @@ def build(event, dryrun):
                     raise KeyError
             except KeyError:
                 try:
+                    rundir = config.get("general", "rundir_default")
+                    path = pathlib.Path(production.rundir)
+                    path.mkdir(parents=True, exist_ok=True)
+                    config_loc = os.path.join(path, f"{production.name}.ini")
+                    production.make_config(config_loc)
+                    click.echo(f"Production config {production.name} created.")
+                    logger.info("Run configuration created.", production=production)
 
-                    # if production.rundir:
-                    #     path = pathlib.Path(production.rundir)
-                    # else:
-                    #     path = pathlib.Path(config.get("general", "rundir_default"))
-
-                    if dryrun:
-                        print(f"Will create {production.name}.ini")
-                    else:
-                        # path.mkdir(parents=True, exist_ok=True)
-                        config_loc = os.path.join(f"{production.name}.ini")
-                        production.make_config(config_loc, dryrun=dryrun)
-                        click.echo(f"Production config {production.name} created.")
-                        try:
-                            event.repository.add_file(
-                                config_loc,
-                                os.path.join(
-                                    f"{production.category}", f"{production.name}.ini"
-                                ),
-                            )
-                            logger.info(
-                                "Configuration committed to event repository.",
-                            )
-                            ledger.update_event(event)
-
-                        except Exception as e:
-                            logger.error(
-                                f"Configuration could not be committed to repository.\n{e}",
-                            )
-                            logger.exception(e)
-                        os.remove(config_loc)
-
+                    try:
+                        event.repository.add_file(config_loc,
+                                                  os.path.join(f"{production.category}",
+                                                               f"{production.name}.ini"))
+                        logger.info("Configuration committed to event repository.",
+                                    production=production)
+                    except Exception as e:
+                        logger.error(f"Configuration could not be committed to repository.\n{e}",
+                                     production=production)
+                        
                 except DescriptionException as e:
                     logger.error("Run configuration failed")
                     logger.exception(e)
@@ -134,9 +119,9 @@ def submit(event, update, dryrun):
     Submit the run configuration files for a given event for jobs which are ready to run.
     If no event is specified then all of the events will be processed.
     """
-    logger = asimov.logger.getChild("cli").getChild("manage.submit")
-    logger.setLevel(LOGGER_LEVEL)
+    
     for event in ledger.get_event(event):
+        logger = logging.AsimovLogger(event=event)
         ready_productions = event.get_all_latest()
         for production in ready_productions:
             logger.info(f"{event.name}/{production.name}")
@@ -236,7 +221,8 @@ def results(event, update):
     Find all available results for a given event.
     """
     for event in ledger.get_event(event):
-        click.secho(f"{event.name}")
+        click.secho(f"{event.title}")
+        logger = logging.AsimovLogger(event=event)
         for production in event.productions:
             click.echo(f"\t- {production.name}")
             try:
