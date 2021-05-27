@@ -85,7 +85,6 @@ class BayesWave(Pipeline):
                     user = self.production.get_meta("user")
                 else:
                     user = ini._get_user()
-                self.production.set_meta("user", user)
 
             ini.update_accounting(user)
 
