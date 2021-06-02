@@ -1,3 +1,9 @@
+v0.3.2
+======
+Minor bug fix.
+
+- Corrects a bug in the PESummary call which prevented spin evolution being correctly calculated.
+
 v0.3.1
 ======
 Minor bug-fixes.
