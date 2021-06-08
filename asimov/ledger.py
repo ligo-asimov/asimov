@@ -7,6 +7,9 @@ import asimov
 from asimov.event import Event
 
 class Ledger:
+    pass
+
+class YAMLLedger(Ledger):
     def __init__(self, location="ledger.yml"):
         self.location = location
         with open(location, "r") as ledger_file:
@@ -27,6 +30,13 @@ class Ledger:
             ledger_file.write(
                 yaml.dump(data, default_flow_style=False))
 
+    def update_event(self, event):
+        """
+        Update an event in the ledger with a changed event object.
+        """
+        self.events[event.name] = event.to_dict()
+        self.save()
+            
     def save(self):
         self.data['events'] = list(self.events.values())
         with open(self.location, "w") as ledger_file:

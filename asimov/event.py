@@ -7,7 +7,6 @@ import yaml
 import os
 import glob
 
-
 import networkx as nx
 
 from .ini import RunConfiguration
@@ -146,6 +145,11 @@ class Event:
             except DescriptionException:
                 pass        
 
+    def update_data(self):
+        if self.ledger:
+            self.ledger.events[self.name] = self.to_dict()
+        pass
+            
     def _check_required(self):
         """
         Find all of the required metadata is provided.
@@ -571,6 +575,7 @@ class Production:
         if "rundir" in self.meta:
             return self.meta['rundir']
         elif "working directory" in self.event.meta:
+
             value = os.path.join(self.event.meta['working directory'], self.name)
             self.meta["rundir"] = value
             if self.event.issue_object != None:
@@ -683,7 +688,7 @@ class Production:
             raise ValueError("Could not open the ini file")
 
         return ini
-
+    
     @classmethod
     def from_dict(cls, parameters, event, issue=None):
         name, pars = list(parameters.items())[0]

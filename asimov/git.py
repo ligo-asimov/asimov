@@ -125,10 +125,10 @@ class EventRepo():
         destination_dir = os.path.join(self.directory, destination_dir)
         pathlib.Path(destination_dir).mkdir(parents=True, exist_ok=True)
 
-        destination = os.path.join(self.directory, destination)
+        destination_d = os.path.join(self.directory, destination)
 
         try:
-            shutil.copyfile(source, destination)
+            shutil.copyfile(source, destination_d)
         except shutil.SameFileError:
             pass
 

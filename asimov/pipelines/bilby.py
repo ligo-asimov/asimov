@@ -150,10 +150,11 @@ class Bilby(Pipeline):
 
 
         if self.production.event.repository:
-            os.chdir(os.path.join(self.production.event.repository.directory,
-                                  self.category))
-            ini = self.production.event.repository.find_prods(self.production.name,
-                                                          self.category)[0]
+            # os.chdir(os.path.join(self.production.event.repository.directory,
+            #                       self.category))
+            ini = self.production.event.repository.find_prods(
+                self.production.name,
+                self.category)[0]
             ini = os.path.join(self.production.event.repository.directory, self.category,  ini)
             gps_file = self.production.get_timefile()
         else:
@@ -177,7 +178,7 @@ class Bilby(Pipeline):
         #os.chdir(self.production.event.meta['working directory'])   
         # TODO: Check if bilby supports loading a gps time file
         
-        command = ["bilby_pipe",
+        command = [os.path.join(config.get("pipelines", "environment"), "bin", "bilby_pipe"),
                    ini,
                    "--label", job_label,
                    "--outdir", self.production.rundir,
