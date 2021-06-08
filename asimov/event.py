@@ -985,7 +985,7 @@ class Production:
             raise ValueError("This isn't a valid ini file")
 
         return ini
-
+    
     @classmethod
     def from_dict(cls, parameters, event, issue=None):
         name, pars = list(parameters.items())[0]
