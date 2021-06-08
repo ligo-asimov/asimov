@@ -11,22 +11,7 @@ from asimov import config
 import asimov.database
 
 class Ledger:
-    @classmethod
-    def create(cls, engine=None, location=None):
-        """
-        Create a ledger.
-        """
-
-        if not engine:
-            engine = config.get("ledger", "engine")
-
-        if engine == "yamlfile":
-            YAMLLedger.create(location)
-        elif engine in {"tinydb", "mongodb"}:
-            DatabaseLedger.create()
-        elif engine == "gitlab":
-            raise NotImplementedError("This hasn't been ported to the new interface yet. Stay tuned!")
-
+    pass
 
 class YAMLLedger(Ledger):
     def __init__(self, location="ledger.yml"):
@@ -58,23 +43,6 @@ class YAMLLedger(Ledger):
         Update an event in the ledger with a changed event object.
         """
         self.events[event.name] = event.to_dict()
-        self.save()
-
-    def delete_event(self, event_name):
-        """
-        Remove an event from the ledger.
-
-        Parameters
-        ----------
-        event_name : str
-           The name of the event to remove from the ledger.
-        """
-        event = self.events.pop(event_name)
-        if "trash" not in self.data:
-            self.data["trash"] = {}
-        if "events" not in self.data["trash"]:
-            self.data["trash"]["events"] = {}
-        self.data["trash"]["events"][event_name] = event
         self.save()
 
     def update_event(self, event):

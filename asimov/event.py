@@ -3,11 +3,6 @@ Trigger handling code.
 """
 
 import glob
-import os
-import pathlib
-from copy import deepcopy
-import logging
-import configparser
 
 import networkx as nx
 import yaml
@@ -200,14 +195,10 @@ class Event:
             self.ledger.update_event(self)
         pass
 
-    def __eq__(self, other):
-        if isinstance(other, Event):
-            if other.name == self.name:
-                return True
-            else:
-                return False
-        else:
-            return False
+    def update_data(self):
+        if self.ledger:
+            self.ledger.events[self.name] = self.to_dict()
+        pass
             
     def _check_required(self):
         """
@@ -834,7 +825,7 @@ class Production:
             return os.path.abspath(self.meta["rundir"])
         elif "working directory" in self.event.meta:
 
-            value = os.path.join(self.event.meta["working directory"], self.name)
+            value = os.path.join(self.event.meta['working directory'], self.name)
             self.meta["rundir"] = value
             return os.path.abspath(value)
         else:
@@ -969,7 +960,7 @@ class Production:
             raise ValueError("This isn't a valid ini file")
 
         return ini
-
+    
     @classmethod
     def from_dict(cls, parameters, event, issue=None):
         name, pars = list(parameters.items())[0]

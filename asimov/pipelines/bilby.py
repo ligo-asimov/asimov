@@ -181,10 +181,13 @@ class Bilby(Pipeline):
         self._determine_prior()  # Build the prior file
 
         if self.production.event.repository:
+            # os.chdir(os.path.join(self.production.event.repository.directory,
+            #                       self.category))
             ini = self.production.event.repository.find_prods(
-                self.production.name, self.category
-            )[0]
-            ini = os.path.join(cwd, ini)
+                self.production.name,
+                self.category)[0]
+            ini = os.path.join(self.production.event.repository.directory, self.category,  ini)
+            gps_file = self.production.get_timefile()
         else:
             ini = f"{self.production.name}.ini"
 
@@ -203,15 +206,15 @@ class Bilby(Pipeline):
         else:
             job_label = self.production.name
 
-        command = [
-            os.path.join(config.get("pipelines", "environment"), "bin", "bilby_pipe"),
-            ini,
-            "--label",
-            job_label,
-            "--outdir",
-            f"{os.path.abspath(self.production.rundir)}",
-            "--accounting",
-            f"{self.production.meta['scheduler']['accounting group']}",
+        prior_file = self._determine_prior()
+        #os.chdir(self.production.event.meta['working directory'])   
+        # TODO: Check if bilby supports loading a gps time file
+        
+        command = [os.path.join(config.get("pipelines", "environment"), "bin", "bilby_pipe"),
+                   ini,
+                   "--label", job_label,
+                   "--outdir", self.production.rundir,
+                   "--accounting", config.get("bilby", "accounting")
         ]
 
         if dryrun:
