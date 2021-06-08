@@ -39,3 +39,10 @@ config_locations = [os.path.join(os.curdir, "{}.conf".format(__packagename__)),
 config_locations.reverse()
 
 config.read([conffile for conffile in config_locations])
+
+if config.get("ledger", "engine") == "gitlab":
+    from .gitlab import GitlabLedger
+    ledger = GitlabLedger()
+elif config.get("ledger", "engine") == "yamlfile":
+    from .ledger import YAMLLedger
+    ledger = YAMLLedger(config.get("ledger", "location"))
