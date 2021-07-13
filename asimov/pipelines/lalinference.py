@@ -3,6 +3,7 @@
 
 import os
 import glob
+import re
 import subprocess
 from ..pipeline import Pipeline, PipelineException, PipelineLogger
 from ..ini import RunConfiguration
@@ -81,14 +82,14 @@ class LALInference(Pipeline):
             self.production.rundir = rundir
 
         #os.mkdir(self.production.rundir, exist_ok=True)
-            
+        ini = f"{self.production.name}.ini"
         command = [
             os.path.join(config.get("pipelines", "environment"),
             "bin",
             "lalinference_pipe"),
                    "-g", f"{gps_file}",
                    "-r", self.production.rundir,
-                   ini.ini_loc
+                   ini
         ]
         self.logger.info(" ".join(command))
         pipe = subprocess.Popen(command, 
@@ -165,6 +166,7 @@ class LALInference(Pipeline):
 
         try:
             command = ["condor_submit_dag",
+                       "-batch-name", f"lalinf/{self.production.event.name}/{self.production.name}",
                                    os.path.join(self.production.rundir, f"multidag.dag")]
             dagman = subprocess.Popen(command,
                                   stdout=subprocess.PIPE,
