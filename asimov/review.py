@@ -30,7 +30,7 @@ class Review:
         Add a new review message to an event.
         """
         self.messages.append(review_message)
-        messages = sorted(messages, key=lambda k: k.timestamp)
+        self.messages = sorted(self.messages, key=lambda k: k.timestamp)
 
     @property
     def status(self):
@@ -115,8 +115,9 @@ class ReviewMessage:
                    "message": None,
                    "timestamp": None}
         default.update(dictionary)
+        timestamp = datetime.strptime(default['timestamp'], '%Y-%m-%d %H:%M:%S.%f')
         message_ob = cls(message=default['message'],
                          production=production,
                          status=default['status'],
-                         timestamp=default['timestamp'])
+                         timestamp=timestamp)
         return message_ob
