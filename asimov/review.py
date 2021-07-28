@@ -115,7 +115,10 @@ class ReviewMessage:
                    "message": None,
                    "timestamp": None}
         default.update(dictionary)
-        timestamp = datetime.strptime(default['timestamp'], '%Y-%m-%d %H:%M:%S.%f')
+        if isinstance(default['timestamp'], str):
+            timestamp = datetime.strptime(default['timestamp'], '%Y-%m-%d %H:%M:%S.%f')
+        else:
+            timestamp = default['timestamp']
         message_ob = cls(message=default['message'],
                          production=production,
                          status=default['status'],
