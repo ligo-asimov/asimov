@@ -3,11 +3,14 @@
 
 import os
 import glob
+import re
 import subprocess
 from ..pipeline import Pipeline, PipelineException, PipelineLogger
 from ..ini import RunConfiguration
 from asimov import config
 from asimov import logging
+
+import htcondor
 
 class LALInference(Pipeline):
     """
@@ -26,9 +29,7 @@ class LALInference(Pipeline):
 
     def __init__(self, production, category=None):
         super(LALInference, self).__init__(production, category)
-
         self.logger = logger = logging.AsimovLogger(event=production.event)
-        
         if not production.pipeline.lower() == "lalinference":
             raise PipelineException
 
@@ -71,25 +72,6 @@ class LALInference(Pipeline):
         os.chdir(os.path.join(self.production.event.repository.directory,
                               self.category))
         gps_file = self.production.get_timefile()
-        ini = self.production.get_configuration()
-
-        if not user:
-            if self.production.get_meta("user"):
-                user = self.productevenion.get_meta("user")
-        else:
-            user = ini._get_user()
-            self.production.set_meta("user", user)
-
-        ini.update_accounting(user)
-
-        if 'queue' in self.production.meta:
-            queue = self.production.meta['queue']
-        else:
-            queue = 'Priority_PE'
-
-        ini.set_queue(queue)
-
-        ini.save()
 
         if self.production.rundir:
             rundir = self.production.rundir
@@ -100,14 +82,14 @@ class LALInference(Pipeline):
             self.production.rundir = rundir
 
         #os.mkdir(self.production.rundir, exist_ok=True)
-            
+        ini = f"{self.production.name}.ini"
         command = [
             os.path.join(config.get("pipelines", "environment"),
             "bin",
             "lalinference_pipe"),
                    "-g", f"{gps_file}",
                    "-r", self.production.rundir,
-                   ini.ini_loc
+                   ini
         ]
         self.logger.info(" ".join(command))
         pipe = subprocess.Popen(command, 
@@ -181,9 +163,10 @@ class LALInference(Pipeline):
         os.chdir(self.production.rundir)
 
         self.before_submit()
-        
+
         try:
             command = ["condor_submit_dag",
+                       "-batch-name", f"lalinf/{self.production.event.name}/{self.production.name}",
                                    os.path.join(self.production.rundir, f"multidag.dag")]
             dagman = subprocess.Popen(command,
                                   stdout=subprocess.PIPE,
@@ -208,3 +191,37 @@ class LALInference(Pipeline):
         cluster = self.run_pesummary()
         self.production.meta['job id'] = int(cluster)
         self.production.status = "processing"
+
+
+    def resurrect(self):
+        """
+        Attempt to ressurrect a failed job.
+        """
+        try:
+            count = self.production.meta['resurrections']
+        except:
+            count = 0
+        if (count < 5) and (len(glob.glob(os.path.join(self.production.rundir, "submit", "*.rescue*")))>0):
+            count +=1
+            self.submit_dag()
+
+    @classmethod
+    def read_ini(cls, filepath):
+        """ 
+        Read and parse a bilby configuration file.
+
+        Note that bilby configurations are property files and not compliant ini configs.
+
+        Parameters
+        ----------
+        filepath: str
+           The path to the ini file.
+        """
+
+        with open(filepath, "r") as f:
+            file_content = f.read()
+
+        config_parser = ConfigParser.RawConfigParser()
+        config_parser.read_string(file_content)
+
+        return config_parser

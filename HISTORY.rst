@@ -1,3 +1,10 @@
+v0.3.3
+======
+Update to LALInference
+
+- Updates the handling of LALInference pipelines to allow them to be templated using liquid.
+- Corrects a bug in the handling of review information
+
 v0.3.2
 ======
 Minor bug fix.
