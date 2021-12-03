@@ -23,7 +23,7 @@ setup(
     #long_description=readme + '\n\n' + history,
     author="Daniel Williams",
     author_email='daniel.williams@ligo.org',
-    url='https://github.com/transientlunatic/supervisor',
+    url='https://git.ligo.org/asimov/asimov',
     packages=['asimov'],
     package_dir={'asimov': 'asimov'},
     entry_points={
@@ -38,9 +38,9 @@ setup(
     zip_safe=True,
     keywords='supervisor, pe, ligo, asimov',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
+        'Development Status :: 5 - Production/Stable',
+        'Intended Audience :: Science/Research',
+        'License :: OSI Approved :: ISC License (ISCL)',
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',

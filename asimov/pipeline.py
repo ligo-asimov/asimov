@@ -148,7 +148,10 @@ class Pipeline():
             "--nsamples_for_skymap", config.get('pesummary', 'skymap_samples'),
             "--evolve_spins", "True",
             "--multi_process", "4",
-            "--regenerate", "mass_1_source mass_2_source chirp_mass_source total_mass_source final_mass_source final_mass_source_non_evolved radiated_energy",
+            "--approximant", self.production.meta['approximant'],
+            "--f_low", str(min(self.production.meta['quality']['lower-frequency'].values())),
+            "--f_ref", str(self.production.meta['quality']['reference-frequency']),
+            "--regenerate", "redshift mass_1_source mass_2_source chirp_mass_source total_mass_source final_mass_source final_mass_source_non_evolved radiated_energy",
             "--config", os.path.join(self.production.event.repository.directory, self.category, configfile)]
         # Samples
         command += ["--samples"]

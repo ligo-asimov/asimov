@@ -8,15 +8,15 @@ import click
 from asimov.cli import known_pipelines
 from asimov import gitlab
 from asimov import config
-
+from asimov.review import ReviewMessage
 @click.group()
 def review():
     pass
 
-@click.argument("event", required=True)
-@click.argument("production", required=True)
-@click.argument("status", required=False, default=None)
 @click.option("--message", "-m", "message", default=None)
+@click.argument("status", required=False, default=None)
+@click.argument("production", required=True)
+@click.argument("event", required=True)
 @review.command()
 def add(event, production, status, message):
     """
@@ -32,13 +32,14 @@ def add(event, production, status, message):
                       for production_o in event.productions
                       if production_o.name == production][0]
         click.secho(event.title, bold=True)
-        message_o = ReviewMessage(message = message,
-                                production = production,
-                                status=status)
-        production.review.add(message_o)
+        click.secho(production.name)
+        message = ReviewMessage(message=message,
+                                status=status,
+                                production=production)
+        production.review.add(message)
     
-    if hasattr(event, "issue_object"):
-        event.issue_object.update_data()
+        if hasattr(event, "issue_object"):
+            production.event.issue_object.update_data()
 
 @click.argument("production", default=None, required=False)
 @click.argument("event", default=None, required=False)
