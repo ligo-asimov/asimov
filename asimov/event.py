@@ -729,9 +729,8 @@ class Production:
         
         config_dict = {s: dict(config.items(s)) for s in config.sections()}
 
-        with open(template_file, "r") as template_file:
-            liq = Liquid(template_file.read())
-            rendered = liq.render(production=self, config=config)
+        liq = Liquid(template_file)
+        rendered = liq.render(production=self, config=config)
 
         with open(filename, "w") as output_file:
             output_file.write(rendered)
