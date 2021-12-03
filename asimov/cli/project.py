@@ -13,8 +13,10 @@ import getpass
 
 import click
 
-from asimov import config, storage, logger, LOGGER_LEVEL
+from asimov import config
+from asimov import storage
 from asimov.ledger import Ledger
+from asimov import gitlab
 
 @click.command()
 @click.argument("name")
@@ -75,17 +77,7 @@ def init(name, root, working="working", checkouts="checkouts", results="results"
     config.set("ledger", "engine", "yamlfile")
     config.set("ledger", "location", "ledger.yml")
 
-    # Set the default environment
-    python_loc = shutil.which("python").split("/")[:-2]
-    config.set("pipelines", "environment", os.path.join("/", *python_loc))
-
-    # Set the default condor user
-    if not user:
-        config.set("condor", "user", getpass.getuser())
-    else:
-        config.set("condor", "user", user)
-
-    Ledger.create(engine="yamlfile", name=project_name, location="ledger.yml")
+    Ledger.create(engine="yamlfile", location="ledger.yml")
 
     with open("asimov.conf", "w") as config_file:
         config.write(config_file)
