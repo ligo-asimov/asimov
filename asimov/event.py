@@ -1127,8 +1127,7 @@ class Production:
         card += """&nbsp;"""
         card += """</div>"""
 
-        if len(self.review) > 0:
-            for review in self.review:
-                card += review.html()
+        liq = Liquid(template_file)
+        rendered = liq.render(production=self, config=config)
 
         return card
