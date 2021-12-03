@@ -281,16 +281,16 @@ class Bilby(Pipeline):
                 job_label = self.production.name
             dag_filename = f"dag_{job_label}.submit"
             command = [
-                # "ssh", f"{config.get('scheduler', 'server')}",
+                "ssh", f"{config.get('scheduler', 'server')}",
                 "condor_submit_dag",
-                "-batch-name",
-                f"bilby/{self.production.event.name}/{self.production.name}",
-                os.path.join(self.production.rundir, "submit", dag_filename),
-            ]
-
-            if dryrun:
-                print(" ".join(command))
-            else:
+                       "-batch-name", f"bilby/{self.production.event.name}/{self.production.name}",
+                                   os.path.join(self.production.rundir, "submit", dag_filename)]
+            dagman = subprocess.Popen(command,
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.STDOUT)
+        except FileNotFoundError as error:
+            raise PipelineException("It looks like condor isn't installed on this system.\n"
+                                    f"""I wanted to run {" ".join(command)}.""")
 
                 # with set_directory(self.production.rundir):
                 self.logger.info(f"Working in {os.getcwd()}")
