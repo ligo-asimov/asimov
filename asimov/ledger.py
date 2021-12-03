@@ -5,8 +5,23 @@ Code for the project ledger.
 import yaml
 import asimov
 from asimov.event import Event
+from asimov import config
 
 class Ledger:
+    @classmethod
+    def create(cls, engine=None, location=None):
+        """
+        Create a ledger.
+        """
+
+        if not engine:
+            engine = config.get("ledger", "engine")
+
+        if engine == "yamlfile":
+            YAMLLedger.create(location)
+        elif engine == "gitlab":
+            raise NotImplementedError("This hasn't been ported to the new interface yet. Stay tuned!")
+            
     pass
 
 class YAMLLedger(Ledger):

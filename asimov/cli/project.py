@@ -14,7 +14,7 @@ import click
 
 from asimov import config
 from asimov import storage
-from asimov import ledger
+from asimov.ledger import Ledger
 from asimov import gitlab
 
 @click.command()
@@ -67,9 +67,10 @@ def init(name, root, working="working", checkouts="checkouts", results="results"
     config.set("storage", "results_store", results)
 
     # Make the ledger
-    ledger.Ledger.create()
     config.set("ledger", "engine", "yamlfile")
     config.set("ledger", "location", "ledger.yml")
+
+    Ledger.create(engine="yamlfile", location="ledger.yml")
 
     with open("asimov.conf", "w") as config_file:
         config.write(config_file)
