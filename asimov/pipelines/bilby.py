@@ -254,7 +254,9 @@ class Bilby(Pipeline):
             else:
                 job_label = self.production.name
             dag_filename = f"dag_{job_label}.submit"
-            command = ["condor_submit_dag",
+            command = [
+                "ssh", f"{config.get('scheduler', 'server')}",
+                "condor_submit_dag",
                        "-batch-name", f"bilby/{self.production.event.name}/{self.production.name}",
                                    os.path.join(self.production.rundir, "submit", dag_filename)]
             dagman = subprocess.Popen(command,
