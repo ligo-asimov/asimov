@@ -4,6 +4,20 @@ Asimov is a workflow management and automation platform for scientific analyses.
 
 It was developed to manage and automate the parameter estimation analyses used by the LIGO, Virgo, and KAGRA collaborations to analyse gravitational wave signals, but it aims to provide tools which can be used for other workflows.
 
+## Branch notes
+
+These notes relate to in-development features on this branch, and what's described here is only expected to be relevant during development.
+More generally useful documentation will move to the main documentation before moving to production.
+
+### Starting the logging server
+
+Run in ``asimov`` directory:
+
+```
+export FLASK_APP=server
+flask run
+```
+
 ## Features
 
 ### Job monitoring and management
