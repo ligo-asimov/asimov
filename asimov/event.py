@@ -554,14 +554,17 @@ class Production:
         output[self.name]['status'] = self.status
         output[self.name]['pipeline'] = self.pipeline.lower()
         output[self.name]['comment'] = self.comment
-
+        if self.event:
+            output[self.name]['event'] = self.event.name
         output[self.name]['review'] = self.review.to_dicts()
-        
+
         if "quality" in self.meta:
             output[self.name]['quality'] = self.meta['quality']
         if "priors" in self.meta:
             output[self.name]['priors'] = self.meta['priors']
         for key, value in self.meta.items():
+            if key == "operations":
+                continue
             output[self.name][key] = value
         if "repository" in self.meta:
             output[self.name]['repository'] = self.repository.url

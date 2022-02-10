@@ -57,7 +57,7 @@ class YAMLLedger(Ledger):
         with open(self.location, "w") as ledger_file:
             ledger_file.write(
                 yaml.dump(self.data, default_flow_style=False))
-            
+
     def add_event(self, event):
         if "events" not in self.data:
             self.data['events'] = []
@@ -70,3 +70,43 @@ class YAMLLedger(Ledger):
             return Event(**self.events[event])
         else:
             return [Event(**self.events[event]) for event in self.events.keys()]
+
+    def get_productions(self, event=None, filters=None):
+        """Get a list of productions either for a single event or for all events.
+
+        Parameters
+        ----------
+        event : str
+           The name of the event to pull productions from.
+           Optional; if no event is specified then all of the productions are
+           returned.
+
+        filters : dict
+           A dictionary of parameters to filter on.
+
+        Examples
+        --------
+        FIXME: Add docs.
+
+        """
+
+        if event:
+            productions = self.get_event(event).productions
+        else:
+            productions = []
+            for event_i in self.get_event():
+                for production in event_i.productions:
+                    productions.append(production)
+
+        def apply_filter(productions, parameter, value):
+            productions = filter(lambda x: x.meta[parameter] == value
+                                 if (parameter in x.meta)
+                                 else (getattr(x, parameter) == value
+                                       if hasattr(x, parameter) else False),
+                                 productions)
+            return productions
+
+        if filters:
+            for parameter, value in filters.items():
+                productions = apply_filter(productions, parameter, value)
+        return list(productions)
