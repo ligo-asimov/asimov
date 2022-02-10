@@ -6,10 +6,12 @@ analyses without the need for an ongoing cronjob.
 """
 from flask import Flask
 
+import asimov.server.ledger
+
+
 from flask.json import JSONEncoder
 from datetime import date
 
-from . import basic
 
 class CustomJSONEncoder(JSONEncoder):
     def default(self, obj):
@@ -29,18 +31,8 @@ def create_app():
     Create the web app for asimov
     """
     app = Flask("asimov")
-    
+    app.register_blueprint(asimov.server.ledger.events_bp)
+    app.register_blueprint(asimov.server.ledger.prods_bp)
+
     app.json_encoder = CustomJSONEncoder
-
-    app.register_blueprint(basic.bp)
-    
     return app
-
-
-def bootstrap():
-    app = create_app()
-    app.run(debug=False)
-
-
-if __name__ == '__main__':
-    bootstrap()

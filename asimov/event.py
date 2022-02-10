@@ -780,33 +780,23 @@ class Production:
         self.meta["job id"] = value
         self.event.issue_object.update_data()
         
-    def to_dict(self, event=True):
-        """
-        Return this production as a dictionary.
+    def to_dict(self):
+        output = {self.name: {}}
+        output[self.name]['status'] = self.status
+        output[self.name]['pipeline'] = self.pipeline.lower()
+        output[self.name]['comment'] = self.comment
+        if self.event:
+            output[self.name]['event'] = self.event.name
+        output[self.name]['review'] = self.review.to_dicts()
 
-        Parameters
-        ----------
-        event : bool
-           If set to True the output is designed to be included nested within an event.
-           The event name is not included in the representation, and the production name is provided as a key.
-        """
-        dictionary = {}
-        if not event:
-            dictionary['event'] = self.event.name
-            dictionary['name'] = self.name
-        
-        dictionary['status'] = self.status
-        dictionary['pipeline'] = self.pipeline.lower()
-        dictionary['comment'] = self.comment
-
-        dictionary['review'] = self.review.to_dicts()
-        
         if "quality" in self.meta:
             dictionary['quality'] = self.meta['quality']
         if "priors" in self.meta:
             dictionary['priors'] = self.meta['priors']
         for key, value in self.meta.items():
-            dictionary[key] = value
+            if key == "operations":
+                continue
+            output[self.name][key] = value
         if "repository" in self.meta:
             dictionary['repository'] = self.repository.url
 
