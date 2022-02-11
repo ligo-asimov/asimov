@@ -250,12 +250,7 @@ class Event:
         """
         Add an additional production to this event.
         """
-
-        if production.name in [production_o.name for production_o in self.productions]:
-            raise ValueError(
-                f"A production with this name already exists for {self.name}. New productions must have unique names."
-            )
-
+        
         self.productions.append(production)
         self.graph.add_node(production)
 
@@ -961,14 +956,13 @@ class Production:
         
         # Check all of the required parameters are included
         if not {"status", "pipeline"} <= pars.keys():
-            raise DescriptionException(
-                f"Some of the required parameters are missing from {name}", issue, name
-            )
-        if "comment" not in pars:
-            pars["comment"] = None
+            print(pars.keys())
+            raise DescriptionException(f"Some of the required parameters are missing from {name}", issue, name)
+        if not "comment" in pars:
+            pars['comment'] = None
         if "event" in pars:
             pars.pop(event)
-
+            
         return cls(event, name, **pars)
 
     def __repr__(self):
