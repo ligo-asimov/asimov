@@ -7,6 +7,7 @@ analyses without the need for an ongoing cronjob.
 from flask import Flask
 
 import asimov.server.ledger
+import asimov.server.productions
 
 
 from flask.json import JSONEncoder
@@ -32,7 +33,7 @@ def create_app():
     """
     app = Flask("asimov")
     app.register_blueprint(asimov.server.ledger.events_bp)
-    app.register_blueprint(asimov.server.ledger.prods_bp)
+    app.register_blueprint(asimov.server.productions.prods_bp)
 
     app.json_encoder = CustomJSONEncoder
     return app
