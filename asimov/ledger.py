@@ -65,6 +65,12 @@ class YAMLLedger(Ledger):
         self.events[event.name] = event.to_dict()
         self.save()
 
+    def add_production(self, event, production):
+        event.add_production(production)
+        self.events[event.name] = event.to_dict()
+        self.save()
+
+        
     def get_event(self, event=None):
         if event:
             return Event(**self.events[event])

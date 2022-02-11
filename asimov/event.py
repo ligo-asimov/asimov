@@ -193,6 +193,7 @@ class Event:
         """
         Add an additional production to this event.
         """
+        
         self.productions.append(production)
         self.graph.add_node(production)
 
@@ -700,9 +701,13 @@ class Production:
             raise DescriptionException("One of the productions is misformatted.", issue, None)
         # Check all of the required parameters are included
         if not {"status", "pipeline"} <= pars.keys():
+            print(pars.keys())
             raise DescriptionException(f"Some of the required parameters are missing from {name}", issue, name)
         if not "comment" in pars:
             pars['comment'] = None
+        if "event" in pars:
+            pars.pop(event)
+            
         return cls(event, name, **pars)
     
     def __repr__(self):
