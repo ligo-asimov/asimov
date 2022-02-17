@@ -24,12 +24,124 @@ prods_bp = Blueprint("productions", __name__, url_prefix="/productions")
 def show_event_productions(event=None):
     """Return all of the productions in the ledger for a given event.
 
-    Examples
-    --------
-    .. http:example:: curl wget python-requests
+    .. http:get:: /productions
 
-       GET /productions/event HTTP/1.1
-       Content-Type: application/json
+       :statuscode 200: Successful
+    
+       
+
+       Example
+       -------
+
+       .. http:example:: curl wget python-requests
+
+          GET /productions/ HTTP/1.1
+          Content-Type: application/json
+
+
+          HTTP/1.1 200 OK
+          Content-Type: application/json
+
+          [
+             {
+               "calibration": {},
+               "comment": null,
+               "event": "GW150914",
+               "event time": 678,
+               "pipeline": "bayeswave",
+               "review": [],
+               "status": "ready",
+               "working directory": "working/GW150914"
+             },
+             {
+                 "approximant": "SEOBNRv4PHM",
+                 "calibration": {
+                   "H1": "C01_offline/calibration/H1.dat",
+                   "L1": "C01_offline/calibration/L1.dat",
+                   "V1": "C01_offline/calibration/V1.dat"
+                 },
+                 "combination": {
+                   "job": 231253218,
+                   "productions": []
+                 },
+                 "comment": "RIFT job",
+                 "data": {
+                   "channels": {
+                     "H1": "H1:DCS-CALIB_STRAIN_CLEAN_SUB60HZ_C01",
+                     "L1": "L1:DCS-CALIB_STRAIN_CLEAN_SUB60HZ_C01",
+                     "V1": "V1:Hrec_hoft_16384Hz"
+                   },
+                   "frame-types": {
+                     "H1": "H1_HOFT_CLEAN_SUB60HZ_C01",
+                     "L1": "L1_HOFT_CLEAN_SUB60HZ_C01",
+                     "V1": "V1Online"
+                   }
+                 },
+                 ...
+               }
+             ]
+
+    .. http:get:: /productions/(event_id)
+
+       Fetch the events for a single event ID.
+
+       .. http:example:: curl wget python-requests
+
+          GET /productions/GW150914 HTTP/1.1
+          Content-Type: application/json
+
+
+          HTTP/1.1 200 OK
+          Content-Type: application/json
+
+          [
+            {
+              "calibration": {},
+              "comment": null,
+              "event": "GW150914",
+              "event time": 678,
+              "pipeline": "bayeswave",
+              "review": [],
+              "status": "ready",
+              "working directory": "working/GW150914"
+            },
+            {
+              "approximant": "IMRPhenomXPHM",
+              "calibration": {},
+              "comment": "A test production",
+              "event": "GW150914",
+              "event time": 678,
+              "pipeline": "bilby",
+              "review": [],
+              "status": "ready",
+              "working directory": "working/GW150914"
+            }
+          ]
+
+       :statuscode 200: Successful
+
+    .. http:post:: /productions/(event_id)
+
+       .. http:example:: curl wget python-requests
+
+          POST /productions/GW170817 HTTP/1.1
+          Content-Type: application/json
+
+          {"approximant": "IMRPhenomXPHM",
+           "comment": "A test production",
+           "status": "ready",
+           "pipeline": "bilby"}
+
+       .. http:example:: curl wget python-requests
+
+          POST /productions/ HTTP/1.1
+          Content-Type: application/json
+
+          {"approximant": "IMRPhenomXPHM",
+           "event": "GW170817",
+           "comment": "A test production",
+           "status": "ready",
+           "pipeline": "bilby"}
 
     """
     if request.method == "POST":
@@ -44,14 +156,6 @@ def show_event_productions(event=None):
 
 def add_event_production(event=None):
     """Add a new production to an event.
-
-    Examples
-    --------
-    .. http:example:: curl wget python-requests
-
-       POST /productions/event HTTP/1.1
-       Content-Type: application/json
-
     """
     data = request.get_json()
     print("data", data)
