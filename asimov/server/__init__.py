@@ -8,6 +8,7 @@ from flask import Flask
 
 import asimov.server.ledger
 import asimov.server.productions
+import asimov.server.monitor
 
 
 from flask.json import JSONEncoder
@@ -33,7 +34,17 @@ def create_app():
     """
     app = Flask("asimov")
     app.register_blueprint(asimov.server.ledger.events_bp)
+    app.register_blueprint(asimov.server.monitor.monitor_bp)
     app.register_blueprint(asimov.server.productions.prods_bp)
 
     app.json_encoder = CustomJSONEncoder
     return app
+
+
+def bootstrap():
+    app = create_app()
+    app.run(debug=False)
+
+
+if __name__ == '__main__':
+    bootstrap()
