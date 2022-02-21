@@ -9,6 +9,7 @@ from flask import Flask
 from flask.json import JSONEncoder
 from datetime import date
 
+from . import basic
 
 class CustomJSONEncoder(JSONEncoder):
     def default(self, obj):
@@ -28,8 +29,11 @@ def create_app():
     Create the web app for asimov
     """
     app = Flask("asimov")
-
+    
     app.json_encoder = CustomJSONEncoder
+
+    app.register_blueprint(basic.bp)
+    
     return app
 
 
