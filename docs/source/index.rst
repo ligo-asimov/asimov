@@ -167,9 +167,10 @@ Developers' Guide
 .. toctree::
    :caption: Development Guide
 
-   contributing.rst
-   code-of-conduct.rst
+   ../../CONTRIBUTING.rst
+   ../../CODE-OF-CONDUCT.rst
 
+   restful-api
    
    asimov-repository
 
