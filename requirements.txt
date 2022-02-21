@@ -11,3 +11,5 @@ pytz
 pyyaml
 requests
 gwpy
+lscsoft-glue
+flask
