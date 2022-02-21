@@ -50,7 +50,6 @@ templates_path = ['_templates']
 language = 'en'
 exclude_patterns = []
 html_theme = 'kentigern'
-#html_static_path = ['_static']
 
 todo_include_todos = True
 
