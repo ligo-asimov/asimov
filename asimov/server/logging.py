@@ -13,7 +13,8 @@ from flask import Blueprint, jsonify, make_response
 from flask import Flask
 from flask import request
 
-from asimov.server import database
+# from asimov.server import database
+from asimov import logger
 
 bp = Blueprint("logging", __name__, url_prefix="/log")
 
@@ -39,20 +40,24 @@ def add_logging_event():
          "production":"ProdX10"
        }
 
+
+       HTTP/1.1 201 OK
+       Content-Type: application/json
+    
+       {}
     """
     if request.is_json:
         req = request.get_json()
 
-    entry = database.Logger(pipeline=req['pipeline'],
-                            module=req['module'],
-                            level=req['level'],
-                            time=datetime.datetime.now(),
-                            event=req['event'],
-                            production=req['production'],
-                            message=req['message']
-                            )
-    entry.save()
-    return make_response({}, 200)
+    entry = logger.log(pipeline=req['pipeline'],
+                       module=req['module'],
+                       level=req['level'],
+                       time=datetime.datetime.now(),
+                       event=req['event'],
+                       production=req['production'],
+                       message=req['message']
+                       )
+    return make_response({}, 201)
 
 
 @bp.route("/", methods=["GET"])
@@ -65,9 +70,32 @@ def list_logging_events():
 
        GET /log HTTP/1.1
        Content-Type: application/json
-
+       
        :query pipeline: RIFT
+
+       
+       HTTP/1.1 200 OK
+       Content-Type: application/json
+
+       [
+         {
+           "level": "debug", 
+           "message": "Looking-up logs with filterings", 
+           "module": "asimov"
+         }, 
+         {
+           "level": "debug", 
+           "message": "Looking-up logs with filterings", 
+           "module": "asimov"
+         }, 
+         {
+           "level": "debug", 
+           "message": "Looking-up logs with filterings", 
+           "module": "asimov"
+         }
+       ]
     """
     filters = request.args
-    events = database.Logger.list(**filters)
+    logger.log(level="debug", message=f"Looking-up logs with filterings: {filters}")
+    events = logger.list(**filters)
     return make_response(jsonify([event.__dictrepr__() for event in events]), 200)
