@@ -200,6 +200,15 @@ class Event:
             self.ledger.update_event(self)
         pass
 
+    def __eq__(self, other):
+        if isinstance(other, Event):
+            if other.name == self.name:
+                return True
+            else:
+                return False
+        else:
+            return False
+            
     def _check_required(self):
         """
         Find all of the required metadata is provided.
@@ -273,17 +282,15 @@ class Event:
         return f"<Event {self.name}>"
 
     @classmethod
-    def from_dict(cls, data, issue=None, update=False, ledger=None):
+    def from_dict(cls, data, issue=None, update=False):
         """
         Convert a dictionary representation of the event object to an Event object.
         """
-        event = cls(**data, issue=issue, update=update, ledger=ledger)
-        if ledger:
-            ledger.add_event(event)
+        event = cls(**data, issue=issue, update=update)
         return event
-
+    
     @classmethod
-    def from_yaml(cls, data, issue=None, update=False, repo=True, ledger=None):
+    def from_yaml(cls, data, issue=None, update=False, repo=True):
         """
         Parse YAML to generate this event.
 
@@ -349,7 +356,7 @@ class Event:
 
         if not repo and "repository" in data:
             data.pop("repository")
-        event = cls.from_dict(data, issue=issue, update=update, ledger=ledger)
+        event = cls.from_dict(data, issue=issue, update=update)
 
         if issue:
             event.issue_object = issue
@@ -404,24 +411,15 @@ class Event:
 
         gid = self.meta["gid"]
 
-        try:
-            client = GraceDb(service_url=config.get("gracedb", "url"))
-            file_obj = client.files(gid, gfile)
+        gid = self.meta['gid']
+        client = GraceDb(service_url=config.get("gracedb", "url"))
+        file_obj = client.files(gid, gfile)
 
-            with open("download.file", "w") as dest_file:
-                dest_file.write(file_obj.read().decode())
+        with open("download.file", "w") as dest_file:
+            dest_file.write(file_obj.read().decode())
 
-            self.repository.add_file(
-                "download.file",
-                destination,
-                commit_message=f"Downloaded {gfile} from GraceDB",
-            )
-            self.logger.info(f"Fetched {gfile} from GraceDB")
-        except HTTPError as e:
-            self.logger.error(
-                f"Unable to connect to GraceDB when attempting to download {gfile}. {e}"
-            )
-            raise HTTPError(e)
+        self.repository.add_file("download.file", destination,
+                                 commit_message = f"Downloaded {gfile} from GraceDB")
 
     def to_dict(self, productions=True):
         data = {}
@@ -434,28 +432,28 @@ class Event:
 
         for key, value in self.meta.items():
             data[key] = value
-        # try:
-        #    data['repository'] = self.repository.url
-        # except AttributeError:
-        #    pass
+        try:
+            data['repository'] = self.repository.url
+        except AttributeError:
+            pass
+        
         if productions:
-            data["productions"] = []
+            data['productions'] = []
             for production in self.productions:
                 # Remove duplicate data
                 prod_dict = production.to_dict()[production.name]
                 dupes = []
                 prod_names = []
                 for key, value in prod_dict.items():
-                    if production.name in prod_names:
-                        continue
+                    if production.name in prod_names: continue
                     if key in data:
                         if data[key] == value:
                             dupes.append(key)
                 for dupe in dupes:
                     prod_dict.pop(dupe)
                 prod_names.append(production.name)
-                data["productions"].append({production.name: prod_dict})
-        data["working directory"] = self.work_dir
+                data['productions'].append({production.name: prod_dict})
+
         if "issue" in data:
             data.pop("issue")
         if "ledger" in data:
@@ -691,6 +689,9 @@ class Production:
     def __eq__(self, other):
         return (self.name == other.name) & (self.event == other.event)
 
+    def __eq__(self, other):
+        return (self.name == other.name) & (self.event == other.event)
+            
     def _process_dependencies(self, needs):
         """
         Process the dependencies list for this production.
@@ -786,9 +787,8 @@ class Production:
     @job_id.setter
     def job_id(self, value):
         self.meta["job id"] = value
-        if self.event.issue_object:
-            self.event.issue_object.update_data()
-
+        self.event.issue_object.update_data()
+        
     def to_dict(self, event=True):
         """
         Return this production as a dictionary.
@@ -801,27 +801,23 @@ class Production:
         """
         dictionary = {}
         if not event:
-            dictionary["event"] = self.event.name
-            dictionary["name"] = self.name
+            dictionary['event'] = self.event.name
+            dictionary['name'] = self.name
+        
+        dictionary['status'] = self.status
+        dictionary['pipeline'] = self.pipeline.lower()
+        dictionary['comment'] = self.comment
 
-        dictionary["status"] = self.status
-        dictionary["pipeline"] = self.pipeline.name.lower()
-        dictionary["comment"] = self.comment
-
-        dictionary["review"] = self.review.to_dicts()
-
+        dictionary['review'] = self.review.to_dicts()
+        
         if "quality" in self.meta:
-            dictionary["quality"] = self.meta["quality"]
+            dictionary['quality'] = self.meta['quality']
         if "priors" in self.meta:
-            dictionary["priors"] = self.meta["priors"]
+            dictionary['priors'] = self.meta['priors']
         for key, value in self.meta.items():
             dictionary[key] = value
         if "repository" in self.meta:
-            dictionary["repository"] = self.repository.url
-        if "ledger" in dictionary:
-            dictionary.pop("ledger")
-        if "pipelines" in dictionary:
-            dictionary.pop("pipelines")
+            dictionary['repository'] = self.repository.url
 
         if not event:
             output = dictionary
@@ -979,14 +975,9 @@ class Production:
         name, pars = list(parameters.items())[0]
         # Check that pars is a dictionary
         if not isinstance(pars, dict):
-            if "event" in parameters:
-                parameters.pop("event")
-
-            if "status" not in parameters:
-                parameters["status"] = "ready"
-
+            parameters.pop("event")
             return cls(event=event, **parameters)
-
+        
         # Check all of the required parameters are included
         if not {"status", "pipeline"} <= pars.keys():
             raise DescriptionException(
