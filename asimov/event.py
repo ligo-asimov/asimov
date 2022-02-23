@@ -200,6 +200,15 @@ class Event:
             self.ledger.update_event(self)
         pass
 
+    def __eq__(self, other):
+        if isinstance(other, Event):
+            if other.name == self.name:
+                return True
+            else:
+                return False
+        else:
+            return False
+            
     def _check_required(self):
         """
         Find all of the required metadata is provided.
@@ -691,6 +700,9 @@ class Production:
     def __eq__(self, other):
         return (self.name == other.name) & (self.event == other.event)
 
+    def __eq__(self, other):
+        return (self.name == other.name) & (self.event == other.event)
+            
     def _process_dependencies(self, needs):
         """
         Process the dependencies list for this production.
