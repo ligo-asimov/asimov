@@ -18,8 +18,13 @@ logging.getLogger("MARKDOWN").setLevel(logging.WARNING)
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
 logging.getLogger("git").setLevel(logging.WARNING)
 
+import asimov.database as database
 
-class AsimovLogger:
+logging.getLogger("werkzeug").setLevel(logging.WARNING)
+logging.getLogger("MARKDOWN").setLevel(logging.WARNING)
+
+class AsimovLogger():
+
     def __init__(self, logfile):
         """
         An object for logging asimov productions.
@@ -31,39 +36,9 @@ class AsimovLogger:
         """
         self.logfile = logfile
         self.mattermost = mattermost.Mattermost()
-        self.file_logger = logging.basicConfig(filename=logfile)
-
-        logger_name = "asimov"
-        self.logger = logging.getLogger(logger_name)
-
-        formatter = logging.Formatter(
-            "%(asctime)s [%(name)s][%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S"
-        )
-        print_formatter = logging.Formatter(
-            "[%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S"
-        )
-
-        ch = logging.StreamHandler()
-        ch.setFormatter(print_formatter)
-        ch.setLevel(logging.ERROR)
-
-        fh = logging.FileHandler(logfile)
-        fh.setFormatter(formatter)
-        fh.setLevel(logging.INFO)
-
-        self.logger.addHandler(ch)
-        self.logger.addHandler(fh)
-
-    def log(
-        self,
-        level,
-        message,
-        event=None,
-        production=None,
-        pipeline=None,
-        module=None,
-        time=None,
-    ):
+        self.file_logger = logging.basicConfig(filename=logfile, level=logging.DEBUG)
+        
+    def log(self, level, message, event=None, production=None, pipeline=None, module=None, time=None):
         """
         Record a log message.
 
@@ -82,19 +57,19 @@ class AsimovLogger:
            Defaults to file only.
         """
 
-        logger_levels = {
-            "debug": logging.DEBUG,
-            "info": logging.INFO,
-            "warning": logging.WARNING,
-            "error": logging.ERROR,
-            "update": 9,
-        }
+        logger_levels = {"debug": logging.DEBUG,
+                         "info": logging.INFO,
+                         "warning": logging.WARNING,
+                         "error": logging.ERROR,
+                         "update": 9}
 
         if not production:
             production = ""
 
-        self.logger.log(logger_levels[level.lower()], message)
-
+        logging.log(logger_levels[level.lower()],
+                    message)
+            
+        
     def info(self, message, production=None, channels="file"):
         """
         Record an information message.
@@ -150,6 +125,7 @@ class AsimovLogger:
         self.log("warning", message, production, channels)
 
     def list(self, offset=0, length=10, **filters):
+
         class LogEntry:
             def __init__(self, data):
                 data = data.strip().split(":")
@@ -158,13 +134,12 @@ class AsimovLogger:
                     self.module = data[1]
                     if self.module == "root":
                         self.module = "asimov"
-                except KeyError:
+                except:
                     self.module = None
                 try:
                     self.message = data[2]
-                except KeyError:
+                except:
                     self.message = None
-
             def __dictrepr__(self):
                 return dict(level=self.level, module=self.module, message=self.message)
 
@@ -173,8 +148,10 @@ class AsimovLogger:
             for line in filehandle:
                 entries.append(LogEntry(line))
 
+
         def apply_filter(entries, parameter, value):
-            entries = filter(lambda x: getattr(x, parameter) == value, entries)
+            entries = filter(lambda x: getattr(x, parameter) == value,
+                             entries)
             return entries
 
         if filters:
@@ -182,8 +159,9 @@ class AsimovLogger:
                 entries = apply_filter(entries, parameter, value)
             entries = list(entries)
 
+                
         if offset:
-            return entries[-int(length) + int(offset): -int(offset)]
+            return entries[-int(length)+int(offset):-int(offset)]
         else:
             return entries[-int(length):]
 
@@ -195,10 +173,9 @@ class DatabaseLogger(AsimovLogger):
 
     def __init__(self):
         self.database = database.Logger
+    
 
-    def log(
-        self, level, message, event=None, production=None, pipeline=None, module=None
-    ):
+    def log(cls, level, message, event=None, production=None, pipeline=None, module=None):
         """
         Record a log message.
 
@@ -215,9 +192,17 @@ class DatabaseLogger(AsimovLogger):
            Defaults to file only.
         """
 
-        entry = self.database(
-            pipeline, module, level, datetime.datetime.now(), event, production, message
-        )
+        logger_levels = {"debug": logging.DEBUG,
+                         "info": logging.INFO,
+                         "warning": logging.WARNING,
+                         "error": logging.ERROR}
+        entry = self.database(pipeline,
+                              module,
+                              level,
+                              datetime.datetime.now(),
+                              event,
+                              production,
+                              message)
         entry.save()
 
     def list(self, **filters):
@@ -226,8 +211,7 @@ class DatabaseLogger(AsimovLogger):
 
         Examples
         --------
-
+        
         """
 
         events = self.database.list(**filters)
-        return events
