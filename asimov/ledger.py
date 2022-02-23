@@ -93,6 +93,13 @@ class YAMLLedger(Ledger):
         self.data["trash"]["events"][event_name] = event
         self.save()
 
+    def update_event(self, event):
+        """
+        Update an event in the ledger with a changed event object.
+        """
+        self.events[event.name] = event.to_dict()
+        self.save()
+            
     def save(self):
         """
         Update the ledger YAML file with the data from the various events.
