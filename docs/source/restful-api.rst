@@ -10,16 +10,16 @@ You can find a detailed listing of all of the available endpoints in the :ref:`r
 This page shows some basic examples of how to access the API using ``curl`` and the python ``requests`` library.
 
 
-Basics
+Logging
 ------
 
-Asimov provides access to some basic information about the system it's running on via the API.
+Asimov provides an interface for displaying and recording logging messages from both asimov itself and also the various pipelines it handles.
 
 Endpoints
 ^^^^^^^^^
 
 .. autoflask:: asimov.server:create_app()
    :undoc-static:
-   :blueprints: asimov
+   :blueprints: logging
 
 

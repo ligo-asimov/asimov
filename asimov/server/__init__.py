@@ -9,7 +9,6 @@ from flask import Flask
 from flask.json import JSONEncoder
 from datetime import date
 
-from . import basic
 from . import logging
 
 class CustomJSONEncoder(JSONEncoder):
