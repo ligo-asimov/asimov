@@ -146,6 +146,15 @@ class Event:
             except DescriptionException:
                 pass        
 
+    def __eq__(self, other):
+        if isinstance(other, Event):
+            if other.name == self.name:
+                return True
+            else:
+                return False
+        else:
+            return False
+            
     def _check_required(self):
         """
         Find all of the required metadata is provided.
@@ -203,6 +212,14 @@ class Event:
         return f"<Event {self.name}>"
 
     @classmethod
+    def from_dict(cls, data, issue=None, update=False):
+        """
+        Convert a dictionary representation of the event object to an Event object.
+        """
+        event = cls(**data, issue=issue, update=update)
+        return event
+    
+    @classmethod
     def from_yaml(cls, data, issue=None, update=False, repo=True):
         """
         Parse YAML to generate this event.
@@ -227,7 +244,7 @@ class Event:
             raise DescriptionException(f"Some of the required parameters are missing from this issue.")
         if not repo and "repository" in data:
             data.pop("repository")
-        event = cls(**data, issue=issue, update=update)
+        event = cls.from_dict(data, issue=issue, update=update)
 
         if issue:
             event.issue_object = issue
@@ -298,7 +315,7 @@ class Event:
         self.repository.add_file("download.file", destination,
                                  commit_message = f"Downloaded {gfile} from GraceDB")
 
-    def to_dict(self):
+    def to_dict(self, productions=True):
         data = {}
         data['name'] = self.name
 
@@ -311,22 +328,23 @@ class Event:
             data['repository'] = self.repository.url
         except AttributeError:
             pass
-        data['productions'] = []
         
-        for production in self.productions:
-            # Remove duplicate data
-            prod_dict = production.to_dict()[production.name]
-            dupes = []
-            prod_names = []
-            for key, value in prod_dict.items():
-                if production.name in prod_names: continue
-                if key in data:
-                    if data[key] == value:
-                        dupes.append(key)
-            for dupe in dupes:
-                prod_dict.pop(dupe)
-            prod_names.append(production.name)
-            data['productions'].append({production.name: prod_dict})
+        if productions:
+            data['productions'] = []
+            for production in self.productions:
+                # Remove duplicate data
+                prod_dict = production.to_dict()[production.name]
+                dupes = []
+                prod_names = []
+                for key, value in prod_dict.items():
+                    if production.name in prod_names: continue
+                    if key in data:
+                        if data[key] == value:
+                            dupes.append(key)
+                for dupe in dupes:
+                    prod_dict.pop(dupe)
+                prod_names.append(production.name)
+                data['productions'].append({production.name: prod_dict})
 
         if "issue" in data:
             data.pop("issue")
@@ -455,6 +473,9 @@ class Production:
         else:
             self.dependencies = None
 
+    def __eq__(self, other):
+        return (self.name == other.name) & (self.event == other.event)
+            
     def _process_dependencies(self, needs):
         """
         Process the dependencies list for this production.
@@ -545,22 +566,40 @@ class Production:
         self.meta["job id"] = value
         self.event.issue_object.update_data()
         
-    def to_dict(self):
-        output = {self.name: {}}
-        output[self.name]['status'] = self.status
-        output[self.name]['pipeline'] = self.pipeline.lower()
-        output[self.name]['comment'] = self.comment
+    def to_dict(self, event=True):
+        """
+        Return this production as a dictionary.
 
-        output[self.name]['review'] = self.review.to_dicts()
+        Parameters
+        ----------
+        event : bool
+           If set to True the output is designed to be included nested within an event.
+           The event name is not included in the representation, and the production name is provided as a key.
+        """
+        dictionary = {}
+        if not event:
+            dictionary['event'] = self.event.name
+            dictionary['name'] = self.name
+        
+        dictionary['status'] = self.status
+        dictionary['pipeline'] = self.pipeline.lower()
+        dictionary['comment'] = self.comment
+
+        dictionary['review'] = self.review.to_dicts()
         
         if "quality" in self.meta:
-            output[self.name]['quality'] = self.meta['quality']
+            dictionary['quality'] = self.meta['quality']
         if "priors" in self.meta:
-            output[self.name]['priors'] = self.meta['priors']
+            dictionary['priors'] = self.meta['priors']
         for key, value in self.meta.items():
-            output[self.name][key] = value
+            dictionary[key] = value
         if "repository" in self.meta:
-            output[self.name]['repository'] = self.repository.url
+            dictionary['repository'] = self.repository.url
+
+        if not event:
+            output = dictionary
+        else:
+            output = {self.name: dictionary}
         return output
 
     @property
@@ -689,7 +728,9 @@ class Production:
         name, pars = list(parameters.items())[0]
         # Check that pars is a dictionary
         if not isinstance(pars, dict):
-            raise DescriptionException("One of the productions is misformatted.", issue, None)
+            parameters.pop("event")
+            return cls(event=event, **parameters)
+        
         # Check all of the required parameters are included
         if not {"status", "pipeline"} <= pars.keys():
             raise DescriptionException(f"Some of the required parameters are missing from {name}", issue, name)
