@@ -23,6 +23,11 @@ class CondorJob(object):
         self.data = {}
         self.get_data()
 
+    def __repr__(self):
+
+        string = f"""<asimov job | running under htcondor | {self.status} | {self.run_directory}>"""
+        return string
+        
     @property
     def status(self):
         data = self.get_data()
@@ -84,3 +89,4 @@ class CondorJob(object):
         self.data = data
         return data
     
+
