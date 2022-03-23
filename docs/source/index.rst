@@ -82,6 +82,8 @@ Developers' Guide
 
    ../../CONTRIBUTING.rst
    ../../CODE-OF-CONDUCT.rst
+
+   restful-api
    
 Module documentation
 --------------------
@@ -102,3 +104,4 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+* :ref:`routingtable`
