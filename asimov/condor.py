@@ -39,10 +39,24 @@ def datetime_from_epoch(dt, tzinfo=UTC):
     return datetime.datetime.utcfromtimestamp(dt).replace(tzinfo=tzinfo)
 
 
-def submit_job(submit_description):
-    """
-    Submit a new job to the condor scheduller
-    """
+    def __repr__(self):
+
+        string = f"""<asimov job | running under htcondor | {self.status} | {self.run_directory}>"""
+        return string
+        
+    @property
+    def status(self):
+        data = self.get_data()
+
+        job_status = data['JobStatus']
+        statuses = {0: "Unexplained",
+                    1: "Idle",
+                    2: "Running",
+                    3: "Removed",
+                    4: "Completed",
+                    5: "Held",
+                    6: "Submission error"}
+        return statuses[job_status]
 
     hostname_job = htcondor.Submit(submit_description)
 
@@ -310,52 +324,15 @@ class CondorJobList:
 
         for schedd_ad in collectors:
             try:
-                schedd = htcondor.Schedd(schedd_ad)
-                jobs = schedd.query(
-                    opts=htcondor.htcondor.QueryOpts.DefaultMyJobsOnly,
-                    projection=[
-                        "ClusterId",
-                        "Cmd",
-                        "CurrentHosts",
-                        "HoldReason",
-                        "JobStatus",
-                        "DAG_Status",
-                        "JobBatchName",
-                        "DAGManJobId",
-                    ],
-                )
-                data += jobs
-            except:  # NoQA
-                pass
+                jobs = schedd.xquery(constraint="ClusterId == {}".format(self.cluster))
+                for job in jobs:
+                    data = job
+                    break
+            except RuntimeError as e:
+                print(e)
+        if len(list(data.keys()))==0:
+            raise ValueError
+        self.data = data
+        return data
+    
 
-            retdat = []
-            for datum in data:
-                if "ClusterId" in datum:
-                    job = dict(
-                        id=int(float(datum["ClusterId"])),
-                        command=datum["Cmd"],
-                        hosts=datum["CurrentHosts"],
-                        status=datum["JobStatus"],
-                    )
-                    if "HoldReason" in datum:
-                        job["hold"] = datum["HoldReason"]
-                    if "JobBatchName" in datum:
-                        job["name"] = datum["JobBatchName"]
-                    if "DAG_Status" not in datum and "DAGManJobID" in datum:
-                        job["dag id"] = int(float(datum["DAGManJobId"]))
-
-                retdat.append(CondorJob.from_dict(job))
-
-        for datum in retdat:
-            if not datum.dag:
-                self.jobs[datum.idno] = datum
-                # # Now search for subjobs
-        for datum in retdat:
-            if datum.dag:
-                if datum.dag in self.jobs:
-                    self.jobs[datum.dag].add_subjob(datum)
-                else:
-                    self.jobs[datum.idno] = datum.to_dict()
-
-        with open("_cache_jobs.yaml", "w") as f:
-            f.write(yaml.dump(self.jobs))
