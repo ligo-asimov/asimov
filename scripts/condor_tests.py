@@ -252,17 +252,25 @@ class CondorJob:
     """
 
     def __repr__(self):
-        return f"<htcondor job | {self.id} | {self.status} | {self.hosts} | {self.command} >"
+        return f"<htcondor job | {self.idno} | {self.status} | {self.hosts} | {self.name} | {len(self.subjobs)} subjobs >"
+
+    def __str__(self):
+        return repr(self)
 
     @classmethod
     def from_dict(cls, dictionary):
         """
         Create a respresentation from a dictionary.
         """
+        cls = cls()
         cls.idno = dictionary['id']
         cls.command = dictionary['command']
         cls.hosts = dictionary['hosts']
         cls.status = dictionary['status']
+        if "name" in dictionary:
+            cls.name = dictionary['name']
+        else:
+            cls.name = "asimov job"
         if "dag id" in dictionary:
             cls.dag = dictionary['dag id']
         else:
@@ -294,12 +302,13 @@ class CondorJobList:
             try:
                 schedd = htcondor.Schedd(schedd_ad)
                 jobs = schedd.query(opts=htcondor.htcondor.QueryOpts.DefaultMyJobsOnly,
-                                    projection=["ClusterId", "Cmd", "CurrentHosts", "HoldReason", "JobStatus", "DAG_Status", "BatchName", "DAGManJobId"],
+                                    projection=["ClusterId", "Cmd", "CurrentHosts", "HoldReason", "JobStatus", "DAG_Status", "JobBatchName", "DAGManJobId"],
                 )
                 data += jobs
             except:
                 pass
         retdat = []
+
         for datum in data:
             if "ClusterId" in datum:
                 job = dict(id=int(float(datum['ClusterId'])),
@@ -309,20 +318,23 @@ class CondorJobList:
                        )
                 if "HoldReason" in datum:
                     job["hold"] =  datum["HoldReason"]
+                if "JobBatchName" in datum:
+                    job["name"] =  datum["JobBatchName"]
                 if not "DAG_Status" in datum and "DAGManJobID" in datum:
                     job["dag id"] = int(float(datum['DAGManJobId']))
             retdat.append(CondorJob.from_dict(job))
 
         for datum in retdat:
-            #if not datum.dag:
-            self.jobs[datum.idno] = datum
+            
+            if not datum.dag:
+                self.jobs[datum.idno] = datum
         # # Now search for subjobs
-        # for datum in retdat:
-        #    if datum.dag:
-        #        if datum.dag in self.jobs:
-        #            self.jobs[datum.dag].add_subjob(datum)
-        #        else:
-        #            self.jobs[datum.idno] = datum
+        for datum in retdat:
+           if datum.dag:
+               if datum.dag in self.jobs:
+                   self.jobs[datum.dag].add_subjob(datum)
+               else:
+                   self.jobs[datum.idno] = datum
 
 
 from asimov import config
@@ -339,7 +351,7 @@ from asimov import gitlab
 jobs = CondorJobList()
 jobs.refresh()
 
-for job in jobs:
+for job in jobs.jobs.values():
     print(job)
 
 # for event in events:
