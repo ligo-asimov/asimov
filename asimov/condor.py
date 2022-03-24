@@ -99,12 +99,16 @@ class CondorJobList:
     """
     def __init__(self):
         self.jobs = {}
-        age = os.stat("_cache_jobs.yaml").st_mtime
-        if age > 15 * 60:
-            with open("_cache_jobs.yaml", "rw") as f:
-                self.jobs = yaml.safe_load(f)
-        else:
+        cache = "_cache_jobs.yaml"
+        if not os.path.exists(cache):
             self.refresh()
+        else:
+            age = os.stat(cache).st_mtime
+            if age > 15 * 60:
+                with open(cache, "rw") as f:
+                    self.jobs = yaml.safe_load(f)
+            else:
+                self.refresh()
         
     def refresh(self):
         """
