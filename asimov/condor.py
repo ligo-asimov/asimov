@@ -50,11 +50,10 @@ class CondorJob:
         """
         Create a respresentation from a dictionary.
         """
-        cls = cls()
-        cls.idno = dictionary['id']
-        cls.command = dictionary['command']
-        cls.hosts = dictionary['hosts']
-        cls._status = dictionary['status']
+        cls = cls(idno=dictionary['id'],
+                  command=dictionary['command'],
+                  hosts=dictionary['hosts'],
+                  status=dictionary['status'])
         if "name" in dictionary:
             cls.name = dictionary['name']
         else:
