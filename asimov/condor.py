@@ -3,7 +3,7 @@ Code for interacting with the condor scheduler.
 """
 import os
 from configparser import ConfigParser
-
+import yaml
 import htcondor
 
 from . import ini
@@ -92,6 +92,12 @@ class CondorJobList:
     """
     def __init__(self):
         self.jobs = {}
+        age = os.stat("_cache_jobs.yaml").st_mtime
+        if age > 15 * 60:
+            with open("_cache_jobs.yaml", "rw") as f:
+                jobs = yaml.safe_load(f)
+        else:
+            self.refresh()
         
     def refresh(self):
         """
@@ -135,3 +141,6 @@ class CondorJobList:
                    self.jobs[datum.dag].add_subjob(datum)
                else:
                    self.jobs[datum.idno] = datum
+
+        with open("_cache_jobs.yaml", "rw") as f:
+                f.write(yaml.dump(jobs))
