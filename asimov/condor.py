@@ -8,31 +8,73 @@ import htcondor
 
 from . import ini
 
-class CondorJob(object):
+class CondorJob:
     """
-    An object to represent a running condor job.
-
-    Parameters
-    ----------
-    cluster_id : int
-       The cluster ID for this job.
+    Represent a specific condor Job.
     """
 
-    def __init__(self, cluster_id):
-        self.cluster = cluster_id
-        self.data = {}
-        self.get_data()
+    def __init__(self, idno, command, hosts, status, **kwargs):
+        """
+        A representation of a condor job on a scheduler.
 
+        Parameters
+        ----------
+        idno : int
+           The jobId or ClusterId for the job.
+        command: str
+           The command being run.
+        hosts: int
+           The number of hosts currently processing the job.
+        status: int
+           The status condition for the job.
+       
+        
+        """
+
+        self.idno = idno
+        self.command = command
+        self.hosts = hosts
+        self.status = status
+
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+        
     def __repr__(self):
+        return f"<htcondor job | {self.idno} | {self.status} | {self.hosts} | {self.name} | {len(self.subjobs)} subjobs >"
 
-        string = f"""<asimov job | running under htcondor | {self.status} | {self.run_directory}>"""
-        return string
+    def __str__(self):
+        return repr(self)
+
+    @classmethod
+    def from_dict(cls, dictionary):
+        """
+        Create a respresentation from a dictionary.
+        """
+        cls = cls()
+        cls.idno = dictionary['id']
+        cls.command = dictionary['command']
+        cls.hosts = dictionary['hosts']
+        cls._status = dictionary['status']
+        if "name" in dictionary:
+            cls.name = dictionary['name']
+        else:
+            cls.name = "asimov job"
+        if "dag id" in dictionary:
+            cls.dag = dictionary['dag id']
+        else:
+            cls.dag = None
+        cls.subjobs = []
+
+        return cls
+
+    def add_subjob(self, job):
+        """
+        Add a subjob of this job.
+        """
+        self.subjobs.append(job)
         
     @property
     def status(self):
-        data = self.get_data()
-
-        job_status = data['JobStatus']
         statuses = {0: "Unexplained",
                     1: "Idle",
                     2: "Running",
@@ -40,53 +82,56 @@ class CondorJob(object):
                     4: "Completed",
                     5: "Held",
                     6: "Submission error"}
-        return statuses[job_status]
+        return statuses[self._status]
 
-    @property
-    def run_directory(self):
-        """
-        Find the run directory.
-        """
-        if not "Err" in self.data:
-            raise ValueError
-        error_file = self.data['Err']
-        rundir = "/".join(error_file.split("/")[:-1])
-        return rundir
 
-    def get_asset(self, path):
+        
+class CondorJobList:
+    """
+    Store the list of running condor jobs.
+    """
+    def __init__(self):
+        self.jobs = {}
+        
+    def refresh(self):
         """
-        Find an asset related to this job.
+        Poll the schedulers to get the list of running jobs and update the database.
         """
-        path = os.path.join(self.run_directory, path)
-        if os.path.exists(path):
-            return path
-        else:
-            return None
-
-    def get_config(self):
-        """
-        Open the configuration file for this job.
-        """
-        ini_location = os.path.join(self.run_directory,
-                                    "config.ini")
-
-        P = ini.RunConfiguration(ini_location)
-        return P
-
-    def get_data(self):
-        data = {}
+        data = []
         for schedd_ad in htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd):
-            schedd = htcondor.Schedd(schedd_ad)
             try:
-                jobs = schedd.xquery(constraint="ClusterId == {}".format(self.cluster))
-                for job in jobs:
-                    data = job
-                    break
-            except RuntimeError as e:
-                print(e)
-        if len(list(data.keys()))==0:
-            raise ValueError
-        self.data = data
-        return data
-    
+                schedd = htcondor.Schedd(schedd_ad)
+                jobs = schedd.query(opts=htcondor.htcondor.QueryOpts.DefaultMyJobsOnly,
+                                    projection=["ClusterId", "Cmd", "CurrentHosts", "HoldReason", "JobStatus", "DAG_Status", "JobBatchName", "DAGManJobId"],
+                )
+                data += jobs
+            except:
+                pass
+        retdat = []
 
+        for datum in data:
+            if "ClusterId" in datum:
+                job = dict(id=int(float(datum['ClusterId'])),
+                           command=datum['Cmd'],
+                           hosts=datum["CurrentHosts"],
+                           status=datum["JobStatus"]
+                       )
+                if "HoldReason" in datum:
+                    job["hold"] =  datum["HoldReason"]
+                if "JobBatchName" in datum:
+                    job["name"] =  datum["JobBatchName"]
+                if not "DAG_Status" in datum and "DAGManJobID" in datum:
+                    job["dag id"] = int(float(datum['DAGManJobId']))
+            retdat.append(CondorJob.from_dict(job))
+
+        for datum in retdat:
+            
+            if not datum.dag:
+                self.jobs[datum.idno] = datum
+        # # Now search for subjobs
+        for datum in retdat:
+           if datum.dag:
+               if datum.dag in self.jobs:
+                   self.jobs[datum.dag].add_subjob(datum)
+               else:
+                   self.jobs[datum.idno] = datum
