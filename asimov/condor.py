@@ -174,6 +174,9 @@ class CondorJob(yaml.YAMLObject):
         for key, value in kwargs.items():
             setattr(self, key, value)
 
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+        
     def __repr__(self):
         out = f"<htcondor job | {self.idno} | {self.status} "
         out += f"| {self.hosts} | {self.name} | {len(self.subjobs)} subjobs >"
