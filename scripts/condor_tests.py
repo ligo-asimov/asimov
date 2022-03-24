@@ -340,6 +340,7 @@ class CondorJobList:
 from asimov import config
 from asimov.cli import connect_gitlab, ACTIVE_STATES, known_pipelines
 from asimov import gitlab
+from asimov.condor import CondorJobList, CondorJob
 import yaml
 
 # server, repository = connect_gitlab()
@@ -355,7 +356,6 @@ with open(ledger, "r") as filehandle:
 
 
 jobs = CondorJobList()
-jobs.refresh()
 
 #for job in jobs.jobs.values():
 #    print(job)
