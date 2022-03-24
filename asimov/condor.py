@@ -146,4 +146,4 @@ class CondorJobList:
                    self.jobs[datum.idno] = datum
 
         with open("_cache_jobs.yaml", "w") as f:
-                f.write(yaml.dump(jobs))
+                f.write(yaml.dump(self.jobs))
