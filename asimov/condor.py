@@ -41,7 +41,7 @@ class CondorJob:
         self.idno = idno
         self.command = command
         self.hosts = hosts
-        self.status = status
+        self._status = status
 
         for key, value in kwargs.items():
             setattr(self, key, value)
