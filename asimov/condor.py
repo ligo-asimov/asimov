@@ -104,7 +104,7 @@ class CondorJobList:
         else:
             age = os.stat(cache).st_mtime
             if age > 15 * 60:
-                with open(cache, "rw") as f:
+                with open(cache, "r") as f:
                     self.jobs = yaml.safe_load(f)
             else:
                 self.refresh()
@@ -152,5 +152,5 @@ class CondorJobList:
                else:
                    self.jobs[datum.idno] = datum
 
-        with open("_cache_jobs.yaml", "rw") as f:
+        with open("_cache_jobs.yaml", "w") as f:
                 f.write(yaml.dump(jobs))
