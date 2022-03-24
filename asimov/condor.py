@@ -95,7 +95,7 @@ class CondorJobList:
         age = os.stat("_cache_jobs.yaml").st_mtime
         if age > 15 * 60:
             with open("_cache_jobs.yaml", "rw") as f:
-                jobs = yaml.safe_load(f)
+                self.jobs = yaml.safe_load(f)
         else:
             self.refresh()
         
