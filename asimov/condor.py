@@ -35,7 +35,9 @@ class CondorJob:
         status: int
            The status condition for the job.
        
-        
+        Examples
+        --------
+        job = CondorJob(346758)
         """
 
         self.idno = idno
