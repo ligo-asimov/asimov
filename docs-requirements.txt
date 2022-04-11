@@ -2,3 +2,6 @@ kentigern
 numpydoc
 sphinx
 sphinx-click
+sphinxcontrib-httpdomain
+sphinxcontrib-httpexample 
+sphinx-jsonschema
