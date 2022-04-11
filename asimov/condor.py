@@ -84,7 +84,6 @@ class CondorJob:
         return statuses[self._status]
 
 
-        
 class CondorJobList:
     """
     Store the list of running condor jobs.
