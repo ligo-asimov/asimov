@@ -33,25 +33,31 @@ Asimov can provide both machine-readible and human-friendly reports of all jobs 
 Quick installation
 ------------------
 
-Asimov is available on ``pypi`` and can be installed via ``pip install ligo-asimov``.
+Asimov is available on ``pypi`` and can be installed via ``pip install asimov``.
+You can find more details about installing ``asimov`` in the :ref:`installationguide`.
 
 
 
-Tutorials
----------
+Tutorials & Introductions
+-------------------------
+
+Asimov is designed to be capable of running many different kinds of analyses, and to be flexible and extendable.
+However, it can be a little overwhelming to jump right in the deep end, so we've put together some tutorials which show how to use the core functionality of the package, including project management and analysis creation.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Tutorials
 
    starting-project
-   starting-analysis
+   build-process
 
 Users' guide
 ------------
 
+The full users' guide for asimov covers everything you might need in the day-to-day use of asimov, but doesn't cover details about adding new pipelines or dealing in detail with the various databases asimov uses to manage its analyses.
+
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Users' guide
 
    installation
@@ -65,26 +71,38 @@ Users' guide
 Advanced topics
 ---------------
 
+These sections of the documentation cover the technical designs of various aspects of the software, including how various interfaces with external packkages work, and the specifications for data storage.
+
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Advanced topics
 	     
    configuration
    yamlformat
    gitlab-interface
    test-interface
+   templates
+   reports
 
 Developers' Guide
 -----------------
 
+We always welcome new contributions to the asimov package from both members of the gravitational wave community, and the general public.
+Please familiarise yourself with the contributors' guidelines for more information.
+
 .. toctree::
+   :maxdepth: 1
    :caption: Development Guide
 
-   ../../CONTRIBUTING.rst
-   ../../CODE-OF-CONDUCT.rst
+   Contributors' Guide <contributing>
+   Contributors' Code of Conduct <code-of-conduct>
+   building-docs
+   
    
 Module documentation
 --------------------
+
+This section of the guide contains the code-level documentation for asimov, and may be useful for developers, but you shouldn't normally need it as a normal user of asimov!
 
 .. toctree::
    :maxdepth: 1
