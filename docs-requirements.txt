@@ -1,4 +1,8 @@
-kentigern
+kentigern >= 0.2.2
 numpydoc
 sphinx
 sphinx-click
+sphinxcontrib-httpdomain
+sphinxcontrib-httpexample 
+sphinx-jsonschema
+sphinx-multiversion
