@@ -55,6 +55,6 @@ todo_include_todos = True
 
 # Multiversion
 smv_tag_whitelist = r'^v\d+\.\d+\.?\d*$'
-#smv_branch_whitelist = r'^(master|review|ledger-engine|docs)$'
+smv_branch_whitelist = r'^(master|review)$'
 smv_released_pattern = r'^refs/tags/v\d+\.\d+\.?\d*$'
-smv_latest_version = r'v0.3.3'
+smv_latest_version = r'master'
