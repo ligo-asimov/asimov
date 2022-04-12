@@ -120,8 +120,10 @@ Asimov is available on ``pypi`` and can be installed via ``pip install asimov``.
 Users' guide
 ------------
 
+The full users' guide for asimov covers everything you might need in the day-to-day use of asimov, but doesn't cover details about adding new pipelines or dealing in detail with the various databases asimov uses to manage its analyses.
+
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Users' guide
 
    getting-started
@@ -148,8 +150,10 @@ Users' guide
 Advanced topics
 ---------------
 
+These sections of the documentation cover the technical designs of various aspects of the software, including how various interfaces with external packkages work, and the specifications for data storage.
+
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Advanced topics
 	     
    configuration
@@ -159,7 +163,11 @@ Advanced topics
 Developers' Guide
 -----------------
 
+We always welcome new contributions to the asimov package from both members of the gravitational wave community, and the general public.
+Please familiarise yourself with the contributors' guidelines for more information.
+
 .. toctree::
+   :maxdepth: 1
    :caption: Development Guide
 
    contributing.rst
@@ -172,6 +180,8 @@ Developers' Guide
    
 Module documentation
 --------------------
+
+This section of the guide contains the code-level documentation for asimov, and may be useful for developers, but you shouldn't normally need it as a normal user of asimov!
 
 .. toctree::
    :maxdepth: 1

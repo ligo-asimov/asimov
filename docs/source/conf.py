@@ -56,6 +56,7 @@ html_theme = 'kentigern'
 todo_include_todos = True
 
 # Multiversion
+smv_remote_whitelist = r'^(origin)$'
 smv_tag_whitelist = r'^v\d+\.\d+\.?\d*$'
 smv_branch_whitelist = r'^(master|review)$'
 smv_released_pattern = r'^refs/tags/v\d+\.\d+\.?\d*$'
