@@ -1,4 +1,4 @@
-kentigern
+kentigern >= 0.2.2
 numpydoc
 sphinx
 sphinx-click
