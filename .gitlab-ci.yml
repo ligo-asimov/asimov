@@ -67,7 +67,7 @@ test-python-39:
 #   - master
 
 # Build docs for multiple code versions
-multipages:
+pages:
   stage: build
   script:
   - pip install -r docs-requirements.txt
