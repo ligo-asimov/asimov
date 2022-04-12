@@ -16,7 +16,7 @@ test_requirements = [
 ]
 
 setup(
-    name='ligo-asimov',
+    name='ligo',
     use_scm_version=True,
     setup_requires=['setuptools_scm'],
     description="""A Python package for managing and interacting with data analysis jobs.""",
