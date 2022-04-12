@@ -11,3 +11,4 @@ pytz
 pyyaml
 requests
 gwpy
+lscsoft-glue
