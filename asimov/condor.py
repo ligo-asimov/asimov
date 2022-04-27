@@ -2,11 +2,10 @@
 Code for interacting with the condor scheduler.
 """
 import os
-from configparser import ConfigParser
 import yaml
 import htcondor
 
-from . import ini
+from asimov import config
 
 class CondorJob:
     """
@@ -27,7 +26,7 @@ class CondorJob:
            The number of hosts currently processing the job.
         status: int
            The status condition for the job.
-       
+
         Examples
         --------
         job = CondorJob(346758)
@@ -51,6 +50,16 @@ class CondorJob:
     def from_dict(cls, dictionary):
         """
         Create a respresentation from a dictionary.
+
+        Parameters
+        ----------
+        dictionary : dict
+           The dictionary of job parameters.
+
+        Returns
+        -------
+        `CondorJob`
+           A condor job object.
         """
         cls = cls(idno=dictionary['id'],
                   command=dictionary['command'],
@@ -71,11 +80,24 @@ class CondorJob:
     def add_subjob(self, job):
         """
         Add a subjob of this job.
+
+        Parameters
+        ----------
+        job : `CondorJob`
+           The job which is a subjob.
         """
         self.subjobs.append(job)
         
     @property
     def status(self):
+        """
+        Get the status of the job.
+
+        Returns
+        -------
+        str
+          A description of the status of the job.
+        """
         statuses = {0: "Unexplained",
                     1: "Idle",
                     2: "Running",
@@ -89,6 +111,9 @@ class CondorJob:
 class CondorJobList:
     """
     Store the list of running condor jobs.
+
+    The list is automatically pulled from the condor scheduller if it is
+    more than 15 minutes old (by default)
     """
     def __init__(self):
         self.jobs = {}
@@ -97,12 +122,12 @@ class CondorJobList:
             self.refresh()
         else:
             age = os.stat(cache).st_mtime
-            if age > 15 * 60:
+            if age > config.get("htcondor", "cache_time"):
                 with open(cache, "r") as f:
                     self.jobs = yaml.safe_load(f)
             else:
                 self.refresh()
-        
+
     def refresh(self):
         """
         Poll the schedulers to get the list of running jobs and update the database.
@@ -112,7 +137,9 @@ class CondorJobList:
             try:
                 schedd = htcondor.Schedd(schedd_ad)
                 jobs = schedd.query(opts=htcondor.htcondor.QueryOpts.DefaultMyJobsOnly,
-                                    projection=["ClusterId", "Cmd", "CurrentHosts", "HoldReason", "JobStatus", "DAG_Status", "JobBatchName", "DAGManJobId"],
+                                    projection=["ClusterId", "Cmd", "CurrentHosts",
+                                                "HoldReason", "JobStatus", "DAG_Status",
+                                                "JobBatchName", "DAGManJobId"],
                 )
                 data += jobs
             except:
@@ -135,16 +162,15 @@ class CondorJobList:
             retdat.append(CondorJob.from_dict(job))
 
         for datum in retdat:
-            
             if not datum.dag:
                 self.jobs[datum.idno] = datum
-        # # Now search for subjobs
+                # # Now search for subjobs
         for datum in retdat:
-           if datum.dag:
-               if datum.dag in self.jobs:
-                   self.jobs[datum.dag].add_subjob(datum)
-               else:
-                   self.jobs[datum.idno] = datum
+            if datum.dag:
+                if datum.dag in self.jobs:
+                    self.jobs[datum.dag].add_subjob(datum)
+                else:
+                    self.jobs[datum.idno] = datum
 
         with open("_cache_jobs.yaml", "w") as f:
-                f.write(yaml.dump(self.jobs))
+            f.write(yaml.dump(self.jobs))
