@@ -62,6 +62,12 @@ Users' guide
    olivaw/reporting
    olivaw/review
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Pipeline Guides
+
+   pipelines/lalinference
+   
 Advanced topics
 ---------------
 
