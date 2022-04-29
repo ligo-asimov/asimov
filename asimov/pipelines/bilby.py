@@ -174,7 +174,7 @@ class Bilby(Pipeline):
             job_label = self.production.name
 
         prior_file = self._determine_prior()
-        self.logger.info(f"[bilby] Working in {cwd}")
+        
         command = [os.path.join(config.get("pipelines", "environment"), "bin", "bilby_pipe"),
                    ini,
                    "--label", job_label,
@@ -280,7 +280,7 @@ class Bilby(Pipeline):
         """
         Gather all of the results assets for this job.
         """
-        pass
+        return {"samples": self.samples()}
 
     def samples(self):
         """
