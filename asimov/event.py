@@ -773,7 +773,8 @@ class Production:
     @job_id.setter
     def job_id(self, value):
         self.meta["job id"] = value
-        self.event.issue_object.update_data()
+        if self.event.issue_object:
+            self.event.issue_object.update_data()
         
     def to_dict(self):
         output = {self.name: {}}
