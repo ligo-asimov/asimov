@@ -6,7 +6,7 @@ import os
 import pathlib
 import click
 
-from asimov.cli import connect_gitlab, known_pipelines
+from asimov.cli import known_pipelines
 from asimov import config, logger, ledger
 
 from asimov import gitlab
