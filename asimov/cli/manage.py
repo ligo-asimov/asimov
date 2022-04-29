@@ -6,9 +6,9 @@ import os
 import pathlib
 import click
 
-from asimov.cli import known_pipelines
-from asimov import logging
-from asimov import config, ledger
+from asimov.cli import connect_gitlab, known_pipelines
+from asimov import config, logger, ledger
+
 from asimov import gitlab
 from asimov.event import Event, DescriptionException, Production
 from asimov.pipeline import PipelineException
@@ -25,11 +25,9 @@ def build(event):
     Create the run configuration files for a given event for jobs which are ready to run.
     If no event is specified then all of the events will be processed.
     """
-
     for event in ledger.get_event(event):
-        click.echo(f"Working on {event.name}")
-        logger = logging.AsimovLogger(event=event)
-        ready_productions = event.get_all_latest()
+        click.echo(f"Working on {event.title}")
+        ready_productions = event.event_object.get_all_latest()
         for production in ready_productions:
             click.echo(f"\tWorking on production {production.name}")
             if production.status in {"running", "stuck", "wait", "finished", "uploaded", "cancelled", "stopped"}: continue
