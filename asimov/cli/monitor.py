@@ -1,6 +1,6 @@
 import click
 
-from asimov.cli import connect_gitlab, ACTIVE_STATES, known_pipelines
+from asimov.cli import ACTIVE_STATES, known_pipelines
 from asimov import gitlab
 from asimov import config
 from asimov import logging

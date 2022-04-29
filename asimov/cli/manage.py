@@ -6,9 +6,9 @@ import os
 import pathlib
 import click
 
-from asimov.cli import connect_gitlab, known_pipelines
+from asimov.cli import known_pipelines
 from asimov import logging
-from asimov import config
+from asimov import config, ledger
 from asimov import gitlab
 from asimov.event import Event, DescriptionException, Production
 from asimov.pipeline import PipelineException
@@ -25,12 +25,11 @@ def build(event):
     Create the run configuration files for a given event for jobs which are ready to run.
     If no event is specified then all of the events will be processed.
     """
-    server, repository = connect_gitlab()
-    events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event], update=False)    
-    for event in events:
-        click.echo(f"Working on {event.title}")
-        logger = logging.AsimovLogger(event=event.event_object)
-        ready_productions = event.event_object.get_all_latest()
+
+    for event in ledger.get_event(event):
+        click.echo(f"Working on {event.name}")
+        logger = logging.AsimovLogger(event=event)
+        ready_productions = event.get_all_latest()
         for production in ready_productions:
             click.echo(f"\tWorking on production {production.name}")
             if production.status in {"running", "stuck", "wait", "finished", "uploaded", "cancelled", "stopped"}: continue
@@ -39,15 +38,17 @@ def build(event):
             except ValueError:
                 try:
                     rundir = config.get("general", "rundir_default")
-                    
-                    production.make_config(f"{production.name}.ini")
+                    path = pathlib.Path(production.rundir)
+                    path.mkdir(parents=True, exist_ok=True)
+                    config_loc = os.path.join(path, f"{production.name}.ini")
+                    production.make_config(config_loc)
                     click.echo(f"Production config {production.name} created.")
                     logger.info("Run configuration created.", production=production)
 
                     try:
-                        event.event_object.repository.add_file(f"{production.name}.ini",
-                                                               os.path.join(f"{production.category}",
-                                                                            f"{production.name}.ini"))
+                        event.repository.add_file(config_loc,
+                                                  os.path.join(f"{production.category}",
+                                                               f"{production.name}.ini"))
                         logger.info("Configuration committed to event repository.",
                                     production=production)
                     except Exception as e:
@@ -66,11 +67,10 @@ def submit(event, update):
     Submit the run configuration files for a given event for jobs which are ready to run.
     If no event is specified then all of the events will be processed.
     """
-    server, repository = connect_gitlab()
-    events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event], update=update)
-    for event in events:
-        logger = logging.AsimovLogger(event=event.event_object)
-        ready_productions = event.event_object.get_all_latest()
+    
+    for event in ledger.get_event(event):
+        logger = logging.AsimovLogger(event=event)
+        ready_productions = event.get_all_latest()
         for production in ready_productions:
             if production.status.lower() in {"running", "stuck", "wait", "processing", "uploaded", "finished", "manual", "cancelled", "stopped"}: continue
             if production.status.lower() == "restart":
@@ -108,11 +108,9 @@ def results(event, update):
     """
     Find all available results for a given event.
     """
-    server, repository = connect_gitlab()
-    events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event], update=update, repo=False)
-    for event in events:
+    for event in ledger.get_event(event):
         click.secho(f"{event.title}")
-        logger = logging.AsimovLogger(event=event.event_object)
+        logger = logging.AsimovLogger(event=event)
         for production in event.productions:
             try:
                 for result, meta in production.results().items():

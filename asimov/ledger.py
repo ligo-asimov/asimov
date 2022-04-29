@@ -5,6 +5,7 @@ from functools import reduce
 
 import yaml
 import asimov
+
 from asimov.event import Event, Production
 from asimov import config
 import asimov.database
@@ -21,8 +22,12 @@ class Ledger:
 
         if engine == "yamlfile":
             YAMLLedger.create(location)
+
         elif engine in {"tinydb", "mongodb"}:
             DatabaseLedger.create()
+        elif engine == "gitlab":
+            raise NotImplementedError("This hasn't been ported to the new interface yet. Stay tuned!")
+
         elif engine == "gitlab":
             raise NotImplementedError("This hasn't been ported to the new interface yet. Stay tuned!")
 
@@ -119,7 +124,6 @@ class YAMLLedger(Ledger):
             for parameter, value in filters.items():
                 productions = apply_filter(productions, parameter, value)
         return list(productions)
-
 
 class DatabaseLedger(Ledger):
     """
