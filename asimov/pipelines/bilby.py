@@ -4,17 +4,11 @@ import glob
 import os
 import re
 import subprocess
-import configparser
-
-import git.exc
-import time
-
-from liquid import Liquid
-
-from asimov.utils import update
-
-from .. import config
-from ..pipeline import Pipeline, PipelineException, PipelineLogger, PESummaryPipeline
+from ..pipeline import Pipeline, PipelineException, PipelineLogger
+from ..ini import RunConfiguration
+from .. import config, logger
+import re
+import numpy as np
 
 
 class Bilby(Pipeline):
@@ -35,8 +29,7 @@ class Bilby(Pipeline):
 
     def __init__(self, production, category=None):
         super(Bilby, self).__init__(production, category)
-        self.logger.info("Using the bilby pipeline")
-
+        self.logger = logger
         if not production.pipeline.lower() == "bilby":
             raise PipelineException
 
