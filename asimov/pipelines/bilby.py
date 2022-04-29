@@ -121,7 +121,7 @@ class Bilby(Pipeline):
                 repo.add_file(prior_file, os.path.join("C01_offline", prior_name))
             except:
                 pass
-            return prior_file
+            return os.path.join(self.production.event.repository.directory, "C01_offline", prior_name)
 
         
     def build_dag(self, psds=None, user=None, clobber_psd=False):
@@ -148,14 +148,13 @@ class Bilby(Pipeline):
 
         cwd = os.getcwd()
 
+        self.logger.info(f"[bilby] Working in {cwd}")
 
         if self.production.event.repository:
-            # os.chdir(os.path.join(self.production.event.repository.directory,
-            #                       self.category))
             ini = self.production.event.repository.find_prods(
                 self.production.name,
                 self.category)[0]
-            ini = os.path.join(self.production.event.repository.directory, self.category,  ini)
+            ini = os.path.join(cwd, ini)
             gps_file = self.production.get_timefile()
         else:
             gps_file = "gpstime.txt"
@@ -175,22 +174,21 @@ class Bilby(Pipeline):
             job_label = self.production.name
 
         prior_file = self._determine_prior()
-        #os.chdir(self.production.event.meta['working directory'])   
-        # TODO: Check if bilby supports loading a gps time file
-        
+        self.logger.info(f"[bilby] Working in {cwd}")
         command = [os.path.join(config.get("pipelines", "environment"), "bin", "bilby_pipe"),
                    ini,
                    "--label", job_label,
-                   "--outdir", self.production.rundir,
+                   "--outdir", f"{cwd}/{self.production.rundir}",
                    "--accounting", config.get("bilby", "accounting")
         ]
-        print(" ".join(command))
         self.logger.info(" ".join(command))
         pipe = subprocess.Popen(command, 
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
         out, err = pipe.communicate()
-        os.chdir(cwd)
+        self.logger.info(out)
+        self.logger.error(err)
+        #os.chdir(cwd)
         if err or "DAG generation complete, to submit jobs" not in str(out):
             self.production.status = "stuck"
             if hasattr(self.production.event, "issue_object"):
@@ -239,7 +237,7 @@ class Bilby(Pipeline):
         This overloads the default submission routine, as bilby seems to store
         its DAG files in a different location
         """
-        os.chdir(self.production.event.meta['working directory'])   
+        #os.chdir(self.production.event.meta['working directory'])   
         #os.chdir(os.path.join(self.production.event.repository.directory,
         #                      self.category))
 
@@ -255,7 +253,7 @@ class Bilby(Pipeline):
                 job_label = self.production.name
             dag_filename = f"dag_{job_label}.submit"
             command = [
-                "ssh", f"{config.get('scheduler', 'server')}",
+                #"ssh", f"{config.get('scheduler', 'server')}",
                 "condor_submit_dag",
                        "-batch-name", f"bilby/{self.production.event.name}/{self.production.name}",
                                    os.path.join(self.production.rundir, "submit", dag_filename)]
