@@ -6,8 +6,7 @@ import glob
 import subprocess
 from ..pipeline import Pipeline, PipelineException, PipelineLogger
 from ..ini import RunConfiguration
-from .. import config
-from asimov import logging
+from .. import config, logger
 import re
 import numpy as np
 
@@ -30,7 +29,7 @@ class Bilby(Pipeline):
 
     def __init__(self, production, category=None):
         super(Bilby, self).__init__(production, category)
-        self.logger = logger = logging.AsimovLogger(event=production.event)
+        self.logger = logger
         if not production.pipeline.lower() == "bilby":
             raise PipelineException
 
