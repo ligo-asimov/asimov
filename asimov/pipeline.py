@@ -6,7 +6,7 @@ import re
 import time
 import htcondor
 
-from asimov import config
+from asimov import config, logger
 from .storage import Store
 from asimov import logging
 
@@ -89,7 +89,7 @@ class Pipeline():
                 self.category = "online"
         else:
             self.category = category
-        self.logger = logger = logging.AsimovLogger(event=production.event)
+        self.logger = logger
         
 
     def detect_completion(self):
