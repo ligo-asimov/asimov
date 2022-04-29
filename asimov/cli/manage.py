@@ -67,7 +67,6 @@ def submit(event, update):
     server, repository = connect_gitlab()
     events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event], update=update)
     for event in events:
-        logger = logging.AsimovLogger(event=event.event_object)
         ready_productions = event.event_object.get_all_latest()
         for production in ready_productions:
             if production.status.lower() in {"running", "stuck", "wait", "processing", "uploaded", "finished", "manual", "cancelled", "stopped"}: continue
@@ -110,7 +109,6 @@ def results(event, update):
     events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event], update=update, repo=False)
     for event in events:
         click.secho(f"{event.title}")
-        logger = logging.AsimovLogger(event=event.event_object)
         for production in event.productions:
             try:
                 for result, meta in production.results().items():
@@ -131,7 +129,6 @@ def resultslinks(event, update, root):
     events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event], update=update, repo=False)
     for event in events:
         click.secho(f"{event.title}")
-        logger = logging.AsimovLogger(event=event.event_object)
         for production in event.productions:
             try:
                 for result, meta in production.results().items():
