@@ -16,6 +16,9 @@ from asimov import config, logger, logging, LOGGER_LEVEL  # NoQA
 import otter  # NoQA
 from .storage import Store  # NoQA
 
+from asimov import config, logger
+from .storage import Store
+from asimov import logging
 
 class PipelineException(Exception):
     """Exception for pipeline problems."""
@@ -93,15 +96,15 @@ class Pipeline:
     def __init__(self, production, category=None):
         self.production = production
 
-        self.category = production.category
-
-        self.logger = logger.getChild(
-            f"analysis.{production.event.name}/{production.name}"
-        )
-        self.logger.setLevel(LOGGER_LEVEL)
-
-    def __repr__(self):
-        return self.name.lower()
+        if not category:
+            if "Prod" in production.name:
+                self.category = "C01_offline"
+            else:
+                self.category = "online"
+        else:
+            self.category = category
+        self.logger = logger
+        
 
     def detect_completion(self):
         """
