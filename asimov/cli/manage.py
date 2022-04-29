@@ -119,10 +119,10 @@ def submit(event, update, dryrun):
     Submit the run configuration files for a given event for jobs which are ready to run.
     If no event is specified then all of the events will be processed.
     """
-    
-    for event in ledger.get_event(event):
-        logger = logging.AsimovLogger(event=event)
-        ready_productions = event.get_all_latest()
+    server, repository = connect_gitlab()
+    events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event], update=update)
+    for event in events:
+        ready_productions = event.event_object.get_all_latest()
         for production in ready_productions:
             logger.info(f"{event.name}/{production.name}")
             if production.status.lower() in {
@@ -222,7 +222,6 @@ def results(event, update):
     """
     for event in ledger.get_event(event):
         click.secho(f"{event.title}")
-        logger = logging.AsimovLogger(event=event)
         for production in event.productions:
             click.echo(f"\t- {production.name}")
             try:
@@ -253,8 +252,10 @@ def resultslinks(event, update, root):
     """
     Find all available results for a given event.
     """
-    for event in ledger.get_event(event):
-        click.secho(f"{event.name}")
+    server, repository = connect_gitlab()
+    events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event], update=update, repo=False)
+    for event in events:
+        click.secho(f"{event.title}")
         for production in event.productions:
             try:
                 for result, meta in production.results().items():
