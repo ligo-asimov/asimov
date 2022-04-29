@@ -480,6 +480,9 @@ class Production:
         else:
             self.dependencies = None
 
+    def __hash__(self):
+        return int(f"{hash(self.name)}{abs(hash(self.event.name))}")
+            
     def __eq__(self, other):
         return (self.name == other.name) & (self.event == other.event)
             
