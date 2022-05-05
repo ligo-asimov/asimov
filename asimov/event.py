@@ -668,6 +668,14 @@ class Production:
     def __eq__(self, other):
         return (self.name == other.name) & (self.event == other.event)
             
+        for ifo, psd in self.psds.items():
+            if self.event.repository:
+                self.psds[ifo] = os.path.join(self.event.repository.directory, psd)
+            else:
+                self.psds[ifo] = psd
+
+        self.category = config.get("general", "calibration_directory")
+
     def _process_dependencies(self, needs):
         """
         Process the dependencies list for this production.
