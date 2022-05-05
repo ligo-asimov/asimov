@@ -455,10 +455,6 @@ class Production:
                 self.psds[ifo] = psd
 
         self.category = config.get("general", "calibration_directory")
-        if "needs" in self.meta:
-            self.dependencies = self._process_dependencies(self.meta['needs'])
-        else:
-            self.dependencies = None
 
     def _process_dependencies(self, needs):
         """
