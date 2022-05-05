@@ -22,4 +22,16 @@ Endpoints
    :undoc-static:
    :blueprints: logging
 
+Basics
+------
+
+Asimov provides access to some basic information about the system it's running on via the API.
+
+Endpoints
+^^^^^^^^^
+
+.. autoflask:: asimov.server:create_app()
+   :undoc-static:
+   :blueprints: asimov
+
 

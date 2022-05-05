@@ -10,6 +10,7 @@ from flask.json import JSONEncoder
 from datetime import date
 
 from . import logging
+from . import basic
 
 class CustomJSONEncoder(JSONEncoder):
     def default(self, obj):
@@ -33,6 +34,7 @@ def create_app():
     app.json_encoder = CustomJSONEncoder
 
     app.register_blueprint(logging.bp)
+    app.register_blueprint(basic.bp)
     
     return app
 
