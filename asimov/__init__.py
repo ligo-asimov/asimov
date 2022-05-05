@@ -41,6 +41,7 @@ config_locations.reverse()
 config.read([conffile for conffile in config_locations])
 
 try:
+
     if config.get("general", "logger") == "file":
         from .logging import AsimovLogger
         logger = AsimovLogger(logfile="asimov.log")
@@ -50,3 +51,13 @@ try:
 except configparser.NoOptionError:
     from .logging import AsimovLogger
     logger = AsimovLogger(logfile="asimov.log")
+
+try:    
+    if config.get("ledger", "engine") == "gitlab":
+        from .gitlab import GitlabLedger
+        ledger = GitlabLedger()
+    elif config.get("ledger", "engine") == "yamlfile":
+        from .ledger import YAMLLedger
+        ledger = YAMLLedger(config.get("ledger", "location"))
+except configparser.NoOptionError:
+    ledger = None

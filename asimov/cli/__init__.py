@@ -29,25 +29,6 @@ The following calibration envelopes have been found.
 ACTIVE_STATES = {"ready", "running", "stuck", "finished", "processing", "stop"}
 
 
-def connect_gitlab(configs=None):
-    """
-    Connect to the gitlab server.
-
-    Returns
-    -------
-    server : `Gitlab`
-       The gitlab server.
-    repository: `Gitlab.project`
-       The gitlab project.
-    """
-    if configs:
-        config=configs
-    else:
-        from asimov import config
-    server = gitlab.gitlab.Gitlab('https://git.ligo.org',
-                              private_token=config.get("gitlab", "token"))
-    repository = server.projects.get(config.get("olivaw", "tracking_repository"))
-    return server, repository
 
 
 def find_calibrations(time):

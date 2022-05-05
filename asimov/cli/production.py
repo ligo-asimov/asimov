@@ -10,12 +10,10 @@ import click
 
 from git import GitCommandError
 
-from asimov import config
-from asimov.ledger import Ledger
+from asimov import config, ledger
 from asimov.storage import Store
 from asimov.event import Production, Event,  DescriptionException
 from asimov import gitlab
-from asimov.cli import connect_gitlab
 
 @click.group()
 def production():
@@ -39,13 +37,8 @@ def create(event, pipeline, family, comment, needs, template, status, approximan
     Add a new production to an event.
 
     """
-    if config.get("ledger", "engine") == "gitlab":
-        _, repository = connect_gitlab()
-        gitlab_event = gitlab.find_events(repository, subset=event)
-        event = gitlab_event[0].event_object
-    elif config.get("ledger", "engine") == "yamlfile":
-        ledger = Ledger(config.get("ledger", "location"))
-        event = ledger.get_event(event)
+
+    event = ledger.get_event(event)
     #
     event_prods = event.productions
     names = [production.name for production in event_prods]

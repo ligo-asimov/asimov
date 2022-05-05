@@ -15,7 +15,7 @@ tz = pytz.timezone('Europe/London')
 import otter
 import otter.bootstrap as bt
 
-from asimov.cli import connect_gitlab, known_pipelines
+from asimov.cli import known_pipelines
 from asimov import gitlab
 from asimov import config
 

@@ -7,7 +7,6 @@ import yaml
 import os
 import glob
 
-
 import networkx as nx
 
 from .ini import RunConfiguration
@@ -147,6 +146,7 @@ class Event:
             except DescriptionException:
                 pass        
 
+
     def __eq__(self, other):
         if isinstance(other, Event):
             if other.name == self.name:
@@ -155,6 +155,12 @@ class Event:
                 return False
         else:
             return False
+
+    def update_data(self):
+        if self.ledger:
+            self.ledger.events[self.name] = self.to_dict()
+        pass
+
             
     def _check_required(self):
         """
@@ -199,6 +205,7 @@ class Event:
         """
         Add an additional production to this event.
         """
+        
         self.productions.append(production)
         self.graph.add_node(production)
 
@@ -469,10 +476,6 @@ class Production:
                 self.psds[ifo] = psd
 
         self.category = config.get("general", "calibration_directory")
-        if "needs" in self.meta:
-            self.dependencies = self._process_dependencies(self.meta['needs'])
-        else:
-            self.dependencies = None
 
     def __hash__(self):
         return int(f"{hash(self.name)}{abs(hash(self.event.name))}")
@@ -568,8 +571,10 @@ class Production:
     @job_id.setter
     def job_id(self, value):
         self.meta["job id"] = value
-        self.event.issue_object.update_data()
+        if self.event.issue_object:
+            self.event.issue_object.update_data()
         
+
     def to_dict(self, event=True):
         """
         Return this production as a dictionary.
@@ -596,7 +601,9 @@ class Production:
         if "priors" in self.meta:
             dictionary['priors'] = self.meta['priors']
         for key, value in self.meta.items():
+
             dictionary[key] = value
+
         if "repository" in self.meta:
             dictionary['repository'] = self.repository.url
 
@@ -614,6 +621,7 @@ class Production:
         if "rundir" in self.meta:
             return self.meta['rundir']
         elif "working directory" in self.event.meta:
+
             value = os.path.join(self.event.meta['working directory'], self.name)
             self.meta["rundir"] = value
             if self.event.issue_object != None:
@@ -726,7 +734,7 @@ class Production:
             raise ValueError("Could not open the ini file")
 
         return ini
-
+    
     @classmethod
     def from_dict(cls, parameters, event, issue=None):
         name, pars = list(parameters.items())[0]
@@ -737,9 +745,13 @@ class Production:
         
         # Check all of the required parameters are included
         if not {"status", "pipeline"} <= pars.keys():
+            print(pars.keys())
             raise DescriptionException(f"Some of the required parameters are missing from {name}", issue, name)
         if not "comment" in pars:
             pars['comment'] = None
+        if "event" in pars:
+            pars.pop(event)
+            
         return cls(event, name, **pars)
     
     def __repr__(self):
@@ -778,9 +790,8 @@ class Production:
         
         config_dict = {s: dict(config.items(s)) for s in config.sections()}
 
-        with open(template_file, "r") as template_file:
-            liq = Liquid(template_file.read())
-            rendered = liq.render(production=self, config=config)
+        liq = Liquid(template_file)
+        rendered = liq.render(production=self, config=config)
 
         with open(filename, "w") as output_file:
             output_file.write(rendered)
