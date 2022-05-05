@@ -14,7 +14,7 @@ from .git import EventRepo
 from .review import Review
 from asimov import config, logger
 from asimov.storage import Store
-from asimov.utils import update
+from asimov.pipelines import known_pipelines
 
 from .git import EventRepo
 from .ini import RunConfiguration
@@ -1027,14 +1027,17 @@ class Production:
         else:
             template = f"{self.pipeline.name}.ini"
 
-        try:
-            template_directory = config.get("templating", "directory")
-            template_file = os.path.join(f"{template_directory}", template)
-            if not os.path.exists(template_file):
-                raise Exception
-        except:
-            from pkg_resources import resource_filename
-            template_file = resource_filename("asimov", f'configs/{template}')
+        pipeline = known_pipelines[self.pipeline]
+        if hasattr("config_template", pipeline):
+            template_file = pipeline.config_template
+        else:
+            try:
+                template_directory = config.get("templating", "directory")
+                template_file = os.path.join(f"{template_directory}", template)
+            except:
+                from pkg_resources import resource_filename
+                template_file = resource_filename("asimov", f'configs/{template}')
+        
         config_dict = {s: dict(config.items(s)) for s in config.sections()}
 
         liq = Liquid(template_file)
