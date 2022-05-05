@@ -135,17 +135,31 @@ class SimpleAnalysis(Analysis):
 
 
             
-class EventAnalysis(Analysis):
+class SubjectAnalysis(Analysis):
     """
     A single subject analysis which requires results from multiple pipelines.
     """
     pass
-
+    
 class ProjectAnalysis(Analysis):
     """
     A multi-subject analysis.
     """
-    pass
+    def __init__(self,
+                 subjects,
+                 analyses,
+                 name,
+                 pipeline,
+                 status=None,
+                 comment=None,
+                 **kwargs):
+        """
+        
+        """
+        super().__init__()
+
+        self.subjects = subjects
+        self.analyses = analyses
 
 class GravitationalWaveTransient(SimpleAnalysis):
     """
