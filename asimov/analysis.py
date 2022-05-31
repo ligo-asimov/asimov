@@ -25,8 +25,11 @@ Project analyses
 from copy import copy, deepcopy
 from warnings import warn
 
-from asimov.utils import update
+from liquid import Liquid
 
+from asimov import config
+from asimov.utils import update
+from asimov.pipelines import known_pipelines
 from .review import Review
 
 class Analysis:
@@ -109,6 +112,45 @@ class Analysis:
         else:
             return None
 
+    def make_config(self, filename, template_directory=None):
+        """
+        Make the configuration file for this production.
+
+        Parameters
+        ----------
+        filename : str
+           The location at which the config file should be saved.
+        template_directory : str, optional
+           The path to the directory containing the pipeline config templates.
+           Defaults to the directory specified in the asimov configuration file.
+        """
+
+
+        if "template" in self.meta:
+            template = f"{self.meta['template']}.ini"
+        else:
+            template = f"{self.pipeline}.ini"
+
+        pipeline = known_pipelines[self.pipeline]
+        if hasattr(pipeline, "config_template"):
+            template_file = pipeline.config_template
+        else:
+            try:
+                template_directory = config.get("templating", "directory")
+                template_file = os.path.join(f"{template_directory}", template)
+            except:
+                from pkg_resources import resource_filename
+                template_file = resource_filename("asimov", f'configs/{template}')
+        
+        config_dict = {s: dict(config.items(s)) for s in config.sections()}
+
+        liq = Liquid(template_file)
+        rendered = liq.render(production=self, config=config)
+
+        with open(filename, "w") as output_file:
+            output_file.write(rendered)
+
+        
 
 class SimpleAnalysis(Analysis):
     """

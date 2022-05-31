@@ -1,3 +1,5 @@
+import collections
+
 def update(d, u):
     """Recursively update a dictionary."""
     for k, v in u.items():
