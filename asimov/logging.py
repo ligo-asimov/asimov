@@ -10,7 +10,7 @@ import os
 from asimov import mattermost
 
 from asimov import config
-from .gitlab import EventIssue
+#from .gitlab import EventIssue
 
 import asimov.database as database
 

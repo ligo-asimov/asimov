@@ -40,6 +40,8 @@ config_locations.reverse()
 
 config.read([conffile for conffile in config_locations])
 
+
+
 try:
 
     if config.get("general", "logger") == "file":
