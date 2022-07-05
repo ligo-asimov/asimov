@@ -73,7 +73,7 @@ $ olivaw event create GW150914
 Many analyses can be run on a single event (these are called "productions" in asimov parlence).
 You can add a new lalinference production to an event as such:
 ```
-$ olivaw production create GW150914 --pipeline lalinference
+$ olivaw production create GW150914 lalinference
 ```
 For a full description of the workflow management process see the documentation.
 
