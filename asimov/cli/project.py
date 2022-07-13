@@ -30,8 +30,10 @@ from asimov.cli import connect_gitlab
 @click.option("--results", default="results",
               help="The location where the results store should be created.")
 def init(name, root, working="working", checkouts="checkouts", results="results"):
-    """
-    Roll-out a new project.
+    """Create a new project called NAME.
+
+    This command creates a new asimov project, creating the appropriate
+    directory structure, and creating a blank ledger.
     """
     import venv
     import pathlib
