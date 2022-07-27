@@ -26,6 +26,9 @@ from asimov.cli import manage
 from asimov.cli import event
 from asimov.cli import project
 from asimov.cli import production
+from asimov.cli import application
+
+
 
 @click.group()
 def olivaw():
@@ -52,3 +55,4 @@ olivaw.add_command(event.event)
 olivaw.add_command(production.production)
 # Review commands
 olivaw.add_command(review.review)
+olivaw.add_command(application.apply)
