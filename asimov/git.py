@@ -51,25 +51,21 @@ class EventRepo:
         """
         Create a new git repository to store configurations etc.
 
-        Parameters
+        Parameters 
         ----------
-        location : str
+        location : str 
            The location of the directory to be used.
         """
-        directory = config.get("general", "calibration_directory")
+
         os.makedirs(location, exist_ok=True)
         repo = git.Repo.init(location)
-        os.makedirs(os.path.join(location, directory), exist_ok=True)
-        with open(os.path.join(location, directory, ".gitkeep"), "w") as f:
+        os.makedirs(os.path.join(location, "C01_offline"), exist_ok=True)
+        with open(os.path.join(location, "C01_offline", ".gitkeep"), "w") as f:
             f.write(" ")
-        repo.git.add(os.path.join(".", directory, ".gitkeep"))
-        try:
-            repo.git.commit("-m", "Initial commit")
-        except git.exc.GitCommandError as e:
-            if "working tree clean" in e.stdout:
-                pass
+        repo.git.add("C01_offline/.gitkeep")
+        repo.git.commit("-m", "Initial commit")
         return cls(directory=location, url=location)
-
+    
     @classmethod
     def from_url(cls, url, name, directory=None, update=False):
         """

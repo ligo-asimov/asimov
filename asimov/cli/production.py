@@ -3,7 +3,8 @@ from copy import copy
 import click
 import yaml
 
-from asimov import config, ledger
+from asimov import config
+from asimov import current_ledger as ledger
 from asimov.storage import Store
 from asimov.event import Production, Event,  DescriptionException
 from asimov import gitlab
@@ -18,37 +19,12 @@ def production():
 
 @click.argument("pipeline")
 @click.argument("event")
-@click.option(
-    "--family",
-    "family",
-    default="Prod",
-    help="The family name of the production, e.g. `prod`.",
-)
-@click.option(
-    "--comment", "comment", default=None, help="A comment to attach to the production"
-)
-@click.option(
-    "--needs",
-    "needs",
-    multiple=True,
-    default=[],
-    help="A list of productions which are requirements",
-)
-@click.option(
-    "--template",
-    "template",
-    default=None,
-    help="The configuration template for the production.",
-)
-@click.option(
-    "--status", "status", default="ready", help="The initial status of the production."
-)
-@click.option(
-    "--approximant",
-    "approximant",
-    default=None,
-    help="The waveform approximant to be used in the production.",
-)
+@click.option("--family", "family", default="Prod", help="The family name of the production, e.g. `prod`.")
+@click.option("--comment", "comment", default=None, help="A comment to attach to the production")
+@click.option("--needs", "needs", multiple=True, default=[], help="A list of productions which are requirements")
+@click.option("--template", "template", default=None, help="The configuration template for the production.")
+@click.option("--status", "status", default="ready", help="The initial status of the production.")
+@click.option("--approximant", "approximant", default=None, help="The waveform approximant to be used in the production.")
 @production.command(help="Add a new production to an event")
 def create(event, pipeline, family, comment, needs, template, status, approximant):
     """

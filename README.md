@@ -63,16 +63,12 @@ It can be installed by running
 ```
 $ pip install asimov
 ```
+
 It is also available on conda, and can be installed by running
 ```
 $ conda install -c conda-forge ligo-asimov
 ```
 
-Asimov also requires that you have `git` installed on your machine, and that you've set it up by running:
-```
-  git config --global user.email "you@example.com"
-  git config --global user.name "Your Name"
-```
 
 ## Get started
 
@@ -92,9 +88,13 @@ $ asimov init "Test project"
 where you can replace `"Test project"` with the name you want to give your project.
 A project will be set-up in your current working directory.
 
-In order to start setting up analyses we next need to download some default settings.
+You can add an existing event with preconfigured settings using the `asimov apply` function, for example, to add GW150914 to the project you can run
 
-An analysis is a pipeline run, and asimov supports `bayeswave`, `bilby` in the default installation.
+```
+$ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/events/gw150914.yaml
+```
+
+Alternatively, a new event with no configured settings can be added to your project by running
 
 We'll download the default configurations for jobs which are going to be run on the LIGO data grid.
 We do this using the `asimov apply` command, which pulls-in data from a file either locally or online.
@@ -103,7 +103,7 @@ We do this using the `asimov apply` command, which pulls-in data from a file eit
 
 $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml
 ```
-and the load default priors the same way:
+$ asimov event create GW150914
 ```
 $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml
 ```
@@ -130,8 +130,7 @@ First use `asimov manage build` to create the configuration files for each analy
 ```
 $ asimov manage build
 ```
-These will be added to the git repositories in the `checkouts` directory inside the project directory.
-You then submit the jobs to the cluster by running
+$ asimov production create GW150914 lalinference
 ```
 $ asimov manage submit
 ```
