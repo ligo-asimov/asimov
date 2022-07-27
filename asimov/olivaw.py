@@ -14,17 +14,17 @@ import asimov  # NoQA
 import asimov.pipelines  # NoQA
 
 # Import CLI bits from elsewhere
-from asimov.cli import (  # NoQA
-    application,
-    configuration,
-    event,
-    manage,
-    monitor,
-    production,
-    project,
-    report,
-    review,
-)  # NoQA
+from asimov import cli
+from asimov.cli import configuration
+from asimov.cli import report
+from asimov.cli import monitor
+from asimov.cli import review
+from asimov.cli import manage
+from asimov.cli import event
+from asimov.cli import project
+from asimov.cli import production
+from asimov.cli import application
+
 
 
 @click.version_option(asimov.__version__)
