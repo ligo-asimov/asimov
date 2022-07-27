@@ -95,26 +95,9 @@ def build(event, dryrun):
                     logger.exception(e)
 
 
-@click.option(
-    "--event",
-    "event",
-    default=None,
-    help="The event which the ledger should be returned for, optional.",
-)
-@click.option(
-    "--update",
-    "update",
-    default=False,
-    help="Force the git repos to be pulled before submission occurs.",
-)
-@click.option(
-    "--dryrun",
-    "-d",
-    "dryrun",
-    is_flag=True,
-    default=False,
-    help="Print all commands which will be executed without running them",
-)
+@click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
+@click.option("--update", "update", default=False, help="Force the git repos to be pulled before submission occurs.")
+@click.option("--dryrun", "-d", "dryrun", default=False, help="Print all commands which will be executed without running them")
 @manage.command()
 def submit(event, update, dryrun):
     """

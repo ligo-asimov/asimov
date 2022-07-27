@@ -11,6 +11,9 @@ from asimov import config, logger
 from asimov.utils import set_directory
 
 from ..pipeline import Pipeline, PipelineException, PipelineLogger
+from ..ini import RunConfiguration
+from asimov import config, logger
+from asimov import logging
 
 
 class LALInference(Pipeline):
