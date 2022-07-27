@@ -29,6 +29,7 @@ setup(
     entry_points={
         'console_scripts': [
             'olivaw=asimov.olivaw:olivaw',
+            'asimov=asimov.olivaw:olivaw',
             'locutus=asimov.locutus:cli'
         ]
     },

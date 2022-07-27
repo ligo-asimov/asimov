@@ -10,7 +10,8 @@ import click
 
 from git import GitCommandError
 
-from asimov import config, ledger
+from asimov import config
+from asimov import current_ledger as ledger
 from asimov.storage import Store
 from asimov.event import Production, Event,  DescriptionException
 from asimov import gitlab
@@ -29,7 +30,7 @@ def production():
 @click.option("--comment", "comment", default=None, help="A comment to attach to the production")
 @click.option("--needs", "needs", multiple=True, default=[], help="A list of productions which are requirements")
 @click.option("--template", "template", default=None, help="The configuration template for the production.")
-@click.option("--status", "status", default="wait", help="The initial status of the production.")
+@click.option("--status", "status", default="ready", help="The initial status of the production.")
 @click.option("--approximant", "approximant", default=None, help="The waveform approximant to be used in the production.")
 @production.command(help="Add a new production to an event")
 def create(event, pipeline, family, comment, needs, template, status, approximant):
@@ -64,8 +65,9 @@ def create(event, pipeline, family, comment, needs, template, status, approximan
     production_dict = {f"{family}{number}": production}
     production = Production.from_dict(production_dict, event=event)
     #
-    click.echo(production)
     event.add_production(production)
+    click.secho(f"Production added to {event.name}")
+    click.echo(f"\t{production}")
 
     if config.get("ledger", "engine") == "gitlab":
         gitlab_event[0].update_data()

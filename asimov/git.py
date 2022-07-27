@@ -51,7 +51,27 @@ class EventRepo():
 
     def __repr__(self):
         return self.directory
-        
+
+    @classmethod
+    def create(cls, location):
+        """
+        Create a new git repository to store configurations etc.
+
+        Parameters 
+        ----------
+        location : str 
+           The location of the directory to be used.
+        """
+
+        os.makedirs(location, exist_ok=True)
+        repo = git.Repo.init(location)
+        os.makedirs(os.path.join(location, "C01_offline"), exist_ok=True)
+        with open(os.path.join(location, "C01_offline", ".gitkeep"), "w") as f:
+            f.write(" ")
+        repo.git.add("C01_offline/.gitkeep")
+        repo.git.commit("-m", "Initial commit")
+        return cls(directory=location, url=location)
+    
     @classmethod
     def from_url(cls, url, name, directory=None, update=False):
         """

@@ -42,29 +42,41 @@ Whether you're setting-up a preliminary analysis for a single gravitational wave
 Asimov is written in Python, and is available on ``pypi``. 
 It can be installed by running
 ```
-$ pip install ligo-asimov
+$ pip install asimov
 ```
+
+It is also available on conda, and can be installed by running
+```
+$ conda install -c conda-forge ligo-asimov
+```
+
 
 ## Get started
 
 Asimov supports a variety of different ways of running, but the simplest way, running a workflow on a local machine, can be set up with a single command:
 
 ```
-$ olivaw init
+$ asimov init "Test project"
+```
+where you can replace `"Test project"` with the name you want to give your project.
+A project will be set-up in your current working directory.
+
+You can add an existing event with preconfigured settings using the `asimov apply` function, for example, to add GW150914 to the project you can run
+
+```
+$ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/events/gw150914.yaml
 ```
 
-``olivaw`` is asimov's built-in management interface.
-
-A new event can be added to your project by running
+Alternatively, a new event with no configured settings can be added to your project by running
 
 ```
-$ olivaw event create GW150914
+$ asimov event create GW150914
 ```
 
 Many analyses can be run on a single event (these are called "productions" in asimov parlence).
 You can add a new lalinference production to an event as such:
 ```
-$ olivaw production --event GW150914 --pipeline lalinference
+$ asimov production create GW150914 lalinference
 ```
 For a full description of the workflow management process see the documentation.
 

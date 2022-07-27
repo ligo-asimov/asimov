@@ -95,6 +95,12 @@ class Event:
                                                      update=update)
             else:
                 self.repository = EventRepo(repository)
+        elif not repository:
+            # If the repository isn't set you'll need to make one
+            location = config.get("general", "git_default")
+            location = os.path.join(location, self.name)
+            self.repository = EventRepo.create(location)
+            
         else:
             self.repository = repository
 
@@ -326,15 +332,17 @@ class Event:
         data = {}
         data['name'] = self.name
 
-        if "repository" in data:        
+        if self.repository.url:
             data['repository'] = self.repository.url
+        else:
+            data['repository'] = self.repository.directory
             
         for key, value in self.meta.items():
             data[key] = value
-        try:
-            data['repository'] = self.repository.url
-        except AttributeError:
-            pass
+        #try:
+        #    data['repository'] = self.repository.url
+        #except AttributeError:
+        #    pass
         
         if productions:
             data['productions'] = []

@@ -7,7 +7,8 @@ import pathlib
 import click
 
 from asimov.cli import known_pipelines
-from asimov import config, logger, ledger
+from asimov import config, logger
+from asimov import current_ledger as ledger
 
 from asimov import gitlab
 from asimov.event import Event, DescriptionException, Production
@@ -26,8 +27,8 @@ def build(event):
     If no event is specified then all of the events will be processed.
     """
     for event in ledger.get_event(event):
-        click.echo(f"Working on {event.title}")
-        ready_productions = event.event_object.get_all_latest()
+        click.echo(f"Working on {event.name}")
+        ready_productions = event.get_all_latest()
         for production in ready_productions:
             click.echo(f"\tWorking on production {production.name}")
             if production.status in {"running", "stuck", "wait", "finished", "uploaded", "cancelled", "stopped"}: continue
@@ -35,8 +36,11 @@ def build(event):
                 configuration = production.get_configuration()
             except ValueError:
                 try:
-                    rundir = config.get("general", "rundir_default")
-                    path = pathlib.Path(production.rundir)
+
+                    if production.rundir:
+                        path = pathlib.Path(production.rundir)
+                    else:
+                        path = pathlib.Path(config.get("general", "rundir_default"))
                     path.mkdir(parents=True, exist_ok=True)
                     config_loc = os.path.join(path, f"{production.name}.ini")
                     production.make_config(config_loc)
