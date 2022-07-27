@@ -64,4 +64,7 @@ try:
 
 except FileNotFoundError:
     logger.error("Could not find a valid ledger file.")
+    #print("This does not seem to be a valid asimov project directory.")
+    #import sys
+    #sys.exit()
     current_ledger = None

@@ -6,6 +6,10 @@ from math import floor
 
 import click
 
+# Ignore warnings from the condor module
+import warnings
+warnings.filterwarnings("ignore", module="htcondor")
+
 from asimov import logging
 from asimov import condor
 import asimov.pipelines
@@ -27,8 +31,6 @@ from asimov.cli import event
 from asimov.cli import project
 from asimov.cli import production
 from asimov.cli import application
-
-
 
 @click.group()
 def olivaw():

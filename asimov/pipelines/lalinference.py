@@ -7,7 +7,7 @@ import re
 import subprocess
 from ..pipeline import Pipeline, PipelineException, PipelineLogger
 from ..ini import RunConfiguration
-from asimov import config
+from asimov import config, logger
 from asimov import logging
 
 import htcondor
@@ -29,7 +29,7 @@ class LALInference(Pipeline):
 
     def __init__(self, production, category=None):
         super(LALInference, self).__init__(production, category)
-        self.logger = logger = logging.AsimovLogger(event=production.event)
+        self.logger = logger
         if not production.pipeline.lower() == "lalinference":
             raise PipelineException
 

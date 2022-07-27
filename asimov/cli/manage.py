@@ -63,8 +63,9 @@ def build(event):
 
 @click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
 @click.option("--update", "update", default=False, help="Force the git repos to be pulled before submission occurs.")
+@click.option("--dryrun", "-d", "dryrun", default=False, help="Print all commands which will be executed without running them")
 @manage.command()
-def submit(event, update):
+def submit(event, update, dryrun):
     """
     Submit the run configuration files for a given event for jobs which are ready to run.
     If no event is specified then all of the events will be processed.
