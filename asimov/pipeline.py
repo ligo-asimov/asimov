@@ -145,6 +145,77 @@ class Pipeline:
     def collect_logs(self):
         return {}
 
+    def run_pesummary(self, dryrun=False):
+        """
+        Run PESummary on the results of this job.
+        """
+
+        psds = self.production.psds
+        calibration = [os.path.join(self.production.event.repository.directory, cal) for cal in self.production.meta['calibration'].values()]
+        configfile = self.production.event.repository.find_prods(self.production.name, self.category)[0]
+        command = [
+            "--webdir", os.path.join(config.get('general', 'webroot'), self.production.event.name, self.production.name,  "results"),
+            "--labels", self.production.name,
+            "--gw",
+            "--cosmology", config.get('pesummary', 'cosmology'),
+            "--redshift_method", config.get('pesummary', 'redshift'),
+            "--nsamples_for_skymap", config.get('pesummary', 'skymap_samples'),
+            "--evolve_spins", "True",
+            "--multi_process", "4",
+            "--approximant", self.production.meta['approximant'],
+            "--f_low", str(min(self.production.meta['quality']['lower-frequency'].values())),
+            "--f_ref", str(self.production.meta['quality']['reference-frequency']),
+            "--regenerate", "redshift mass_1_source mass_2_source chirp_mass_source total_mass_source final_mass_source final_mass_source_non_evolved radiated_energy",
+            "--config", os.path.join(self.production.event.repository.directory, self.category, configfile)]
+        # Samples
+        command += ["--samples"]
+        command += self.samples()
+        # Calibration information
+        command += ["--calibration"]
+        command += calibration
+        # PSDs
+        command += ["--psd"]
+        command += psds.values()
+        
+        self.logger.info(f"Submitted PE summary run. Command: {config.get('pesummary', 'executable')} {' '.join(command)}", production=self.production, channels=['file'])
+
+        if dryrun:
+            print(command)
+
+        submit_description = {
+            "executable": config.get("pesummary", "executable"),  
+            "arguments": " ".join(command),
+            "accounting_group": config.get("pipelines", "accounting"),
+            "output": f"{self.production.rundir}/pesummary.out",
+            "error": f"{self.production.rundir}/pesummary.err",
+            "log": f"{self.production.rundir}/pesummary.log",
+            "request_cpus": "4",
+            "getenv": "true",
+            "batch-name": f"PESummary/{self.production.event.name}/{self.production.name}",
+            "request_memory": "8192MB",
+            "request_disk": "8192MB",
+        }
+
+        if dryrun:
+            print("SUBMIT DESCRIPTION")
+            print("------------------")
+            print(submit_description)
+
+        if not dryrun:
+            
+            hostname_job = htcondor.Submit(submit_description)
+
+            schedulers = htcondor.Collector().locate(htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler"))
+
+            schedd = htcondor.Schedd(schedulers)
+            with schedd.transaction() as txn:   
+                cluster_id = hostname_job.queue(txn)
+
+        else:
+            cluster_id = 0
+                
+        return cluster_id
+
     def store_results(self):
         """
         Store the PE Summary results

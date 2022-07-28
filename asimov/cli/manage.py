@@ -22,20 +22,8 @@ def manage():
     pass
 
 
-@click.option(
-    "--event",
-    "event",
-    default=None,
-    help="The event which the ledger should be returned for, optional.",
-)
-@click.option(
-    "--dryrun",
-    "-d",
-    "dryrun",
-    is_flag=True,
-    default=False,
-    help="Print all commands which will be executed without running them",
-)
+@click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
+@click.option("--dryrun", "-d", "dryrun", is_flag=True, default=False, help="Print all commands which will be executed without running them")
 @manage.command()
 def build(event, dryrun):
     """
@@ -74,22 +62,26 @@ def build(event, dryrun):
                         path = pathlib.Path(production.rundir)
                     else:
                         path = pathlib.Path(config.get("general", "rundir_default"))
-                    path.mkdir(parents=True, exist_ok=True)
-                    config_loc = os.path.join(path, f"{production.name}.ini")
-                    production.make_config(config_loc)
-                    click.echo(f"Production config {production.name} created.")
-                    logger.info("Run configuration created.", production=production)
 
-                    try:
-                        event.repository.add_file(config_loc,
-                                                  os.path.join(f"{production.category}",
-                                                               f"{production.name}.ini"))
-                        logger.info("Configuration committed to event repository.",
-                                    production=production)
-                    except Exception as e:
-                        logger.error(f"Configuration could not be committed to repository.\n{e}",
-                                     production=production)
-                        
+                    if dryrun:
+                        print(f"- Will mkdir {path}")
+                    else:
+                        path.mkdir(parents=True, exist_ok=True)
+                        config_loc = os.path.join(path, f"{production.name}.ini")
+                        production.make_config(config_loc, dryrun=True)
+                        click.echo(f"Production config {production.name} created.")
+                        logger.info("Run configuration created.", production=production)
+
+                        try:
+                            event.repository.add_file(config_loc,
+                                                      os.path.join(f"{production.category}",
+                                                                   f"{production.name}.ini"))
+                            logger.info("Configuration committed to event repository.",
+                                        production=production)
+                        except Exception as e:
+                            logger.error(f"Configuration could not be committed to repository.\n{e}",
+                                         production=production)
+
                 except DescriptionException as e:
                     logger.error("Run configuration failed")
                     logger.exception(e)
@@ -97,7 +89,7 @@ def build(event, dryrun):
 
 @click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
 @click.option("--update", "update", default=False, help="Force the git repos to be pulled before submission occurs.")
-@click.option("--dryrun", "-d", "dryrun", default=False, help="Print all commands which will be executed without running them")
+@click.option("--dryrun", "-d", "dryrun", is_flag=True, default=False, help="Print all commands which will be executed without running them")
 @manage.command()
 def submit(event, update, dryrun):
     """
@@ -128,46 +120,20 @@ def submit(event, update, dryrun):
                     )
                 continue
             if production.status.lower() == "restart":
-                pipe = production.pipeline
-                try:
+                if production.pipeline.lower() in known_pipelines:
+                    pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
                     pipe.clean(dryrun=dryrun)
-                except PipelineException as e:
-                    logger.error("The pipeline failed to clean up after itself.")
-                    logger.exception(e)
-                pipe.submit_dag(dryrun=dryrun)
-                click.echo(
-                    click.style("●", fg="green")
-                    + f" Resubmitted {production.event.name}/{production.name}"
-                )
-                production.status = "running"
-            else:
-                pipe = production.pipeline
-                try:
-                    pipe.build_dag(dryrun=dryrun)
-                except PipelineException as e:
-                    logger.error(
-                        "The pipeline failed to build a DAG file.",
-                    )
-                    logger.exception(e)
-                    click.echo(
-                        click.style("●", fg="red")
-                        + f" Unable to submit {production.name}"
-                    )
-                except ValueError:
-                    logger.info("Unable to submit an unbuilt production")
-                    click.echo(
-                        click.style("●", fg="red")
-                        + f" Unable to submit {production.name} as it hasn't been built yet."
-                    )
-                    click.echo("Try running `asimov manage build` first.")
-                    sys.exit()
-                try:
                     pipe.submit_dag(dryrun=dryrun)
-                    if not dryrun:
-                        click.echo(
-                            click.style("●", fg="green")
-                            + f" Submitted {production.event.name}/{production.name}"
-                        )
+            else:
+                if production.pipeline.lower() in known_pipelines:
+                    pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
+                    try:
+                        pipe.build_dag(dryrun=dryrun)
+                    except PipelineException:
+                        logger.error("The pipeline failed to build a DAG file.",
+                                     production=production)
+                    try:
+                        pipe.submit_dag(dryrun=dryrun)
                         production.status = "running"
 
                 except PipelineException as e:
