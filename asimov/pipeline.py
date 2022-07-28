@@ -98,7 +98,7 @@ class Pipeline():
         """
         pass
 
-    def before_submit(self):
+    def before_submit(self, dryrun=False):
         """
         Define a hook to run before the DAG file is generated and submitted.
 
@@ -131,7 +131,7 @@ class Pipeline():
     def collect_logs(self):
         return {}
 
-    def run_pesummary(self):
+    def run_pesummary(self, dryrun=False):
         """
         Run PESummary on the results of this job.
         """
@@ -165,7 +165,10 @@ class Pipeline():
         
         self.logger.info(f"Submitted PE summary run. Command: {config.get('pesummary', 'executable')} {' '.join(command)}", production=self.production, channels=['file'])
 
-        hostname_job = htcondor.Submit({
+        if dryrun:
+            print(command)
+
+        submit_description = {
             "executable": config.get("pesummary", "executable"),  
             "arguments": " ".join(command),
             "accounting_group": config.get("pipelines", "accounting"),
@@ -177,14 +180,26 @@ class Pipeline():
             "batch-name": f"PESummary/{self.production.event.name}/{self.production.name}",
             "request_memory": "8192MB",
             "request_disk": "8192MB",
-        })
+        }
 
-        schedulers = htcondor.Collector().locate(htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler"))
+        if dryrun:
+            print("SUBMIT DESCRIPTION")
+            print("------------------")
+            print(submit_description)
 
-        schedd = htcondor.Schedd(schedulers)
-        with schedd.transaction() as txn:   
-            cluster_id = hostname_job.queue(txn)
+        if not dryrun:
+            
+            hostname_job = htcondor.Submit(submit_description)
 
+            schedulers = htcondor.Collector().locate(htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler"))
+
+            schedd = htcondor.Schedd(schedulers)
+            with schedd.transaction() as txn:   
+                cluster_id = hostname_job.queue(txn)
+
+        else:
+            cluster_id = 0
+                
         return cluster_id
 
     def store_results(self):

@@ -123,7 +123,7 @@ class Bilby(Pipeline):
             return os.path.join(self.production.event.repository.directory, "C01_offline", prior_name)
 
         
-    def build_dag(self, psds=None, user=None, clobber_psd=False):
+    def build_dag(self, psds=None, user=None, clobber_psd=False, dryrun=False):
         """
         Construct a DAG file in order to submit a production to the
         condor scheduler using bilby_pipe.
@@ -138,6 +138,8 @@ class Bilby(Pipeline):
            instead.
         user : str
            The user accounting tag which should be used to run the job.
+        dryrun: bool
+           If set to true the commands will not be run, but will be printed to standard output. Defaults to False.
 
         Raises
         ------
@@ -180,44 +182,45 @@ class Bilby(Pipeline):
                    "--outdir", f"{cwd}/{self.production.rundir}",
                    "--accounting", config.get("bilby", "accounting")
         ]
-        self.logger.info(" ".join(command))
-        pipe = subprocess.Popen(command, 
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
-        out, err = pipe.communicate()
-        self.logger.info(out)
-        self.logger.error(err)
-        #os.chdir(cwd)
-        if err or "DAG generation complete, to submit jobs" not in str(out):
-            self.production.status = "stuck"
-            if hasattr(self.production.event, "issue_object"):
-                raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
-                                            issue=self.production.event.issue_object,
+
+        if dryrun:
+            print(command)
+        else:
+            self.logger.info(" ".join(command))
+            pipe = subprocess.Popen(command, 
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT)
+            out, err = pipe.communicate()
+            self.logger.info(out)
+            self.logger.error(err)
+            #os.chdir(cwd)
+            if err or "DAG generation complete, to submit jobs" not in str(out):
+                self.production.status = "stuck"
+                if hasattr(self.production.event, "issue_object"):
+                    raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
+                                                issue=self.production.event.issue_object,
+                                                production=self.production.name)
+                else:
+                    raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
                                             production=self.production.name)
             else:
-                raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
-                                        production=self.production.name)
-        else:
-            if hasattr(self.production.event, "issue_object"):
-                return PipelineLogger(message=out,
-                                      issue=self.production.event.issue_object,
-                                      production=self.production.name)
-            else:
-                return PipelineLogger(message=out,
-                                      production=self.production.name)
+                if hasattr(self.production.event, "issue_object"):
+                    return PipelineLogger(message=out,
+                                          issue=self.production.event.issue_object,
+                                          production=self.production.name)
+                else:
+                    return PipelineLogger(message=out,
+                                          production=self.production.name)
 
 
-    def submit_dag(self):
+    def submit_dag(self, dryrun=False):
         """
         Submit a DAG file to the condor cluster.
 
         Parameters
         ----------
-        category : str, optional
-           The category of the job.
-           Defaults to "C01_offline".
-        production : str
-           The production name.
+        dryrun : bool
+           If set to true the DAG will not be submitted, but all commands will be printed to standard output instead. Defaults to False.
 
         Returns
         -------
@@ -256,25 +259,30 @@ class Bilby(Pipeline):
                 "condor_submit_dag",
                        "-batch-name", f"bilby/{self.production.event.name}/{self.production.name}",
                                    os.path.join(self.production.rundir, "submit", dag_filename)]
-            dagman = subprocess.Popen(command,
+
+            if dryrun:
+                print(command)
+            else:
+                dagman = subprocess.Popen(command,
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.STDOUT)
+
+                stdout, stderr = dagman.communicate()
+
+                if "submitted to cluster" in str(stdout):
+                    cluster = re.search("submitted to cluster ([\d]+)", str(stdout)).groups()[0]
+                    self.production.status = "running"
+                    self.production.job_id = int(cluster)
+                    return cluster, PipelineLogger(stdout)
+                else:
+                    raise PipelineException(f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
+                                            issue=self.production.event.issue_object,
+                                            production=self.production.name)
         except FileNotFoundError as error:
             raise PipelineException("It looks like condor isn't installed on this system.\n"
                                     f"""I wanted to run {" ".join(command)}.""")
 
-        stdout, stderr = dagman.communicate()
-
-        if "submitted to cluster" in str(stdout):
-            cluster = re.search("submitted to cluster ([\d]+)", str(stdout)).groups()[0]
-            self.production.status = "running"
-            self.production.job_id = int(cluster)
-            return cluster, PipelineLogger(stdout)
-        else:
-            raise PipelineException(f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
-                                    issue=self.production.event.issue_object,
-                                    production=self.production.name)
-
+        
     def collect_assets(self):
         """
         Gather all of the results assets for this job.

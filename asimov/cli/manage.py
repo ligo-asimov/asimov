@@ -20,8 +20,9 @@ def manage():
 
 
 @click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
+@click.option("--dryrun", "-d", "dryrun", is_flag=True, default=False, help="Print all commands which will be executed without running them")
 @manage.command()
-def build(event):
+def build(event, dryrun):
     """
     Create the run configuration files for a given event for jobs which are ready to run.
     If no event is specified then all of the events will be processed.
@@ -41,29 +42,33 @@ def build(event):
                         path = pathlib.Path(production.rundir)
                     else:
                         path = pathlib.Path(config.get("general", "rundir_default"))
-                    path.mkdir(parents=True, exist_ok=True)
-                    config_loc = os.path.join(path, f"{production.name}.ini")
-                    production.make_config(config_loc)
-                    click.echo(f"Production config {production.name} created.")
-                    logger.info("Run configuration created.", production=production)
 
-                    try:
-                        event.repository.add_file(config_loc,
-                                                  os.path.join(f"{production.category}",
-                                                               f"{production.name}.ini"))
-                        logger.info("Configuration committed to event repository.",
-                                    production=production)
-                    except Exception as e:
-                        logger.error(f"Configuration could not be committed to repository.\n{e}",
-                                     production=production)
-                        
+                    if dryrun:
+                        print(f"- Will mkdir {path}")
+                    else:
+                        path.mkdir(parents=True, exist_ok=True)
+                        config_loc = os.path.join(path, f"{production.name}.ini")
+                        production.make_config(config_loc, dryrun=True)
+                        click.echo(f"Production config {production.name} created.")
+                        logger.info("Run configuration created.", production=production)
+
+                        try:
+                            event.repository.add_file(config_loc,
+                                                      os.path.join(f"{production.category}",
+                                                                   f"{production.name}.ini"))
+                            logger.info("Configuration committed to event repository.",
+                                        production=production)
+                        except Exception as e:
+                            logger.error(f"Configuration could not be committed to repository.\n{e}",
+                                         production=production)
+
                 except DescriptionException as e:
                     logger.error("Run configuration failed", production=production, channels=["file", "mattermost"])
 
 
 @click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
 @click.option("--update", "update", default=False, help="Force the git repos to be pulled before submission occurs.")
-@click.option("--dryrun", "-d", "dryrun", default=False, help="Print all commands which will be executed without running them")
+@click.option("--dryrun", "-d", "dryrun", is_flag=True, default=False, help="Print all commands which will be executed without running them")
 @manage.command()
 def submit(event, update, dryrun):
     """
@@ -77,23 +82,18 @@ def submit(event, update, dryrun):
             if production.status.lower() == "restart":
                 if production.pipeline.lower() in known_pipelines:
                     pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
-                    pipe.clean()
-                    pipe.submit_dag()
+                    pipe.clean(dryrun=dryrun)
+                    pipe.submit_dag(dryrun=dryrun)
             else:
-                #try:
-                #    configuration = production.get_configuration()
-                #except ValueError as e:
-                #    #build(event)
-                #    logger.error(f"Error while trying to submit a configuration. {e}", production=production, channels="gitlab")
                 if production.pipeline.lower() in known_pipelines:
                     pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
                     try:
-                        pipe.build_dag()
+                        pipe.build_dag(dryrun=dryrun)
                     except PipelineException:
                         logger.error("The pipeline failed to build a DAG file.",
                                      production=production)
                     try:
-                        pipe.submit_dag()
+                        pipe.submit_dag(dryrun=dryrun)
                         production.status = "running"
 
                     except PipelineException as e:

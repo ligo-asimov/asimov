@@ -46,7 +46,7 @@ class LALInference(Pipeline):
         else:
             return False
                 
-    def build_dag(self, psds=None, user=None, clobber_psd=False):
+    def build_dag(self, psds=None, user=None, clobber_psd=False, dryrun=False):
         """
         Construct a DAG file in order to submit a production to the
         condor scheduler using LALInferencePipe.
@@ -61,6 +61,8 @@ class LALInference(Pipeline):
            instead.
         user : str
            The user accounting tag which should be used to run the job.
+        dryrun: bool
+           If set to true the commands will not be run, but will be printed to standard output. Defaults to False.
 
         Raises
         ------
@@ -91,31 +93,35 @@ class LALInference(Pipeline):
                    "-r", self.production.rundir,
                    ini
         ]
-        self.logger.info(" ".join(command))
-        pipe = subprocess.Popen(command, 
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
-        out, err = pipe.communicate()
-        if err or "Successfully created DAG file." not in str(out):
-            self.production.status = "stuck"
-            if hasattr(self.production.event, "issue_object"):
-                self.logger.error(f"DAG file could not be created.\n{command}\n{out}\n\n{err}")
-                raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
-                                            issue=self.production.event.issue_object,
+
+        if dryrun:
+            print(" ".join(command))
+        else:
+            self.logger.info(" ".join(command))
+            pipe = subprocess.Popen(command, 
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT)
+            out, err = pipe.communicate()
+            if err or "Successfully created DAG file." not in str(out):
+                self.production.status = "stuck"
+                if hasattr(self.production.event, "issue_object"):
+                    self.logger.error(f"DAG file could not be created.\n{command}\n{out}\n\n{err}")
+                    raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
+                                                issue=self.production.event.issue_object,
+                                                production=self.production.name)
+                else:
+                    self.logger.error(f"DAG file could not be created.\n{command}\n{out}\n\n{err}")
+                    raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
                                             production=self.production.name)
             else:
-                self.logger.error(f"DAG file could not be created.\n{command}\n{out}\n\n{err}")
-                raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
-                                        production=self.production.name)
-        else:
-            self.logger.info("DAG created")
-            if hasattr(self.production.event, "issue_object"):
-                return PipelineLogger(message=out,
-                                      issue=self.production.event.issue_object,
-                                      production=self.production.name)
-            else:
-                return PipelineLogger(message=out,
-                                      production=self.production.name)
+                self.logger.info("DAG created")
+                if hasattr(self.production.event, "issue_object"):
+                    return PipelineLogger(message=out,
+                                          issue=self.production.event.issue_object,
+                                          production=self.production.name)
+                else:
+                    return PipelineLogger(message=out,
+                                          production=self.production.name)
 
     def samples(self):
         """
@@ -135,7 +141,7 @@ class LALInference(Pipeline):
                 messages[log.split("/")[-1]] = message
         return messages
 
-    def submit_dag(self):
+    def submit_dag(self, dryrun=False):
         """
         Submit a DAG file to the condor cluster.
 
@@ -146,6 +152,9 @@ class LALInference(Pipeline):
            Defaults to "C01_offline".
         production : str
            The production name.
+        dryrun: bool
+           If set to true the commands will not be run, but will be printed to standard output. Defaults to False.
+
 
         Returns
         -------
@@ -159,39 +168,44 @@ class LALInference(Pipeline):
         PipelineException
            This will be raised if the pipeline fails to submit the job.
         """
+        if not dryrun:
+            os.chdir(self.production.rundir)
 
-        os.chdir(self.production.rundir)
-
-        self.before_submit()
+        self.before_submit(dryrun=dryrun)
 
         try:
             command = ["condor_submit_dag",
                        "-batch-name", f"lalinf/{self.production.event.name}/{self.production.name}",
                                    os.path.join(self.production.rundir, f"multidag.dag")]
-            dagman = subprocess.Popen(command,
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT)
+
+            if dryrun:
+                print(" ".join(command))
+            else:
+                dagman = subprocess.Popen(command,
+                                      stdout=subprocess.PIPE,
+                                      stderr=subprocess.STDOUT)
+
+                stdout, stderr = dagman.communicate()
+
+                if "submitted to cluster" in str(stdout):
+                    cluster = re.search("submitted to cluster ([\d]+)", str(stdout)).groups()[0]
+                    self.production.status = "running"
+                    self.production.job_id = cluster
+                    return cluster, PipelineLogger(stdout)
+                else:
+                    raise PipelineException(f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
+                                            issue=self.production.event.issue_object,
+                                            production=self.production.name)
+
         except FileNotFoundError as error:
-            raise PipelineException("It looks like condor isn't installed on this system.\n"
-                                    f"""I wanted to run {" ".join(command)}.""")
+                raise PipelineException("It looks like condor isn't installed on this system.\n"
+                                        f"""I wanted to run {" ".join(command)}.""")
 
-        stdout, stderr = dagman.communicate()
-
-        if "submitted to cluster" in str(stdout):
-            cluster = re.search("submitted to cluster ([\d]+)", str(stdout)).groups()[0]
-            self.production.status = "running"
-            self.production.job_id = cluster
-            return cluster, PipelineLogger(stdout)
-        else:
-            raise PipelineException(f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
-                                    issue=self.production.event.issue_object,
-                                    production=self.production.name)
-
+            
     def after_completion(self):
         cluster = self.run_pesummary()
         self.production.meta['job id'] = int(cluster)
         self.production.status = "processing"
-
 
     def resurrect(self):
         """

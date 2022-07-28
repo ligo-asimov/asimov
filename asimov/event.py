@@ -704,8 +704,16 @@ class Production:
         str
            The location of the time file.
         """
-        return self.event.repository.find_timefile(self.category)
-
+        try:
+            return self.event.repository.find_timefile(self.category)
+        except FileNotFoundError:
+            new_file = os.path.join("gps.txt")
+            print(os.getcwd())
+            with open(new_file, "w") as f:
+                f.write(f"{self.event.meta['event time']}")
+            self.event.repository.add_file(new_file, os.path.join(self.category, new_file), "Added a new GPS timefile.")
+            return new_file
+            
     def get_coincfile(self):
         """
         Find this event's coinc.xml file.
