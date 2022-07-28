@@ -235,6 +235,7 @@ class LALInference(Pipeline):
                     f"""I wanted to run {" ".join(command)}."""
                 ) from error
 
+            
     def after_completion(self):
         cluster = self.run_pesummary()
         self.production.meta["job id"] = int(cluster)
