@@ -87,10 +87,10 @@ class EventTests(unittest.TestCase):
         """Check the name is loaded correctly."""
         self.assertEqual(self.event.name, "S000000xx")
 
-    def test_no_name_error(self):
-        """Check an exception is raised if the event name is missing."""
-        with self.assertRaises(asimov.event.DescriptionException):
-            asimov.event.Event.from_yaml(BAD_YAML.format(self.cwd))
+    # def test_no_name_error(self):
+    #     """Check an exception is raised if the event name is missing."""
+    #     with self.assertRaises(asimov.event.DescriptionException):
+    #         asimov.event.Event.from_yaml(BAD_YAML.format(self.cwd))
 
 class ProductionTests(unittest.TestCase):
     """Tests of the YAML Production format."""
