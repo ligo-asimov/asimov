@@ -9,8 +9,10 @@ import yaml
 from ligo.gracedb.rest import GraceDb, HTTPError
 from liquid import Liquid
 
-from asimov import config, logger, LOGGER_LEVEL
-from asimov.pipelines import known_pipelines
+from .ini import RunConfiguration
+from .git import EventRepo
+from .review import Review
+from asimov import config, logger
 from asimov.storage import Store
 from asimov.utils import update
 
@@ -18,21 +20,14 @@ from .git import EventRepo
 from .ini import RunConfiguration
 from .review import Review
 
-status_map = {
-    "cancelled": "light",
-    "finished": "success",
-    "uploaded": "success",
-    "processing": "primary",
-    "running": "primary",
-    "stuck": "warning",
-    "restart": "secondary",
-    "ready": "secondary",
-    "wait": "light",
-    "stop": "danger",
-    "manual": "light",
-    "stopped": "light",
-}
-
+def update(d, u):
+    """Recursively update a dictionary."""
+    for k, v in u.items():
+        if isinstance(v, collections.abc.Mapping):
+            d[k] = update(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d
 
 class DescriptionException(Exception):
     """Exception for event description problems."""
@@ -112,8 +107,15 @@ class Event:
             if kwargs["ledger"]:
                 self.ledger = kwargs["ledger"]
         else:
-            self.ledger = None
+            self.work_dir = os.path.join(config.get("general", "rundir_default"), self.name)
+        if not os.path.exists(self.work_dir):
+            os.makedirs(self.work_dir)
 
+        if "ledger" in kwargs:
+            self.ledger = kwargs['ledger']
+        else:
+            self.ledger = None
+            
         if repository:
             if "git@" in repository or "https://" in repository:
                 self.repository = EventRepo.from_url(
@@ -190,10 +192,10 @@ class Event:
         else:
             return False
 
-    def update_data(self):
-        if self.ledger:
-            self.ledger.update_event(self)
-        pass
+    # def update_data(self):
+    #     if ledger:
+    #         ledger.events[self.name] = self.to_dict()
+    #     pass
 
     def update_data(self):
         if self.ledger:
@@ -300,46 +302,8 @@ class Event:
         data = yaml.safe_load(data)
         if "kind" in data:
             data.pop("kind")
-        if (
-            not {
-                "name",
-            }
-            <= data.keys()
-        ):
-            raise DescriptionException(
-                "Some of the required parameters are missing from this issue."
-            )
-
-        try:
-            calibration = data["data"]["calibration"]
-        except KeyError:
-            calibration = {}
-
-        if "productions" in data:
-            if isinstance(data["productions"], type(None)):
-                data["productions"] = []
-        else:
-            data["productions"] = []
-
-        if "interferometers" in data and "event time" in data:
-
-            if calibration.keys() != data["interferometers"]:
-                # We need to fetch the calibration data
-                from asimov.utils import find_calibrations
-
-                try:
-                    data["data"]["calibration"] = find_calibrations(data["event time"])
-                except ValueError:
-                    data["data"]["calibration"] = {}
-                    logger.warning(
-                        f"Could not find calibration files for {data['name']}"
-                    )
-
-        if "working directory" not in data:
-            data["working directory"] = os.path.join(
-                config.get("general", "rundir_default"), data["name"]
-            )
-
+        if not {"name",} <= data.keys():
+            raise DescriptionException(f"Some of the required parameters are missing from this issue.")
         if not repo and "repository" in data:
             data.pop("repository")
         event = cls.from_dict(data, issue=issue, update=update)
@@ -398,24 +362,24 @@ class Event:
         gid = self.meta["gid"]
 
         gid = self.meta['gid']
-        client = GraceDb(service_url=config.get("gracedb", "url"))
-        file_obj = client.files(gid, gfile)
 
-        with open("download.file", "w") as dest_file:
-            dest_file.write(file_obj.read().decode())
+        try:
+            client = GraceDb(service_url=config.get("gracedb", "url"))
+            file_obj = client.files(gid, gfile)
 
-        self.repository.add_file("download.file", destination,
-                                 commit_message = f"Downloaded {gfile} from GraceDB")
+            with open("download.file", "w") as dest_file:
+                dest_file.write(file_obj.read().decode())
+
+            self.repository.add_file("download.file", destination,
+                                     commit_message = f"Downloaded {gfile} from GraceDB")
+        except HTTPError as e:
+            logger.error(f"Unable to connect to GraceDB when attempting to download {gfile}. {e}")
+            raise HTTPError(e)
 
     def to_dict(self, productions=True):
         data = {}
-        data["name"] = self.name
-
-        if self.repository.url:
-            data["repository"] = self.repository.url
-        else:
-            data["repository"] = self.repository.directory
-
+        data['name'] = self.name
+        
         if self.repository.url:
             data['repository'] = self.repository.url
         else:
@@ -427,7 +391,6 @@ class Event:
         #    data['repository'] = self.repository.url
         #except AttributeError:
         #    pass
-        
         if productions:
             data['productions'] = []
             for production in self.productions:
@@ -449,8 +412,6 @@ class Event:
             data.pop("issue")
         if "ledger" in data:
             data.pop("ledger")
-        if "pipelines" in data:
-            data.pop("pipelines")
         return data
 
     def to_yaml(self):
@@ -804,6 +765,9 @@ class Production:
         if "repository" in self.meta:
             dictionary['repository'] = self.repository.url
 
+        if "ledger" in dictionary:
+            dictionary.pop("ledger")
+            
         if not event:
             output = dictionary
         else:
@@ -1005,22 +969,6 @@ class Production:
         else:
             psds = {}
 
-        for ifo, psd in psds.items():
-            self.logger.debug(f"PSD-{ifo}: {psd}")
-
-        return psds
-
-    def _check_compatible(self, other_production):
-        """
-        Check that the data settings in two productions are sufficiently compatible
-        that one can be used as a dependency of the other.
-        """
-        compatible = True
-
-        compatible = self.meta["likelihood"] == other_production.meta["likelihood"]
-        compatible = self.meta["data"] == other_production.meta["data"]
-        return compatible
-
     def make_config(self, filename, template_directory=None, dryrun=False):
         """
         Make the configuration file for this production.
@@ -1117,4 +1065,8 @@ class Production:
         liq = Liquid(template_file)
         rendered = liq.render(production=self, config=config)
 
-        return card
+        if not dryrun:
+            with open(filename, "w") as output_file:
+                output_file.write(rendered)
+        else:
+            print(rendered)

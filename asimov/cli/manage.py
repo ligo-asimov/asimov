@@ -68,7 +68,7 @@ def build(event, dryrun):
                     else:
                         path.mkdir(parents=True, exist_ok=True)
                         config_loc = os.path.join(path, f"{production.name}.ini")
-                        production.make_config(config_loc, dryrun=True)
+                        production.make_config(config_loc, dryrun=dryrun)
                         click.echo(f"Production config {production.name} created.")
                         logger.info("Run configuration created.", production=production)
 

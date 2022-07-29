@@ -7,19 +7,14 @@ import time
 
 import git
 
-from copy import copy
+from .ini import RunConfiguration
+from asimov import config
+from asimov.utils import set_directory
 
 from asimov import config, logger
 from asimov.utils import set_directory
 
-from .ini import RunConfiguration
-
-
-class AsimovFileNotFound(FileNotFoundError):
-    pass
-
-
-class EventRepo:
+class EventRepo():
     """
     Read a git repository containing event PE information.
 
@@ -181,6 +176,13 @@ class EventRepo:
             except IndexError:
                 raise AsimovFileNotFound
 
+        with set_directory(os.path.join(self.directory, category)):
+            try:
+                gps_file = glob.glob("*gps*.txt")[0]
+                return gps_file
+            except IndexError:
+                raise AsimovFileNotFound
+
     def find_coincfile(self, category=config.get("general", "calibration_directory")):
         """
         Find the coinc file for this calibration category in this repository.
@@ -209,18 +211,10 @@ class EventRepo:
         """
 
         self.update()
-        path = f"{os.path.join(os.getcwd(), self.directory, category)}/{name}.ini"
-        return [path]
+        prods = glob.glob(f"{os.path.join(self.directory, category)}/{name}*.ini")
+        return prods
 
-    def upload_prod(
-        self,
-        production,
-        rundir,
-        preferred=False,
-        category=config.get("general", "calibration_directory"),
-        rootdir="public_html/LVC/projects/O3/C01/",
-        rename=False,
-    ):
+    def upload_prod(self, production, rundir, preferred=False, category="C01_offline", rootdir="public_html/LVC/projects/O3/C01/", rename = False):
         """
         Upload the results of a PE job to the event repostory.
 
@@ -299,20 +293,14 @@ class EventRepo:
             actual_config = RunConfiguration(run_ini)
             engine_data = actual_config.get_engine()
             labels.append(f"C01:{engine_data['approx']}")
-            configs.append(
-                str(os.path.join(event.data[f"{prod}_rundir"], "config.ini"))
-            )
+            configs.append(str(os.path.join(event.data[f"{prod}_rundir"], "config.ini")))
 
-        with set_directory(
-            os.path.join(self.directory, "Preferred", "PESummary_metafile")
-        ):
 
-            command = [
-                "summarycombine",
-                "--webdir",
-                f"/home/daniel.williams/public_html/LVC/projects/O3/preferred/{event.title}",
-                "--samples",
-            ]
+        with set_directory(os.path.join(self.directory, "Preferred", "PESummary_metafile")):
+
+            command = ["summarycombine",
+                       "--webdir", f"/home/daniel.williams/public_html/LVC/projects/O3/preferred/{event.title}",
+                       "--samples", ]
             command += samples
             command += ["--labels"]
             command += labels
@@ -320,19 +308,13 @@ class EventRepo:
             command += configs
             command += ["--gw"]
 
-            dagman = subprocess.Popen(
-                command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-            )
+            dagman = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             out, err = dagman.communicate()
 
-            self.logger.info(out)
-            self.logger.error(err)
+            print(out)
+            print(err)
 
-            copy(
-                "/home/daniel.williams/public_html/LVC/projects/O3/"
-                + f"preferred/{event.title}/samples/posterior_samples.h5",
-                os.path.join(self.directory, "Preferred", "PESummary_metafile"),
-            )
+            copy(f"/home/daniel.williams/public_html/LVC/projects/O3/preferred/{event.title}/samples/posterior_samples.h5", os.path.join(self.directory, "Preferred", "PESummary_metafile"))
             self.repo.git.add("Preferred/PESummary_metafile/posterior_samples.h5")
             self.repo.git.commit("-m", "Updated the preferred sample metafile.")
             self.repo.git.push()

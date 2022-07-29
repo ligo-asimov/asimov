@@ -29,6 +29,11 @@ def apply(file):
         
     if quick_parse['kind'] == "event":
         event = asimov.event.Event.from_yaml(data)
-
-
-    ledger.update_event(event)
+        ledger.update_event(event)
+        
+    if quick_parse['kind'] == "analysis":
+        quick_parse.pop("kind")
+        event = ledger.get_event(quick_parse['event'])
+        production = asimov.event.Production.from_dict(quick_parse, event=event)
+        event.add_production(production)
+        ledger.update_event(event)

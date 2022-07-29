@@ -10,13 +10,8 @@ import datetime
 import asimov.database as database
 from asimov import mattermost
 
-# from .gitlab import EventIssue
-
-
-logging.getLogger("werkzeug").setLevel(logging.WARNING)
-logging.getLogger("MARKDOWN").setLevel(logging.WARNING)
-logging.getLogger("matplotlib").setLevel(logging.WARNING)
-logging.getLogger("git").setLevel(logging.WARNING)
+from asimov import config
+#from .gitlab import EventIssue
 
 import asimov.database as database
 
