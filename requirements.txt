@@ -13,3 +13,4 @@ requests
 gwpy
 lscsoft-glue
 flask
+tinydb
