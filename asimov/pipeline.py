@@ -102,8 +102,10 @@ class Pipeline():
         """
         Define a hook to run before the DAG file is generated and submitted.
 
-        Note, this method should take no arguments, and should be over-written in the 
-        specific pipeline implementation if required.
+        Note, this method should be over-written in the specific pipeline implementation 
+        if required.
+        It allows the `dryrun` option to be specified in order to only print the commands
+        rather than run them.
         """
         pass
 

@@ -10,22 +10,10 @@ import git
 
 from .ini import RunConfiguration
 from asimov import config
-# from asimov import logging
+from asimov.utils import set_directory
 
 class AsimovFileNotFound(FileNotFoundError):
     pass
-
-class MetaRepository():
-
-    def __init__(self, directory):
-        self.directory = directory
-        os.chdir(directory)
-        repos_list = glob.glob("*")
-        self.repos = {event: os.path.join(directory, event) for event in repos_list}
-
-    def get_repo(self, event):
-        return EventRepo(self.repos[event])
-
 
 class EventRepo():
     """
@@ -172,18 +160,18 @@ class EventRepo():
         """
         Find the time file in this repository.
         """
-        os.chdir(os.path.join(self.directory, category))
-        try:
-            gps_file = glob.glob("*gps*.txt")[0]
-            return gps_file
-        except IndexError:
-            raise AsimovFileNotFound
+
+        with set_directory(os.path.join(self.directory, category)):
+            try:
+                gps_file = glob.glob("*gps*.txt")[0]
+                return gps_file
+            except IndexError:
+                raise AsimovFileNotFound
 
     def find_coincfile(self, category="C01_offline"):
         """
         Find the coinc file for this calibration category in this repository.
         """
-        #os.chdir(os.path.join(self.directory, category))
         coinc_file = glob.glob(os.path.join(self.directory, category, "*coinc*.xml"))
         
         if len(coinc_file)>0:
@@ -206,7 +194,6 @@ class EventRepo():
         """
 
         self.update()
-        #os.chdir(os.path.join(self.directory, category))
         prods = glob.glob(f"{os.path.join(self.directory, category)}/{name}*.ini")
         return prods
 
@@ -278,32 +265,32 @@ class EventRepo():
             configs.append(str(os.path.join(event.data[f"{prod}_rundir"], "config.ini")))
 
 
-        os.chdir(os.path.join(self.directory, "Preferred", "PESummary_metafile"))
+        with set_directory(os.path.join(self.directory, "Preferred", "PESummary_metafile")):
 
-        command = ["summarycombine",
-                   "--webdir", f"/home/daniel.williams/public_html/LVC/projects/O3/preferred/{event.title}",
-                   "--samples", ]
-        command += samples
-        command += ["--labels"]
-        command += labels
-        command += ["--config"]
-        command += configs
-        command += ["--gw"]
+            command = ["summarycombine",
+                       "--webdir", f"/home/daniel.williams/public_html/LVC/projects/O3/preferred/{event.title}",
+                       "--samples", ]
+            command += samples
+            command += ["--labels"]
+            command += labels
+            command += ["--config"]
+            command += configs
+            command += ["--gw"]
 
-        dagman = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        out, err = dagman.communicate()
+            dagman = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            out, err = dagman.communicate()
 
-        print(out)
-        print(err)
+            print(out)
+            print(err)
 
-        copy(f"/home/daniel.williams/public_html/LVC/projects/O3/preferred/{event.title}/samples/posterior_samples.h5", os.path.join(self.directory, "Preferred", "PESummary_metafile"))
-        self.repo.git.add("Preferred/PESummary_metafile/posterior_samples.h5")
-        self.repo.git.commit("-m", "Updated the preferred sample metafile.")
-        self.repo.git.push()
-        time.sleep(15)
+            copy(f"/home/daniel.williams/public_html/LVC/projects/O3/preferred/{event.title}/samples/posterior_samples.h5", os.path.join(self.directory, "Preferred", "PESummary_metafile"))
+            self.repo.git.add("Preferred/PESummary_metafile/posterior_samples.h5")
+            self.repo.git.commit("-m", "Updated the preferred sample metafile.")
+            self.repo.git.push()
+            time.sleep(15)
 
-        event.labels += ["Preferred cleaned"]
-        event.issue_object.save()
+            event.labels += ["Preferred cleaned"]
+            event.issue_object.save()
 
         return True
 

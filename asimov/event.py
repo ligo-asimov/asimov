@@ -12,14 +12,13 @@ import networkx as nx
 from .ini import RunConfiguration
 from .git import EventRepo
 from .review import Review
-from asimov import config
+from asimov import config, logger
 from asimov.storage import Store
 
 from liquid import Liquid
 
 from ligo.gracedb.rest import GraceDb, HTTPError
 from copy import copy, deepcopy
-
 
 def update(d, u):
     """Recursively update a dictionary."""
@@ -85,8 +84,15 @@ class Event:
         if "working_directory" in kwargs:
             self.work_dir = kwargs['working_directory']
         else:
-            self.work_dir = None
+            self.work_dir = os.path.join(config.get("general", "rundir_default"), self.name)
+        if not os.path.exists(self.work_dir):
+            os.makedirs(self.work_dir)
 
+        if "ledger" in kwargs:
+            self.ledger = kwargs['ledger']
+        else:
+            self.ledger = None
+            
         if repository:
             if "git@" in repository or "https://" in repository:
                 self.repository = EventRepo.from_url(repository,
@@ -161,10 +167,10 @@ class Event:
         else:
             return False
 
-    def update_data(self):
-        if self.ledger:
-            self.ledger.events[self.name] = self.to_dict()
-        pass
+    # def update_data(self):
+    #     if ledger:
+    #         ledger.events[self.name] = self.to_dict()
+    #     pass
 
             
     def _check_required(self):
@@ -253,6 +259,8 @@ class Event:
            An event.
         """
         data = yaml.safe_load(data)
+        if "kind" in data:
+            data.pop("kind")
         if not {"name",} <= data.keys():
             raise DescriptionException(f"Some of the required parameters are missing from this issue.")
         if not repo and "repository" in data:
@@ -319,19 +327,24 @@ class Event:
 
 
         gid = self.meta['gid']
-        client = GraceDb(service_url=config.get("gracedb", "url"))
-        file_obj = client.files(gid, gfile)
 
-        with open("download.file", "w") as dest_file:
-            dest_file.write(file_obj.read().decode())
+        try:
+            client = GraceDb(service_url=config.get("gracedb", "url"))
+            file_obj = client.files(gid, gfile)
 
-        self.repository.add_file("download.file", destination,
-                                 commit_message = f"Downloaded {gfile} from GraceDB")
+            with open("download.file", "w") as dest_file:
+                dest_file.write(file_obj.read().decode())
+
+            self.repository.add_file("download.file", destination,
+                                     commit_message = f"Downloaded {gfile} from GraceDB")
+        except HTTPError as e:
+            logger.error(f"Unable to connect to GraceDB when attempting to download {gfile}. {e}")
+            raise HTTPError(e)
 
     def to_dict(self, productions=True):
         data = {}
         data['name'] = self.name
-
+        
         if self.repository.url:
             data['repository'] = self.repository.url
         else:
@@ -343,7 +356,6 @@ class Event:
         #    data['repository'] = self.repository.url
         #except AttributeError:
         #    pass
-        
         if productions:
             data['productions'] = []
             for production in self.productions:
@@ -363,7 +375,8 @@ class Event:
 
         if "issue" in data:
             data.pop("issue")
-
+        if "ledger" in data:
+            data.pop("ledger")
         return data
         
     def to_yaml(self):
@@ -553,7 +566,7 @@ class Production:
         """
         if key not in self.meta:
             self.meta[key] = value
-            self.event.issue_object.update_data()
+            self.event.ledger.update_event(self.event)
         else:
             raise ValueError
 
@@ -615,6 +628,9 @@ class Production:
         if "repository" in self.meta:
             dictionary['repository'] = self.repository.url
 
+        if "ledger" in dictionary:
+            dictionary.pop("ledger")
+            
         if not event:
             output = dictionary
         else:
@@ -774,7 +790,7 @@ class Production:
         return f"<Production {self.name} for {self.event} | status: {self.status}>"
 
 
-    def make_config(self, filename, template_directory=None):
+    def make_config(self, filename, template_directory=None, dryrun=False):
         """
         Make the configuration file for this production.
 
@@ -805,5 +821,8 @@ class Production:
         liq = Liquid(template_file)
         rendered = liq.render(production=self, config=config)
 
-        with open(filename, "w") as output_file:
-            output_file.write(rendered)
+        if not dryrun:
+            with open(filename, "w") as output_file:
+                output_file.write(rendered)
+        else:
+            print(rendered)

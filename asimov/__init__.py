@@ -54,17 +54,14 @@ except configparser.NoOptionError:
 
 
 try:
-    
     if config.get("ledger", "engine") == "gitlab":
         from .gitlab import GitlabLedger
         current_ledger = GitlabLedger()
     elif config.get("ledger", "engine") == "yamlfile":
         from .ledger import YAMLLedger
         current_ledger = YAMLLedger(config.get("ledger", "location"))
-
+    else:
+        current_ledger = None
 except FileNotFoundError:
     logger.error("Could not find a valid ledger file.")
-    #print("This does not seem to be a valid asimov project directory.")
-    #import sys
-    #sys.exit()
-    current_ledger = None
+    current_ledger = None 
