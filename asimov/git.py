@@ -56,8 +56,12 @@ class EventRepo():
         os.makedirs(os.path.join(location, "C01_offline"), exist_ok=True)
         with open(os.path.join(location, "C01_offline", ".gitkeep"), "w") as f:
             f.write(" ")
-        repo.git.add("C01_offline/.gitkeep")
-        repo.git.commit("-m", "Initial commit")
+        repo.git.add("./C01_offline/.gitkeep")
+        try:
+            repo.git.commit("-m", "Initial commit")
+        except git.exc.GitCommandError as e:
+            if "working tree clean" in e.stdout:
+                pass
         return cls(directory=location, url=location)
     
     @classmethod

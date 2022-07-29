@@ -772,8 +772,9 @@ class Production:
         name, pars = list(parameters.items())[0]
         # Check that pars is a dictionary
         if not isinstance(pars, dict):
-            parameters.pop("event")
-            return cls(event=event, **parameters)
+            if "event" in parameters:
+                parameters.pop("event")
+            return cls(event=event,  **parameters)
         
         # Check all of the required parameters are included
         if not {"status", "pipeline"} <= pars.keys():
