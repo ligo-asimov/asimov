@@ -120,6 +120,11 @@ class Event:
         else:
             self.ledger = None
 
+        if "ledger" in kwargs:
+            self.ledger = kwargs['ledger']
+        else:
+            self.ledger = None
+            
         if repository:
             if "git@" in repository or "https://" in repository:
                 self.repository = EventRepo.from_url(
@@ -894,6 +899,10 @@ class Production:
         if "productions" in dictionary:
             dictionary.pop("productions")
 
+
+        if "ledger" in dictionary:
+            dictionary.pop("ledger")
+            
         if not event:
             output = dictionary
         else:
