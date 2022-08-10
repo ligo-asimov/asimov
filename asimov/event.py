@@ -304,6 +304,17 @@ class Event:
             data.pop("kind")
         if not {"name",} <= data.keys():
             raise DescriptionException(f"Some of the required parameters are missing from this issue.")
+
+        try:
+            calibration = data["calibration"]
+        except ValueError:
+            calibration = {}
+
+        if calibration.keys() != data['interferometers']:
+            # We need to fetch the calibration data
+            from asimov.utils import find_calibrations
+            data["calibration"] = find_calibrations(event['time'])
+        
         if not repo and "repository" in data:
             data.pop("repository")
         event = cls.from_dict(data, issue=issue, update=update)
