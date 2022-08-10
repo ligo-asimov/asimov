@@ -16,7 +16,7 @@ import asimov.event
 @click.option("--file", "-f", 
               help="Location of the file containing the ledger items.")
 @click.option("--event", "-e",
-              help="The event which the ledger items should be applied to (e.g. for analyses)"
+              help="The event which the ledger items should be applied to (e.g. for analyses)",
               default=None)
 def apply(file, event):
 
