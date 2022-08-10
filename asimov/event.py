@@ -266,7 +266,7 @@ class Event:
 
         try:
             calibration = data["calibration"]
-        except ValueError:
+        except KeyError:
             calibration = {}
 
         if "productions" in data:
