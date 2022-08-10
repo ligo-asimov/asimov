@@ -41,9 +41,9 @@ def apply(file, event):
             document.pop("kind")
             if not event:
                 prompt = "Which event should these be applied to?"
-                event = click.prompt(prompt)
+                event = str(click.prompt(prompt))
 
-            event = ledger.get_event(event)
-            production = asimov.event.Production.from_dict(document, event=event)
-            event.add_production(production)
-            ledger.update_event(event)
+            event_o = ledger.get_event(event)
+            production = asimov.event.Production.from_dict(document, event=event_o)
+            event_o.add_production(production)
+            ledger.update_event(event_o)
