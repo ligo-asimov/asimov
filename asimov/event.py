@@ -370,6 +370,18 @@ class Event:
                 data['productions'] = []
         else:
             data['productions'] = []
+
+            
+        if "interferometers" in data and "event time" in data:
+            
+            if calibration.keys() != data['interferometers']:
+                # We need to fetch the calibration data
+                from asimov.utils import find_calibrations
+                data["calibration"] = find_calibrations(data['event time'])
+        
+        if not repo and "repository" in data:
+            data.pop("repository")
+        event = cls.from_dict(data, issue=issue, update=update)
         
         if issue:
             event.issue_object = issue
