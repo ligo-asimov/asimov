@@ -291,12 +291,6 @@ class Event:
             event.issue_object = issue
             event.from_notes()
 
-        #for production in data['productions']:
-        #    try:
-        #        event.add_production(
-        #            Production.from_dict(production, event=event, issue=issue))
-        #    except DescriptionException as error:
-        #        error.submit_comment()
         return event
 
     @classmethod

@@ -15,7 +15,10 @@ import asimov.event
 @click.command()
 @click.option("--file", "-f", 
               help="Location of the file containing the ledger items.")
-def apply(file):
+@click.option("--event", "-e",
+              help="The event which the ledger items should be applied to (e.g. for analyses)"
+              default=None)
+def apply(file, event):
 
     if file[:4] == "http":
         r = requests.get(file)
@@ -33,7 +36,11 @@ def apply(file):
         
     if quick_parse['kind'] == "analysis":
         quick_parse.pop("kind")
-        event = ledger.get_event(quick_parse['event'])
+        if not event:
+            prompt = "Which event should these be applied to?"
+            event = click.prompt(prompt)
+
+        event = ledger.get_event(event)
         production = asimov.event.Production.from_dict(quick_parse, event=event)
         event.add_production(production)
         ledger.update_event(event)
