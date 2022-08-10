@@ -788,6 +788,10 @@ class Production:
         if not isinstance(pars, dict):
             if "event" in parameters:
                 parameters.pop("event")
+
+            if not "status" in parameters:
+                parameters['status'] = "ready"
+                
             return cls(event=event,  **parameters)
         
         # Check all of the required parameters are included
