@@ -74,10 +74,18 @@ $ asimov event create GW150914
 ```
 
 Many analyses can be run on a single event (these are called "productions" in asimov parlence).
-You can add a new lalinference production to an event as such:
+We can add some pre-configured analyses (the same set of analyses which were used for the GWTC-3 catalogue) by running
+
 ```
-$ asimov production create GW150914 lalinference
+$ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/analyses/gwtc3-default.yaml -e GW150914
 ```
+Note that if you omit the `-e` argument asimov will ask which event the analyses should be applied to.
+
+Alternatively, you can add analyses at the command line, for example you can add a new lalinference production to an event using
+```
+$ asimov production create GW150914 lalinference --approximant IMRPhenomPv2
+```
+
 For a full description of the workflow management process see the documentation.
 
 
