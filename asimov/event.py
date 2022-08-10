@@ -319,6 +319,12 @@ class Event:
             data.pop("repository")
         event = cls.from_dict(data, issue=issue, update=update)
 
+        if "productions" in data:
+            if isinstance(data['productions'], type(None)):
+                data['productions'] = []
+        else:
+            data['productions'] = []
+        
         if issue:
             event.issue_object = issue
             event.from_notes()
