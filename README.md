@@ -117,39 +117,16 @@ $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/events/gwtc-2-1/GW
 This downloads the settings which were used for analysing GW150914 for the GWTC-2.1 catalogue paper, and stores them in the ledger file in the project (`ledger.yml`).
 
 Many analyses can be run on a single event (these are called "productions" in asimov parlence).
-We can add some pre-configured analyses by downloading some analysis configuration settings.
+We can add some pre-configured analyses (the same set of analyses which were used for the GWTC-3 catalogue) by running
 
 ```
-$ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/analyses/production-default.yaml -e GW150914_095045
+$ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/analyses/gwtc3-default.yaml -e GW150914
 ```
 Note that if you omit the `-e` argument asimov will ask which event the analyses should be applied to.
 
-
-You can now build and submit your jobs to the cluster.
-First use `asimov manage build` to create the configuration files for each analysis:
+Alternatively, you can add analyses at the command line, for example you can add a new lalinference production to an event using
 ```
-$ asimov manage build
-```
-$ asimov production create GW150914 lalinference
-```
-$ asimov manage submit
-```
-
-It will normally take a long time for a parameter estimation job to finish, but you can get asimov to check up on it by running
-```
-$ asimov monitor
-```
-If the job is finished `asimov` will start post-processing using `PESummary`, and if it's fallen over it will attempt to fix the problem and resubmit it to the cluster.
-If the post-processing has finished it will move the results to a read-only directory.
-
-You can also set the asimov monitor to automatically check the status of the job every 15 minutes by running 
-```
-$ asimov start
-```
-which will automatically start any post-processing, and start any jobs once their dependencies are met.
-You can stop this automatic monitoring process any time by running
-```
-$ asimov stop
+$ asimov production create GW150914 lalinference --approximant IMRPhenomPv2
 ```
 
 For a full description of the workflow management process see the documentation.
