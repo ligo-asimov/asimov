@@ -28,19 +28,22 @@ def apply(file, event):
         with open(file, "r") as apply_file:
             data = apply_file.read()
 
-    quick_parse = yaml.safe_load(data) # Load as a dictionary so we can identify the object type it contains
-        
-    if quick_parse['kind'] == "event":
-        event = asimov.event.Event.from_yaml(data)
-        ledger.update_event(event)
-        
-    if quick_parse['kind'] == "analysis":
-        quick_parse.pop("kind")
-        if not event:
-            prompt = "Which event should these be applied to?"
-            event = click.prompt(prompt)
+    quick_parse = yaml.safe_load_all(data) # Load as a dictionary so we can identify the object type it contains
 
-        event = ledger.get_event(event)
-        production = asimov.event.Production.from_dict(quick_parse, event=event)
-        event.add_production(production)
-        ledger.update_event(event)
+    for document in quick_parse:
+
+        if document['kind'] == "event":
+            document.pop("kind")
+            event = asimov.event.Event.from_yaml(yaml.dump(document))
+            ledger.update_event(event)
+
+        if document['kind'] == "analysis":
+            document.pop("kind")
+            if not event:
+                prompt = "Which event should these be applied to?"
+                event = click.prompt(prompt)
+
+            event = ledger.get_event(event)
+            production = asimov.event.Production.from_dict(document, event=event)
+            event.add_production(production)
+            ledger.update_event(event)
