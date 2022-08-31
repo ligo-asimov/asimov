@@ -10,11 +10,7 @@ from asimov import config
 from asimov import gitlab
 
 from asimov.utils import find_calibrations
-
-from asimov.pipelines.bayeswave import BayesWave
-from asimov.pipelines.lalinference import LALInference
-from asimov.pipelines.rift import Rift
-from asimov.pipelines.bilby import Bilby
+from asimov.pipelines import known_pipelines
 
 
 frametypes= {"L1": "L1_HOFT_CLEAN_SUB60HZ_C01",
@@ -33,11 +29,6 @@ The following calibration envelopes have been found.
 
 
 ACTIVE_STATES = {"ready", "running", "stuck", "finished", "processing", "stop"}
-
-known_pipelines = {"bayeswave": BayesWave,
-                   "bilby": Bilby,
-                   "rift": Rift,
-                   "lalinference": LALInference}
 
 
 def add_data(event, yaml_data, json_data=None):

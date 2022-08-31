@@ -40,6 +40,8 @@ config_locations.reverse()
 
 config.read([conffile for conffile in config_locations])
 
+
+
 try:
 
     if config.get("general", "logger") == "file":
@@ -51,7 +53,6 @@ try:
 except configparser.NoOptionError:
     from .logging import AsimovLogger
     logger = AsimovLogger(logfile="asimov.log")
-
 
 try:
     if config.get("ledger", "engine") == "gitlab":

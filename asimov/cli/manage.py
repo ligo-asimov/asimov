@@ -6,9 +6,9 @@ import os
 import pathlib
 import click
 
-from asimov.cli import known_pipelines
 from asimov import config, logger
 from asimov import current_ledger as ledger
+from asimov.pipelines import known_pipelines
 
 from asimov import gitlab
 from asimov.event import Event, DescriptionException, Production
@@ -129,10 +129,8 @@ def resultslinks(event, update, root):
     """
     Find all available results for a given event.
     """
-    server, repository = connect_gitlab()
-    events = gitlab.find_events(repository, milestone=config.get("olivaw", "milestone"), subset=[event], update=update, repo=False)
-    for event in events:
-        click.secho(f"{event.title}")
+    for event in current_ledger.get_event(event):
+        click.secho(f"{event.name}")
         for production in event.productions:
             try:
                 for result, meta in production.results().items():

@@ -53,13 +53,28 @@ test-python-39:
     - python -m unittest discover tests/
 #    - coverage report -m
     
+# pages:
+#   stage: build
+#   script:
+#   - pip install -r docs-requirements.txt
+#   - pip install -r requirements.txt
+#   - pip install .
+#   - sphinx-build -b html docs/source public
+#   artifacts:
+#     paths:
+#     - public
+#   only:
+#   - master
+
+# Build docs for multiple code versions
 pages:
   stage: build
   script:
   - pip install -r docs-requirements.txt
   - pip install -r requirements.txt
   - pip install .
-  - sphinx-build -b html docs/source public
+  - sphinx-multiversion docs/source public
+  - echo "<!DOCTYPE html><html><head><title>Redirecting to master branch</title><meta charset=\"utf-8\"><meta http-equiv=\"refresh\" content=\"0; url=./master/index.html\">    <link rel=\"canonical\" href=\"https://asimov.docs.ligo.org/asimov/master/index.html\"></head></html>" > public/index.html 
   artifacts:
     paths:
     - public

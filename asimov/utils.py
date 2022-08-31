@@ -4,6 +4,7 @@ from asimov import logger
 import os
 import glob
 import numpy as np
+import collections
 
 @contextmanager
 def set_directory(path: (Path, str)):
@@ -52,3 +53,11 @@ def find_calibrations(time):
             "V1": virgo}
 
 
+def update(d, u):
+    """Recursively update a dictionary."""
+    for k, v in u.items():
+        if isinstance(v, collections.abc.Mapping):
+            d[k] = update(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d

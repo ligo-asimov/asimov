@@ -9,7 +9,7 @@ from flask import Flask
 
 from flask.json import JSONEncoder
 from datetime import date
-
+from . import logging
 from . import basic
 
 import asimov.server.ledger
@@ -42,6 +42,7 @@ def create_app():
     
     app.json_encoder = CustomJSONEncoder
 
+    app.register_blueprint(logging.bp)
     app.register_blueprint(basic.bp)
     
     app.register_blueprint(asimov.server.ledger.events_bp)

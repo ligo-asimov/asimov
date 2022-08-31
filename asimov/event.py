@@ -14,6 +14,7 @@ from .git import EventRepo
 from .review import Review
 from asimov import config, logger
 from asimov.storage import Store
+from asimov.pipelines import known_pipelines
 
 from liquid import Liquid
 
@@ -510,10 +511,6 @@ class Production:
                 self.psds[ifo] = psd
 
         self.category = config.get("general", "calibration_directory")
-        if "needs" in self.meta:
-            self.dependencies = self._process_dependencies(self.meta['needs'])
-        else:
-            self.dependencies = None
 
     def __hash__(self):
         return int(f"{hash(self.name)}{abs(hash(self.event.name))}")
@@ -828,14 +825,19 @@ class Production:
         else:
             template = f"{self.pipeline.name}.ini"
 
-        try:
-            template_directory = config.get("templating", "directory")
-            template_file = os.path.join(f"{template_directory}", template)
-            if not os.path.exists(template_file):
+        pipeline = known_pipelines[self.pipeline]
+        if hasattr("config_template", pipeline):
+            template_file = pipeline.config_template
+        else:
+            try:
+                template_directory = config.get("templating", "directory")
+                template_file = os.path.join(f"{template_directory}", template)
+                if not os.path.exists(template_file):
                 raise Exception
-        except:
-            from pkg_resources import resource_filename
-            template_file = resource_filename("asimov", f'configs/{template}')
+            except:
+                from pkg_resources import resource_filename
+                template_file = resource_filename("asimov", f'configs/{template}')
+        
         config_dict = {s: dict(config.items(s)) for s in config.sections()}
 
         liq = Liquid(template_file)

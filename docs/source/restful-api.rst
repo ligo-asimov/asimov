@@ -10,12 +10,40 @@ You can find a detailed listing of all of the available endpoints in the :ref:`r
 This page shows some basic examples of how to access the API using ``curl`` and the python ``requests`` library.
 
 
+
 Basics
 ------
 
 Asimov provides access to some basic information about the system it's running on via the API.
 
 * :ref:`routingtable`
+
+Logging
+------
+
+Asimov provides an interface for displaying and recording logging messages from both asimov itself and also the various pipelines it handles.
+
+Endpoints
+^^^^^^^^^
+
+
+.. autoflask:: asimov.server:create_app()
+   :undoc-static:
+   :blueprints: logging
+
+
+
+Basics
+------
+
+Asimov provides access to some basic information about the system it's running on via the API.
+
+Endpoints
+^^^^^^^^^
+
+.. autoflask:: asimov.server:create_app()
+   :undoc-static:
+   :blueprints: asimov
 
 
 Productions
@@ -26,12 +54,6 @@ Every analysis is attached to an event, which represents an individual gravitati
 Normally a production will inherit most of its settings from the event, but these can be over-loaded for each individual production.
 For example, the event time will be stored within the event, but if an earlier start time was desired for a single analysis this can be specified on the production.
 
-Endpoints
-^^^^^^^^^
-
-.. autoflask:: asimov.server:create_app()
-   :undoc-static:
-   :blueprints: asimov
 
 
 Asimov exposes API endpoints for viewing and creating productions, in addition to changing the state of each production (e.g. starting or stopping an analysis).
@@ -204,3 +226,5 @@ Monitoring
 
 .. autoflask:: asimov.server:create_app()
    :blueprints: monitor
+
+* :ref:`routingtable`
