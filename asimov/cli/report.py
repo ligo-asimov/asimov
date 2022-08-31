@@ -15,8 +15,8 @@ tz = pytz.timezone('Europe/London')
 import otter
 import otter.bootstrap as bt
 
+from asimov import current_ledger
 from asimov.cli import known_pipelines
-from asimov import gitlab
 from asimov import config
 
 @click.group()
@@ -31,26 +31,39 @@ def html(event, webdir):
     Return the ledger for a given event.
     If no event is specified then the entire production ledger is returned.
     """
-    server, repository = connect_gitlab()
+
+    events = current_ledger.get_event(event)
+
     if not webdir:
-        webdir = config.get("report", "report_root")
-    click.echo("Getting events...")
-    events = gitlab.find_events(repository,
-                                milestone=config.get("olivaw", "milestone"),
-                                subset=[event],
-                                repo=False,
-                                update=False)
-    click.echo("Got events")
-    if len(glob.glob("asimov.conf"))>0:
-        config_file = "asimov.conf"
-    else:
-        config_file = None
+        webdir = config.get("general", "webroot")
 
     report = otter.Otter(f"{webdir}/index.html", 
                          author="Olivaw", 
                          title="Olivaw PE Report", 
-                         author_email=config.get("report", "report_email"),
-                         config_file=config_file)
+                         #author_email=config.get("report", "report_email"),
+                         #config_file=config_file
+    )
+    with report:
+
+        style = """
+<style>
+        .review-deprecated, .status-cancelled, .review-rejected {
+        display: none;
+        }
+
+        .event-data {
+        margin-bottom: 2rem;
+        }
+
+        .asimov-sidebar {
+        position: sticky;
+        top: 4rem;
+        height: calc(100vh - 4rem);
+        overflow-y: auto;
+        }
+</style>
+        """
+        report + style
 
     with report:
         navbar = bt.Navbar("Asimov", background="navbar-dark bg-primary")
@@ -61,124 +74,72 @@ def html(event, webdir):
 
         time + f"Report generated at {str(datetime.now(tz))}"
         report + time
-
-    cards = []
-    container = bt.Container()
-    container + "# All PE Productions"
+    events = sorted(events, key = lambda a: a.name)
+    cards = "<div class='container-fluid'><div class='row'><div class='col-12 col-md-3 col-xl-2  asimov-sidebar'>"
+    
+    toc = """<nav><ul class="list-unstyled">"""
     for event in events:
-        click.secho(event.title, bold=True)
+        toc += f"""<li><a href="#card-{event.name}">{event.name}</a></li>"""
+        
+    toc += "</ul></nav>"
 
-        event_report =  otter.Otter(f"{webdir}/{event.title}.html", 
-                         author="Olivaw", 
-                         title=f"Olivaw PE Report | {event.title}", 
-                         author_email="daniel.williams@ligo.org", 
-                                    config_file=config_file)
+    cards += toc
+    cards += """</div><div class='events col-md-9 col-xl-10' data-isotope='{ "itemSelector": ".production-item", "layoutMode": "fitRows" }'>"""
+    status_map = {"cancelled": "light",
+                  "finished": "success",
+                  "uploaded": "success",
+                  "processing": "primary",
+                  "running": "primary",
+                  "stuck": "warning",
+                  "restart": "secondary",
+                  "ready": "secondary",
+                  "wait": "light",
+                  "stop": "danger",
+                  "manual": "light",
+                  "stopped": "light"}
 
-        with event_report:
-            navbar = bt.Navbar("Asimov", background="navbar-dark bg-primary")
-            event_report + navbar
+    review_map = {"deprecated": "warning",
+                  "none": "default",
+                  "approved": "success",
+                  "rejected": "danger",
+                  "checked": "info"
+                  }
 
-        card = bt.Card(title=f"<a href='{event.title}.html'>{event.title}</a>")
 
-        toc = bt.Container()
+    for event in events:
+        # This is a quick test to try and improve readability
 
-        for production in event.productions:
-            toc + f"* [{production.name}](#{production.name}) | {production.pipeline} |"# + bt.Badge({production.pipeline}, "info")
 
-        with event_report:
-            title_c = bt.Container()
-            title_c + f"#{event.title}"
-            event_report + title_c
-            event_report + toc
+        card = f"""
+<div class="card event-data" id="card-{event.name}">
+<div class="card-body">
+<h3 class="card-title">{event.name}</h3>
+"""
 
-        production_list = bt.ListGroup()
-        for production in event.productions:
-            click.echo(f"{event.title}\t{production.name}")
-            if production.pipeline.lower() in known_pipelines:
-                    pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
+        prods = {}
+        for prod in event.productions:
+            prods[prod.name] = prod
 
-            event_log =  otter.Otter(f"{webdir}/{event.title}-{production.name}.html", 
-                                     author="Olivaw", 
-                                     title=f"Olivaw PE Report | {event.title} | {production.name}", 
-                                     author_email="daniel.williams@ligo.org", 
-                                     config_file=config_file)
+        card += """<div class="list-group">"""
 
+
+
+        for production_name, production in prods.items():
+
+            card += production.html()
             
+        card += """</div>"""
+        
+        # card += """<p class="card-text">Card text</p>""" # 
+        card += """
+</div>
+</div>"""
+        cards += card
 
-            
-            
-            status_map = {"cancelled": "light",
-                          "finished": "success",
-                          "uploaded": "success",
-                          "processing": "primary",
-                          "running": "primary",
-                          "stuck": "warning",
-                          "restart": "secondary",
-                          "ready": "secondary",
-                          "wait": "light",
-                          "stop": "danger",
-                          "manual": "light",
-                          "stopped": "light"}
-            with event_report:
-                container = bt.Container()
-                container + f"## {production.name}"
-                container + f"<a id='{production.name}'/>"
-                container + "### Ledger"
-                container + production.meta
-
-            if production.pipeline.lower() == "bilby":
-                container +f"### Progress"
-                progress_line = []
-                procs = pipe.check_progress()
-                for proc, val in procs.items():
-                    container + f"- {proc.split('_')[-1]}\t{val[0]}\t{val[1]}"
-                    progress_line.append(f"{val[1]}")
-            else:
-                progress_line = []
-            if production.status.lower() == "running":
-                progress = str(bt.Badge("|".join(progress_line)))
-            else:
-                progress = ""
-
-            if production.status.lower() == "uploaded":
-                link = os.path.join("https://ldas-jobs.ligo.caltech.edu", config.get('general', 'webroot').replace("/home/", "~").replace("public_html/", ""), production.event.name, production.name,  "results", "home.html")
-                item_text = f"<a href='{link}'>{production.name}</a>" 
-            else:
-                item_text = f"<a href='{event.title}.html#{production.name}'>{production.name}</a>" 
-            production_list.add_item(item_text
-                                     + str(bt.Badge(f"{production.pipeline}", "info")) 
-                                     + progress
-                                     + str(bt.Badge(f"{production.status}")), 
-                                     context=status_map[production.status])
-
-            # logs = pipe.collect_logs()
-            # container + f"### Log files"
-            # container + f"<a href='{event.title}-{production.name}.html'>Log file page</a>"
-            # with event_log:
-
-            #     for log, message in logs.items():
-            #         log_card = bt.Card(title=f"{log}")
-            #         log_card.add_content("<div class='card-body'><pre>"+message+"</pre></div>")
-            #         event_log + log_card
-
-            with event_report:
-                event_report + container
-
-        card.add_content(production_list)
-        cards.append(card)
-
-
-
+    cards += "</div></div>"
     with report:
-        if len(cards) == 1:
-            report + card
-        else:
-            for i, card in enumerate(cards):
-                if i%2==0:
-                    deck = bt.CardDeck()
-                deck + card
-                if i%2==1:
-                    report + deck
+        report + cards
+
 
 @click.argument("event", default=None, required=False)
 @report.command()
@@ -192,24 +153,18 @@ def status(event):
        The name of the event.
 
     """
-    server, repository = connect_gitlab()
-
-    events = gitlab.find_events(repository,
-                                milestone=config.get("olivaw", "milestone"),
-                                subset=[event],
-                                update=False,
-                                repo=False)
-    for event in events:
-        click.secho(f"{event.title:30}", bold=True)
-        if len(event.event_object.meta['productions'])>0:
+    for event in current_ledger.get_event(event):
+        click.secho(f"{event.name:30}", bold=True)
+        if len(event.productions)>0:
             click.secho("\tProductions", bold=True)
-            for production in event.event_object.meta['productions']:
-                click.echo(f"\t\t{list(production.keys())[0]}")
-        if len(event.event_object.get_all_latest())>0:
-            click.secho("\tJobs waiting", bold=True)
-            waiting = event.event_object.get_all_latest()
+            for production in event.productions:
+                click.echo(f"\t- {production.name} " + click.style(f"{production.pipeline}") + " " + click.style(f"{production.status}"))
+        if len(event.get_all_latest())>0:
+            click.secho("\tProductions waiting: ", bold=True, nl=False)
+            waiting = event.get_all_latest()
             for awaiting in waiting:
-                click.echo(f"\t\t{awaiting.name}\t{awaiting.status}")
+                click.echo(f"{awaiting.name} ", nl=False)
+            click.echo("")
 
 @click.option("--yaml", "yaml_f", default=None, help="A YAML file to save the ledger to.")
 @click.argument("event", default=None, required=False)
@@ -219,18 +174,9 @@ def ledger(event, yaml_f):
     Return the ledger for a given event.
     If no event is specified then the entire production ledger is returned.
     """
-
-    server, repository = connect_gitlab()
-
-    events = gitlab.find_events(repository,
-                                milestone=config.get("olivaw", "milestone"),
-                                subset=[event],
-                                update=False,
-                                repo=False)
-
     total = []
-    for event in events:
-        total.append(yaml.safe_load(event.event_object.to_yaml()))
+    for event in current_ledger.get_event(event):
+        total.append(yaml.safe_load(event.to_yaml()))
 
     click.echo(yaml.dump(total))
 
