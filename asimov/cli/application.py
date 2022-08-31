@@ -37,7 +37,7 @@ def apply(file, event):
             event = asimov.event.Event.from_yaml(yaml.dump(document))
             ledger.update_event(event)
 
-        if document['kind'] == "analysis":
+        elif document['kind'] == "analysis":
             document.pop("kind")
             if not event:
                 prompt = "Which event should these be applied to?"
