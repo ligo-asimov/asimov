@@ -3,22 +3,18 @@ import configparser
 import os
 import subprocess
 import time
-import warnings
 
+
+import warnings
 warnings.filterwarnings("ignore", module="htcondor")
 
 
-import htcondor  # NoQA
-
-from asimov import utils  # NoQA
-from asimov import config, logger, logging, LOGGER_LEVEL  # NoQA
-
-import otter  # NoQA
-from .storage import Store  # NoQA
+import htcondor
 
 from asimov import config, logger
 from .storage import Store
 from asimov import logging
+
 
 class PipelineException(Exception):
     """Exception for pipeline problems."""
@@ -90,9 +86,8 @@ class Pipeline:
     """
     Factory class for pipeline specification.
     """
-
     name = "Asimov Pipeline"
-
+    
     def __init__(self, production, category=None):
         self.production = production
 
@@ -105,7 +100,10 @@ class Pipeline:
             self.category = category
         self.logger = logger
         
+    def __repr__(self):
+        return self.name
 
+        
     def detect_completion(self):
         """
         Check to see if the job has in fact completed.
