@@ -184,7 +184,7 @@ class Bilby(Pipeline):
         ]
 
         if dryrun:
-            print(command)
+            print(" ".join(command))
         else:
             self.logger.info(" ".join(command))
             pipe = subprocess.Popen(command, 
@@ -261,7 +261,7 @@ class Bilby(Pipeline):
                                    os.path.join(self.production.rundir, "submit", dag_filename)]
 
             if dryrun:
-                print(command)
+                print(" ".join(command))
             else:
                 dagman = subprocess.Popen(command,
                                   stdout=subprocess.PIPE,
