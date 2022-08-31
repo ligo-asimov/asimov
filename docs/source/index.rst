@@ -33,7 +33,7 @@ Asimov can provide both machine-readible and human-friendly reports of all jobs 
 Quick installation
 ------------------
 
-Asimov is available on ``pypi`` and can be installed via ``pip install ligo-asimov``.
+Asimov is available on ``pypi`` and can be installed via ``pip install asimov``.
 
 
 
