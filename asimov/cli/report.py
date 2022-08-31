@@ -11,8 +11,8 @@ from pkg_resources import resource_filename
 import otter
 import otter.bootstrap as bt
 
+from asimov import current_ledger
 from asimov.cli import known_pipelines
-from asimov import gitlab
 from asimov import config
 
 @click.group()
@@ -37,14 +37,33 @@ def html(event, webdir):
     if not webdir:
         webdir = config.get("general", "webroot")
 
-    report = otter.Otter(
-        f"{webdir}/index.html",
-        author="Asimov",
-        title="Asimov project report",
-        theme_location=resource_filename("asimov.cli", "report-theme"),
-        config_file="asimov.conf",
+    report = otter.Otter(f"{webdir}/index.html", 
+                         author="Olivaw", 
+                         title="Olivaw PE Report", 
+                         #author_email=config.get("report", "report_email"),
+                         #config_file=config_file
     )
     with report:
+
+        style = """
+<style>
+        .review-deprecated, .status-cancelled, .review-rejected {
+        display: none;
+        }
+
+        .event-data {
+        margin-bottom: 2rem;
+        }
+
+        .asimov-sidebar {
+        position: sticky;
+        top: 4rem;
+        height: calc(100vh - 4rem);
+        overflow-y: auto;
+        }
+</style>
+        """
+        report + style
 
         style = """
 <style>
@@ -117,22 +136,65 @@ def html(event, webdir):
     events = sorted(events, key=lambda a: a.name)
     cards = "<div class='container-fluid'><div class='row'><div class='col-12 col-md-3 col-xl-2  asimov-sidebar'>"
 
-    toc = """<nav><h6>Subjects</h6><ul class="list-unstyled">"""
+        time + f"Report generated at {str(datetime.now(tz))}"
+        report + time
+    events = sorted(events, key = lambda a: a.name)
+    cards = "<div class='container-fluid'><div class='row'><div class='col-12 col-md-3 col-xl-2  asimov-sidebar'>"
+    
+    toc = """<nav><ul class="list-unstyled">"""
     for event in events:
         toc += f"""<li><a href="#card-{event.name}">{event.name}</a></li>"""
-
+        
     toc += "</ul></nav>"
 
     cards += toc
-    cards += """</div><div class='events col-md-9 col-xl-10'
-    data-isotope='{ "itemSelector": ".production-item", "layoutMode": "fitRows" }'>"""
+    cards += """</div><div class='events col-md-9 col-xl-10' data-isotope='{ "itemSelector": ".production-item", "layoutMode": "fitRows" }'>"""
+    status_map = {"cancelled": "light",
+                  "finished": "success",
+                  "uploaded": "success",
+                  "processing": "primary",
+                  "running": "primary",
+                  "stuck": "warning",
+                  "restart": "secondary",
+                  "ready": "secondary",
+                  "wait": "light",
+                  "stop": "danger",
+                  "manual": "light",
+                  "stopped": "light"}
+
+    review_map = {"deprecated": "warning",
+                  "none": "default",
+                  "approved": "success",
+                  "rejected": "danger",
+                  "checked": "info"
+                  }
+
 
     for event in events:
-        card = ""
         # This is a quick test to try and improve readability
-        card += event.html()
 
-        # card += """<p class="card-text">Card text</p>""" #
+
+        card = f"""
+<div class="card event-data" id="card-{event.name}">
+<div class="card-body">
+<h3 class="card-title">{event.name}</h3>
+"""
+
+        prods = {}
+        for prod in event.productions:
+            prods[prod.name] = prod
+
+        card += """<div class="list-group">"""
+
+
+
+        for production_name, production in prods.items():
+
+            card += production.html()
+            
+        card += """</div>"""
+        
+        # card += """<p class="card-text">Card text</p>""" # 
         card += """
 </div>
 </div>"""
@@ -141,10 +203,6 @@ def html(event, webdir):
     cards += "</div></div>"
     with report:
         report + cards
-
-    with report:
-        time = f"Report generated at {datetime.now(tz):%Y-%m-%d %H:%M}"
-        report + time
 
 
 @click.argument("event", default=None, required=False)
@@ -161,29 +219,16 @@ def status(event):
     """
     for event in current_ledger.get_event(event):
         click.secho(f"{event.name:30}", bold=True)
-        if len(event.productions) > 0:
-            click.secho("\tAnalyses", bold=True)
-            if len(event.productions) == 0:
-                click.echo("\t<NONE>")
+        if len(event.productions)>0:
+            click.secho("\tProductions", bold=True)
             for production in event.productions:
-                click.echo(
-                    f"\t- {production.name} "
-                    + click.style(f"{production.pipeline}")
-                    + " "
-                    + click.style(f"{production.status}")
-                )
-        if len(event.get_all_latest()) > 0:
-            click.secho(
-                "\tAnalyses waiting: ",
-                bold=True,
-            )
+                click.echo(f"\t- {production.name} " + click.style(f"{production.pipeline}") + " " + click.style(f"{production.status}"))
+        if len(event.get_all_latest())>0:
+            click.secho("\tProductions waiting: ", bold=True, nl=False)
             waiting = event.get_all_latest()
             for awaiting in waiting:
-                click.echo(
-                    f"{awaiting.name} ",
-                )
+                click.echo(f"{awaiting.name} ", nl=False)
             click.echo("")
-
 
 @click.option(
     "--yaml", "yaml_f", default=None, help="A YAML file to save the ledger to."

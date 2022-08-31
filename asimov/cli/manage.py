@@ -157,15 +157,13 @@ def results(event, update):
     Find all available results for a given event.
     """
     for event in ledger.get_event(event):
-        click.secho(f"{event.title}")
+        click.secho(f"{event.name}")
         for production in event.productions:
             click.echo(f"\t- {production.name}")
             try:
                 for result, meta in production.results().items():
-                    click.echo(
-                        f"- {production.event.name}/{production.name}/{result}, {production.results(result)}"
-                    )
-            except Exception:
+                    click.echo(f"- {production.event.name}/{production.name}/{result}, {production.results(result)}")
+            except:
                 click.echo("\t  (No results available)")
             # print(production.results())
 

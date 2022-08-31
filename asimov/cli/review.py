@@ -8,7 +8,8 @@ import click
 from asimov.cli import known_pipelines
 from asimov import gitlab
 from asimov import config
-
+from asimov import current_ledger
+from asimov.review import ReviewMessage
 @click.group()
 def review():
     """Add and view review information and sign-offs"""
@@ -26,11 +27,9 @@ def add(event, production, status, message):
     """
 
     for event in current_ledger.get_event(event):
-        production = [
-            production_o
-            for production_o in event.productions
-            if production_o.name == production
-        ][0]
+        production = [production_o
+                      for production_o in event.productions
+                      if production_o.name == production][0]
         click.secho(event.name, bold=True)
         click.secho(production.name)
         message = ReviewMessage(message=message, status=status, production=production)
@@ -38,7 +37,6 @@ def add(event, production, status, message):
 
         if hasattr(event, "issue_object"):
             production.event.update_data()
-
 
 @click.argument("production", default=None, required=False)
 @click.argument("event", default=None, required=False)
