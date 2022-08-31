@@ -99,6 +99,7 @@ class EventRepo:
 
             pathlib.Path(directory).mkdir(parents=True, exist_ok=True)
 
+            
         # Replace an https address with an ssh address
         if "https" in url:
             url = url.replace("https://", "git@")
