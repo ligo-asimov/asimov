@@ -14,7 +14,7 @@ from asimov import gitlab
 from asimov.event import Event, DescriptionException, Production
 from asimov.pipeline import PipelineException
 
-@click.group()
+@click.group(chain=True)
 def manage():
     pass
 
@@ -28,10 +28,10 @@ def build(event, dryrun):
     If no event is specified then all of the events will be processed.
     """
     for event in ledger.get_event(event):
-        click.echo(f"Working on {event.name}")
+        click.echo(f"● Working on {event.name}")
         ready_productions = event.get_all_latest()
         for production in ready_productions:
-            click.echo(f"\tWorking on production {production.name}")
+            click.echo(f"\tWorking on production {production.name}", nl=False)
             if production.status in {"running", "stuck", "wait", "finished", "uploaded", "cancelled", "stopped"}: continue
             try:
                 configuration = production.get_configuration()
@@ -92,6 +92,7 @@ def submit(event, update, dryrun):
                     except PipelineException:
                         logger.error("The pipeline failed to build a DAG file.",
                                      production=production)
+                        click.echo(click.style("●", fg="red") + f" Unable to submit {production.name}")
                     try:
                         pipe.submit_dag(dryrun=dryrun)
                         production.status = "running"

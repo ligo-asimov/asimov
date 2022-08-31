@@ -3,7 +3,8 @@ import click
 from asimov.cli import ACTIVE_STATES, known_pipelines
 from asimov import gitlab
 from asimov import config
-from asimov import logging
+from asimov import current_ledger as ledger
+from asimov import logger
 from asimov import condor
 
 @click.argument("event", default=None, required=False)
@@ -15,38 +16,31 @@ def monitor(event, update, dry_run):
     """
     Monitor condor jobs' status, and collect logging information.
     """
-    server, repository = connect_gitlab()
-    events = gitlab.find_events(repository,
-                                milestone=config.get("olivaw", "milestone"),
-                                subset=[event],
-                                update=update,
-                                repo=True)
-    
-    for event in events:
+    for event in ledger.get_event(event):
         stuck = 0
         running = 0
         ready = 0
         finish = 0
-        click.secho(f"{event.title}", bold=True)
+        click.secho(f"{event.name}", bold=True)
         on_deck = [production
                    for production in event.productions
                    if production.status.lower() in ACTIVE_STATES]
         for production in on_deck:
 
-            click.secho(f"\t{production.name}", bold=True)
+            click.echo(f"\t- " + click.style(f"{production.name}", bold=True) + click.style(f"[{production.pipeline}]", fg = "green"))
 
-            if not dry_run:
-                logger = logging.AsimovLogger(event=event.event_object)
-            else:
-                logger = None
-                
+            # Jobs marked as ready can just be ignored as they've not been stood-up
+            if production.status.lower() == "ready":
+                click.secho(f"  \t  ● {production.status.lower()}", fg="green")
+                continue
+            
             # Deal with jobs which need to be stopped first
             if production.status.lower() == "stop":
                 pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
                 if not dry_run:
                     pipe.eject_job()
                     production.status = "stopped"
-                    click.echo(f"\t\t{production.name} stopped")
+                    click.secho(f"  \tStopped", fg="red")
                 else:
                     click.echo("\t\t{production.name} --> stopped")
                 continue
@@ -84,9 +78,9 @@ def monitor(event, update, dry_run):
 
             except ValueError as e:
                 click.echo(e)
-                click.echo(f"\t\t{production.name}\t{production.status.lower()}")
+                click.echo(f"\t\t{production.status.lower()}")
                 if production.pipeline.lower() in known_pipelines:
-                    click.echo("Investigating...")
+                    #click.echo("Investigating...")
                     pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
 
                     if production.status.lower() == "stop":
@@ -128,7 +122,7 @@ def monitor(event, update, dry_run):
 
                 if production.status == "stuck":
                     event.state = "stuck"
-                production.event.issue_object.update_data()
+                ledger.update_event(event)
 
             if (running > 0) and (stuck == 0):
                 event.state = "running"
