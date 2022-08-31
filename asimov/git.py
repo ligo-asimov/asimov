@@ -10,6 +10,7 @@ import git
 
 from .ini import RunConfiguration
 from asimov import config
+from asimov import logger
 from asimov.utils import set_directory
 
 class AsimovFileNotFound(FileNotFoundError):
@@ -87,8 +88,13 @@ class EventRepo():
         if not directory:
             tmp = config.get("general", "git_default")
             directory = f"{tmp}/{name}"
+
+            if os.path.exists(directory):
+                return cls(directory, url, update=update)
+            
             pathlib.Path(directory).mkdir(parents=True, exist_ok=True)
 
+            
         # Replace an https address with an ssh address
         if "https" in url:
             url = url.replace("https://", "git@")
@@ -324,5 +330,7 @@ class EventRepo():
                 pass
             elif "Either specify the URL from the command-line or configure a remote repository using" in str(e):
                 pass
+            elif "Temporary failure in name resolution" in str(e):
+                logger.warning(f"Unable to update the repository for {self.event}")
             else:
                 raise e

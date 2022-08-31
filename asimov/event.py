@@ -97,7 +97,7 @@ class Event:
             if "git@" in repository or "https://" in repository:
                 self.repository = EventRepo.from_url(repository,
                                                      self.name,
-                                                     self.work_dir,
+                                                     directory=None,
                                                      update=update)
             else:
                 self.repository = EventRepo(repository)
@@ -831,15 +831,18 @@ class Production:
         try:
             template_directory = config.get("templating", "directory")
             template_file = os.path.join(f"{template_directory}", template)
+            if not os.path.exists(template_file):
+                raise Exception
         except:
             from pkg_resources import resource_filename
             template_file = resource_filename("asimov", f'configs/{template}')
-        
         config_dict = {s: dict(config.items(s)) for s in config.sections()}
 
         liq = Liquid(template_file)
         rendered = liq.render(production=self, config=config)
 
+        logger.info(f"[{self.event.name}/{self.name}] configuration created using {template_file} as a template")
+        
         if not dryrun:
             with open(filename, "w") as output_file:
                 output_file.write(rendered)
