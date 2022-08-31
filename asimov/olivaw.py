@@ -1,5 +1,7 @@
 import os
 import sys
+import collections
+import json
 
 # Ignore warnings from the condor module
 import warnings
@@ -11,6 +13,7 @@ import warnings
 warnings.filterwarnings("ignore", module="htcondor")
 
 from asimov import logging
+from asimov import current_ledger as ledger
 from asimov import condor
 import asimov.pipelines
 
@@ -39,11 +42,11 @@ def olivaw(ctx):
     """
 
     # Check that we're running in an actual asimov project
-    if not os.path.exists("asimov.conf") and ctx.invoked_subcommand != "init":
+
+    if not os.path.exists("asimov.conf"):
         # This isn't the root of an asimov project, let's fail.
         click.secho("This isn't an asimov project", fg="white", bg="red")
         sys.exit(1)
-    pass
 
 
 # Project initialisation

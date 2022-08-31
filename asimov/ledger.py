@@ -237,7 +237,7 @@ class YAMLLedger(Ledger):
         
     def get_event(self, event=None):
         if event:
-            return Event(**self.events[event], ledger=self)
+            return [Event(**self.events[event], ledger=self)]
         else:
             return [Event(**self.events[event], ledger=self) for event in self.events.keys()]
 
