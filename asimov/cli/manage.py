@@ -15,7 +15,6 @@ from asimov import gitlab
 from asimov.event import Event, DescriptionException, Production
 from asimov.pipeline import PipelineException
 
-
 @click.group(chain=True)
 def manage():
     """Perform management tasks such as job building and submission."""
@@ -31,26 +30,11 @@ def build(event, dryrun):
     If no event is specified then all of the events will be processed.
     """
     for event in ledger.get_event(event):
-        click.echo(f"Working on {event.name}")
+        click.echo(f"● Working on {event.name}")
         ready_productions = event.get_all_latest()
         for production in ready_productions:
-            logger.info(f"{event.name}/{production.name}")
-            click.echo(f"\tWorking on production {production.name}")
-            if production.status in {
-                "running",
-                "stuck",
-                "wait",
-                "finished",
-                "uploaded",
-                "cancelled",
-                "stopped",
-            }:
-                if dryrun:
-                    click.echo(
-                        click.style("●", fg="yellow")
-                        + f" {production.name} is marked as {production.status.lower()} so no action will be performed"
-                    )
-                continue  # I think this test might be unused
+            click.echo(f"\tWorking on production {production.name}", nl=False)
+            if production.status in {"running", "stuck", "wait", "finished", "uploaded", "cancelled", "stopped"}: continue
             try:
                 ini_loc = production.event.repository.find_prods(production.name, production.category)[0]
                 if not os.path.exists(ini_loc):
@@ -132,6 +116,7 @@ def submit(event, update, dryrun):
                     except PipelineException:
                         logger.error("The pipeline failed to build a DAG file.",
                                      production=production)
+                        click.echo(click.style("●", fg="red") + f" Unable to submit {production.name}")
                     try:
                         pipe.submit_dag(dryrun=dryrun)
                         production.status = "running"

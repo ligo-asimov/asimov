@@ -6,7 +6,8 @@ import click
 from asimov.cli import ACTIVE_STATES, known_pipelines
 from asimov import gitlab
 from asimov import config
-from asimov import logging
+from asimov import current_ledger as ledger
+from asimov import logger
 from asimov import condor
 
 @click.argument("event", default=None, required=False)
@@ -31,52 +32,23 @@ def monitor(ctx, event, update, dry_run, chain):
     """
     Monitor condor jobs' status, and collect logging information.
     """
-
-    logger.info("Running asimov monitor")
-
-    if chain:
-        logger.info("Running in chain mode")
-        ctx.invoke(manage.build, event=event)
-        ctx.invoke(manage.submit, event=event)
-
-    try:
-        # First pull the condor job listing
-        job_list = condor.CondorJobList()
-    except condor.htcondor.HTCondorLocateError:
-        click.echo(click.style("Could not find the condor scheduler", bold=True))
-        click.echo(
-            "You need to run asimov on a machine which has access to a"
-            "condor scheduler in order to work correctly, or to specify"
-            "the address of a valid sceduler."
-        )
-        sys.exit()
-
     for event in ledger.get_event(event):
         stuck = 0
         running = 0
         finish = 0
         click.secho(f"{event.name}", bold=True)
-        on_deck = [
-            production
-            for production in event.productions
-            if production.status.lower() in ACTIVE_STATES
-        ]
+        on_deck = [production
+                   for production in event.productions
+                   if production.status.lower() in ACTIVE_STATES]
         for production in on_deck:
 
-            logger.debug(f"Available analyses: {event}/{production.name}")
-
-            click.echo(
-                "\t- "
-                + click.style(f"{production.name}", bold=True)
-                + click.style(f"[{production.pipeline}]", fg="green")
-            )
+            click.echo(f"\t- " + click.style(f"{production.name}", bold=True) + click.style(f"[{production.pipeline}]", fg = "green"))
 
             # Jobs marked as ready can just be ignored as they've not been stood-up
             if production.status.lower() == "ready":
                 click.secho(f"  \t  ● {production.status.lower()}", fg="green")
-                logger.debug(f"Ready production: {event}/{production.name}")
                 continue
-
+            
             # Deal with jobs which need to be stopped first
             if production.status.lower() == "stop":
                 pipe = production.pipeline
@@ -84,7 +56,7 @@ def monitor(ctx, event, update, dry_run, chain):
                 if not dry_run:
                     pipe.eject_job()
                     production.status = "stopped"
-                    click.secho("  \tStopped", fg="red")
+                    click.secho(f"  \tStopped", fg="red")
                 else:
                     click.echo("\t\t{production.name} --> stopped")
                 continue
@@ -160,10 +132,12 @@ def monitor(ctx, event, update, dry_run, chain):
                     else:
                         running += 1
 
-            except (ValueError, AttributeError):
-                if production.pipeline:
-
-                    pipe = production.pipeline
+            except ValueError as e:
+                click.echo(e)
+                click.echo(f"\t\t{production.status.lower()}")
+                if production.pipeline.lower() in known_pipelines:
+                    #click.echo("Investigating...")
+                    pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
 
                     if production.status.lower() == "stop":
                         pipe.eject_job()
@@ -254,28 +228,8 @@ def monitor(ctx, event, update, dry_run, chain):
                             )
 
                 if production.status == "stuck":
-                    click.echo(
-                        "  \t  "
-                        + click.style("●", "yellow")
-                        + f" {production.name} is stuck"
-                    )
-
-            ledger.update_event(event)
-
-        all_productions = set(event.productions)
-        complete = {
-            production
-            for production in event.productions
-            if production.status in {"finished", "uploaded"}
-        }
-        others = all_productions - set(event.get_all_latest()) - complete
-        if len(others) > 0:
-            click.echo(
-                "The event also has these analyses which are waiting on other analyses to complete:"
-            )
-            for production in others:
-                needs = ", ".join(production.meta["needs"])
-                click.echo(f"\t{production.name} which needs {needs}")
+                    event.state = "stuck"
+                ledger.update_event(event)
 
         if chain:
             ctx.invoke(report.html)
