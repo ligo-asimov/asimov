@@ -288,3 +288,16 @@ class Pipeline():
 
     def check_progress(self):
         pass
+
+    def html(self):
+        """
+        Return an HTML representation of this pipeline object.
+        """
+
+        out = ""
+
+        out += """<div class="asimov-pipeline">"""
+        out += f"""<p class="asimov-pipeline-name">{self.name}</p>"""
+        out += """</div>"""
+        
+        return out

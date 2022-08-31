@@ -167,10 +167,10 @@ class Event:
         else:
             return False
 
-    # def update_data(self):
-    #     if ledger:
-    #         ledger.events[self.name] = self.to_dict()
-    #     pass
+    def update_data(self):
+        if self.ledger:
+            self.ledger.update_event(self)
+        pass
 
             
     def _check_required(self):
@@ -628,7 +628,7 @@ class Production:
             dictionary['name'] = self.name
         
         dictionary['status'] = self.status
-        dictionary['pipeline'] = self.pipeline.lower()
+        dictionary['pipeline'] = self.pipeline.name.lower()
         dictionary['comment'] = self.comment
 
         dictionary['review'] = self.review.to_dicts()
@@ -826,7 +826,7 @@ class Production:
         if "template" in self.meta:
             template = f"{self.meta['template']}.ini"
         else:
-            template = f"{self.pipeline}.ini"
+            template = f"{self.pipeline.name}.ini"
 
         try:
             template_directory = config.get("templating", "directory")
@@ -848,3 +848,38 @@ class Production:
                 output_file.write(rendered)
         else:
             print(rendered)
+
+    def html(self):
+        """
+        An HTML representation of this production.
+        """
+        production = self
+
+        card = ""
+
+        card += "<div class='asimov-analysis'>"
+        card += f"<h4>{self.name}</h4>"
+        
+        if self.comment:
+            card += f"""<p class="asimov-comment">{self.comment}</p>"""
+        if self.pipeline:
+            card += self.pipeline.html()
+                
+        if self.rundir:
+            card += f"""<p class="asimov-rundir"><code>{production.rundir}</code></p>"""
+        else:
+            card += """&nbsp;"""
+
+        if "approximant" in production.meta:
+            card += f"""<p class="asimov-approximant">{production.meta['approximant']}</p>"""
+        else:
+            card += """&nbsp;"""
+            card += f"""</div>"""
+
+        if len(self.review)>0:
+            for review in self.review:
+                card += review.html()
+
+
+            
+        return card
