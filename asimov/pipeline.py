@@ -17,6 +17,7 @@ import otter  # NoQA
 from .storage import Store  # NoQA
 
 
+
 class PipelineException(Exception):
     """Exception for pipeline problems."""
 
@@ -103,6 +104,7 @@ class Pipeline:
     def __repr__(self):
         return self.name.lower()
 
+        
     def detect_completion(self):
         """
         Check to see if the job has in fact completed.
