@@ -9,6 +9,7 @@ import git
 
 from .ini import RunConfiguration
 from asimov import config
+from asimov import logger
 from asimov.utils import set_directory
 
 from asimov import config, logger
@@ -91,9 +92,10 @@ class EventRepo():
 
             if os.path.exists(directory):
                 return cls(directory, url, update=update)
-
+            
             pathlib.Path(directory).mkdir(parents=True, exist_ok=True)
 
+            
         # Replace an https address with an ssh address
         if "https" in url:
             url = url.replace("https://", "git@")

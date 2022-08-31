@@ -118,9 +118,10 @@ class Event:
             
         if repository:
             if "git@" in repository or "https://" in repository:
-                self.repository = EventRepo.from_url(
-                    repository, self.name, directory=None, update=update
-                )
+                self.repository = EventRepo.from_url(repository,
+                                                     self.name,
+                                                     directory=None,
+                                                     update=update)
             else:
                 self.repository = EventRepo(repository)
         elif not repository:
@@ -1016,80 +1017,21 @@ class Production:
         else:
             template = f"{self.pipeline.name.lower()}.ini"
 
-        pipeline = self.pipeline
-        if hasattr(pipeline, "config_template"):
-            template_file = pipeline.config_template
-        else:
-            try:
-                template_directory = config.get("templating", "directory")
-                template_file = os.path.join(f"{template_directory}", template)
-                if not os.path.exists(template_file):
-                    raise Exception
-            except Exception:
-                from pkg_resources import resource_filename
-
-                template_file = resource_filename("asimov", f"configs/{template}")
-
-        self.logger.info(f"Using {template_file}")
+        try:
+            template_directory = config.get("templating", "directory")
+            template_file = os.path.join(f"{template_directory}", template)
+            if not os.path.exists(template_file):
+                raise Exception
+        except:
+            from pkg_resources import resource_filename
+            template_file = resource_filename("asimov", f'configs/{template}')
+        config_dict = {s: dict(config.items(s)) for s in config.sections()}
 
         liq = Liquid(template_file)
         rendered = liq.render(production=self, config=config)
 
-        if not dryrun:
-            with open(filename, "w") as output_file:
-                output_file.write(rendered)
-            self.logger.info(f"Saved as {filename}")
-        else:
-            print(rendered)
-
-    def build_report(self):
-        if self.pipeline:
-            self.pipeline.build_report()
-
-    def html(self):
-        """
-        An HTML representation of this production.
-        """
-        production = self
-
-        card = ""
-
-        card += f"<div class='asimov-analysis asimov-analysis-{self.status}'>"
-        card += f"<h4>{self.name}"
-
-        if self.comment:
-            card += (
-                f"""  <small class="asimov-comment text-muted">{self.comment}</small>"""
-            )
-        card += "</h4>"
-        if self.status:
-            card += f"""<p class="asimov-status">
-  <span class="badge badge-pill badge-{status_map[self.status]}">{self.status}</span>
-</p>"""
-
-        if self.pipeline:
-            card += f"""<p class="asimov-pipeline-name">{self.pipeline.name}</p>"""
-
-        if self.pipeline:
-            # self.pipeline.collect_pages()
-            card += self.pipeline.html()
-
-        if self.rundir:
-            card += f"""<p class="asimov-rundir"><code>{production.rundir}</code></p>"""
-        else:
-            card += """&nbsp;"""
-
-        if "approximant" in production.meta:
-            card += f"""<p class="asimov-attribute">Waveform approximant:
-   <span class="asimov-approximant">{production.meta['approximant']}</span>
-</p>"""
-
-        card += """&nbsp;"""
-        card += """</div>"""
-
-        liq = Liquid(template_file)
-        rendered = liq.render(production=self, config=config)
-
+        logger.info(f"[{self.event.name}/{self.name}] configuration created using {template_file} as a template")
+        
         if not dryrun:
             with open(filename, "w") as output_file:
                 output_file.write(rendered)
