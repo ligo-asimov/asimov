@@ -499,6 +499,9 @@ class Production:
             # TODO: Should probably raise a deprecation warning
             self.meta['sampler']['cip jobs'] = self.meta['cip jobs']
 
+        if not "scheduler" in self.meta:
+            self.meta['scheduler'] = {}
+            
         if not "likelihood" in self.meta:
             self.meta['likelihood'] = {}
         if "lmax" in self.meta:
