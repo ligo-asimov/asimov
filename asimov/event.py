@@ -633,7 +633,7 @@ class Production:
         if ('quality' in self.meta) and ("event time" in self.meta):
             if "segment start" not in self.meta['quality']:
                 self.meta['likelihood']['segment start'] = self.meta['event time'] - self.meta['data']['segment length'] + 2
-                self.event.meta['likelihood']['segment start'] = self.meta['data']['segment start']
+                #self.event.meta['likelihood']['segment start'] = self.meta['data']['segment start']
 
         # Gather the appropriate prior data for this production
         if "priors" in self.meta:
