@@ -1,16 +1,67 @@
-chirp_mass = bilby.gw.prior.UniformInComponentsChirpMass(name='chirp_mass', minimum={mc_min}, maximum={mc_max}, unit='$M_{{\odot}}$')
-mass_ratio = bilby.gw.prior.UniformInComponentsMassRatio(name='mass_ratio', minimum={q_min}, maximum={q_max})
-mass_1 = Constraint(name='mass_1', minimum={comp_min}, maximum={comp_max})
-mass_2 = Constraint(name='mass_2', minimum={comp_min}, maximum={comp_max})
-a_1 = Uniform(name='a_1', minimum=0, maximum=0.99)
-a_2 = Uniform(name='a_2', minimum={a2_min}, maximum={a2_max})
-tilt_1 = Sine(name='tilt_1')
-tilt_2 = Sine(name='tilt_2')
-phi_12 = Uniform(name='phi_12', minimum=0, maximum=2 * np.pi, boundary='periodic')
-phi_jl = Uniform(name='phi_jl', minimum=0, maximum=2 * np.pi, boundary='periodic')
-luminosity_distance =  PowerLaw(alpha=2, name='luminosity_distance', minimum={d_min}, maximum={d_max}, unit='Mpc')
+# Chirp mass
+chirp_mass = {{priors['chirp mass']['type'] | default: UniformInComponentsChirpMass }}(
+    name='chirp_mass',
+    minimum={{priors['chirp mass']['minimum']}},
+    maximum={{priors['chirp mass']['maximum']}},
+    unit='$M_\{\{\odot\}\}$')
+# Mass ratio
+mass_ratio = {{priors['mass ratio']['type'] | default: UniformInComponentsMassRatio }}(
+    name='mass_ratio',
+    minimum={{priors['mass ratio']['minimum']}},
+    maximum={{priors['mass ratio']['maximum']}}
+)
+# Component masses
+mass_1 = {{priors['mass 1']['type'] | default: Constraint}}(
+    name='mass_1',
+    minimum={{priors['mass 1']['minimum']}},
+    maximum={{priors['mass 1']['maximum']}}
+)
+mass_2 = {{priors['mass 2']['type'] | default: Constraint}}(
+    name='mass_2',
+    minimum={{priors['mass 2']['minimum']}},
+    maximum={{priors['mass 2']['maximum']}}
+)
+# Component spins
+a_1 = {{ priors['spin 1']['type'] | default: Uniform}}(
+    name='a_1',
+    minimum={{ priors['spin 1']['minimum'] | default: 0}},
+    maximum={{ priors['spin 1']['maximum'] | default: 0.99}}
+)
+a_2 = {{ priors['spin 2']['type'] | default: Uniform}}(
+    name='a_2',
+    minimum={{ priors['spin 2']['minimum'] | default: 0}},
+    maximum={{ priors['spin 2']['maximum'] | default: 0.99}}
+)
+# Component spins
+tilt_1 = {{ priors['tilt 1']['type'] | default: Sine}}(
+    name='tilt_1'
+)
+tilt_2 = {{ priors['tilt 2']['type'] | default: Sine}}(
+    name='tilt_2'
+)
+
+phi_12 = {{ priors['phi 12']['type'] | default: Uniform}}(
+    name='phi_12',
+    minimum={{ priors['phi 12']['minimum'] | default: 0}},
+    maximum={{ priors['phi 12']['maximum'] | default: "2 * np.pi"}},
+    boundary={{priors['phi 12']['boundary'] | default: 'periodic'}}
+)
+phi_jl = {{ priors['phi jl']['type'] | default: Uniform}}(
+    name='phi_jl',
+    minimum={{ priors['phi jl']['minimum'] | default: 0}},
+    maximum={{ priors['phi jl']['maximum'] | default: "2 * np.pi"}},
+    boundary={{priors['phi jl']['boundary'] | default: 'periodic'}}
+    )
+# Extrinsic parameters
+luminosity_distance =  {{ priors['luminosity distance']['type'] | default: PowerLaw}}(
+    alpha={{ priors['luminosity distance']['alpha'] | default: 2}},
+    name='luminosity_distance',
+    minimum={{ priors['luminosity distance']['minimum']}},
+    maximum={{ priors['luminosity distance']['maximum']}},
+    unit='Mpc')
 dec = Cosine(name='dec')
 ra = Uniform(name='ra', minimum=0, maximum=2 * np.pi, boundary='periodic')
+
 theta_jn = Sine(name='theta_jn')
 psi = Uniform(name='psi', minimum=0, maximum=np.pi, boundary='periodic')
 phase = Uniform(name='phase', minimum=0, maximum=2 * np.pi, boundary='periodic')

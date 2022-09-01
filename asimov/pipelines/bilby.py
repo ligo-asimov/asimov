@@ -1,6 +1,5 @@
 """Bilby Pipeline specification."""
 
-
 import os
 import glob
 import subprocess
@@ -10,6 +9,7 @@ from .. import config, logger
 import re
 import numpy as np
 
+from liquid import Liquid
 import htcondor
 
 class Bilby(Pipeline):
@@ -61,36 +61,6 @@ class Bilby(Pipeline):
 
             prior_parameters = {}
             
-            if "priors" in self.production.meta:
-                priors_e = self.production.meta['priors']
-                if "chirp-mass" in priors_e:
-                    prior_parameters['mc_min'] = priors_e['chirp-mass'][0]
-                    prior_parameters['mc_max'] = priors_e['chirp-mass'][1]
-
-                if "component" in priors_e:
-                    prior_parameters['comp_min'] = priors_e['component'][0]
-                    prior_parameters['comp_max'] = priors_e['component'][1]
-
-                if "q" in priors_e:
-                    prior_parameters['q_min'] = priors_e['q'][0]
-                    prior_parameters['q_max'] = priors_e['q'][1]
-
-                if "distance" in priors_e:
-                    if priors_e['distance'][0]:
-                        prior_parameters['d_min'] = priors_e['distance'][0]
-                    else:
-                        prior_parameters['d_min'] = 10
-                    prior_parameters['d_max'] = priors_e['distance'][1]
-
-                if "a2" in priors_e:
-                    prior_parameters['a2_min'] = priors_e['a2'][0]
-                    prior_parameters['a2_max'] = priors_e['a2'][1]
-
-                if "a1" in priors_e:
-                    prior_parameters['a1_min'] = priors_e['a1'][0]
-                    prior_parameters['a1_max'] = priors_e['a1'][1]
-
-
             if "event type" in self.production.meta:
                 event_type = self.production.meta['event type'].lower()
             else:
@@ -108,12 +78,16 @@ class Bilby(Pipeline):
                     from pkg_resources import resource_filename
                     template = resource_filename("asimov", f'priors/{template_filename}')
 
-            with open(template, "r") as old_prior:
-                prior_string = old_prior.read().format(**prior_parameters)
+            #with open(template, "r") as old_prior:
+            #    prior_string = old_prior.read().format(**prior_parameters)
+
+            liq = Liquid(template)
+            rendered = liq.render(priors=self.production.meta['priors'], config=config)
+            
             prior_name = f"{self.production.name}.prior"
             prior_file = os.path.join(os.getcwd(), prior_name)
             with open(prior_file, "w") as new_prior:
-                new_prior.write(prior_string)
+                new_prior.write(rendered)
                 
             repo = self.production.event.repository
             try:
