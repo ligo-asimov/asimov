@@ -230,7 +230,7 @@ class BayesWave(Pipeline):
 
             command = ["condor_submit_dag",
                        "-batch-name", f"bwave/{self.production.event.name}/{self.production.name}",
-                       os.path.join(self.production.rundir, f"{self.production.name}.dag")]
+                       f"{self.production.name}.dag"]
 
             if dryrun:
                 print(" ".join(command))
