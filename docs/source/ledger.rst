@@ -49,8 +49,25 @@ While editing the ledger directly is the most powerful approach it also presents
 Detector information
 --------------------
 
+Information about which detectors should be used for an analysis is contained under the ``interferometers`` key.
 
+This should be a list of detector abbreviations, for example ``[H1, L1, V1]``.
 
+Examples
+~~~~~~~~
+
+In order to provide the IFO list for all analyses in a given event:
+
+.. code-block::
+
+   - name: GW150915
+     interferometers:
+     - L1
+     - H1
+     productions:
+       Prod1: ...
+
+       
 Data information
 ----------------
 
@@ -127,9 +144,12 @@ Examples
 .. code-block::
 
    quality:
-     lower-frequency:
+     minimum frequency:
        H1: 20
        L1: 20
+     maximum frequency:
+       H1: 2048
+       L1: 2048
 
 Likelihood settings
 -------------------
@@ -139,14 +159,14 @@ Examples
 
 .. code-block::
 
-   psd length: 4
-   reference frequency: 20
-   sample rate: 2048
-   segment start: 1126259460.391
-  
-   start frequency: 13.333333333333334
-   upper frequency: 896
-   window length: 4
+   likelihood:
+   
+     psd length: 4
+     reference frequency: 20
+     sample rate: 2048
+     segment start: 1126259460.391
+     start frequency: 13.333333333333334
+     window length: 4
 
 Sampler settings
 ----------------
@@ -160,3 +180,54 @@ Prior settings
 Examples
 ~~~~~~~~
 
+.. code-block:: yaml
+
+    priors:
+      chirp mass:
+	type: UniformInComponentsChirpMass
+	minimum: 0
+	maximum: 100
+      mass ratio:
+	type: UniformInComponentsMassRatio
+	minimum: 0.1
+	maximum: 1.0
+      mass 1:
+	type: Constraint
+	minimum: 0
+	maximum: 1
+      mass 2:
+	type: Constraint
+	minimum: 0
+	maximum: 1
+      spin 1:
+	type: Uniform
+	minimum: 0
+	maximum: 1
+      spin 2:
+	type: Uniform
+	minimum: 0
+	maximum: 1
+      tilt 1:
+	type: Sine
+      tilt 2:
+	type: Sine
+      phi 12:
+	type: Uniform
+      phi jl:
+	type: Uniform
+      luminosity distance:
+	type: PowerLaw
+	minimum: 0
+	maximum: 1000
+	alpha: 2
+      dec:
+	type: Cosine
+      ra:
+	type: Uniform
+      theta jn:
+	type: Sine
+      psi:
+	type: Uniform
+      phase:
+	type: Uniform
+	boundary: periodic
