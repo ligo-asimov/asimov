@@ -479,8 +479,11 @@ class Production:
         self.comment = comment
 
         # Start by adding pipeline defaults
-        if pipeline in self.event.ledger.data['pipelines']:
-            self.meta = deepcopy(self.event.ledger.data['pipelines'][pipeline])
+        if "pipelines" in self.event.ledger.data:
+            if pipeline in self.event.ledger.data['pipelines']:
+                self.meta = deepcopy(self.event.ledger.data['pipelines'][pipeline])
+            else:
+                self.meta = {}
         else:
             self.meta = {}
         # Update with the event and project defaults
