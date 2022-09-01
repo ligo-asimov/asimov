@@ -9,7 +9,7 @@ from ..pipeline import Pipeline, PipelineException, PipelineLogger
 from ..ini import RunConfiguration
 from ..git import AsimovFileNotFound
 from ..storage import Store, AlreadyPresentException
-from asimov import logging
+from asimov import logger
 from asimov import config
 from shutil import copyfile
 import numpy as np
@@ -26,12 +26,12 @@ class BayesWave(Pipeline):
         The category of the job.
         Defaults to "C01_offline".
     """
-
+    name = "BayesWave"
     STATUS = {"wait", "stuck", "stopped", "running", "finished"}
 
     def __init__(self, production, category=None):
         super(BayesWave, self).__init__(production, category)
-        self.logger = logger = logging.AsimovLogger(event=production.event)
+        self.logger = logger
         if not production.pipeline.lower() == "bayeswave":
             raise PipelineException
 

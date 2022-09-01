@@ -24,7 +24,7 @@ class Rift(Pipeline):
         The category of the job.
         Defaults to "C01_offline".
     """
-
+    name = "RIFT"
     STATUS = {"wait", "stuck", "stopped", "running", "finished"}
 
     def __init__(self, production, category=None):
@@ -188,14 +188,14 @@ class Rift(Pipeline):
         #lmax = self.production.meta['priors']['amp order']
 
         if "lmax" in self.production.meta:
-            lmax = self.production.meta['lmax']
+            lmax = self.production.meta['likelihood']['lmax']
         elif "HM" in self.production.meta['approximant']:
             lmax = 4
         else:
             lmax = 2
             
 
-        if "cip jobs" in self.production.meta:
+        if "cip jobs" in self.production.meta['sampler']:
             cip = self.production.meta['cip jobs']
         else:
             cip = 3

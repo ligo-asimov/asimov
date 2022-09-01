@@ -425,6 +425,30 @@ class Event:
         ends = [x for x in unfinished.reverse().nodes() if unfinished.reverse().out_degree(x)==0]
         return set(ends) # only want to return one version of each production!
 
+    def html(self):
+        card = f"""
+<div class="card event-data" id="card-{self.name}">
+<div class="card-body">
+<h3 class="card-title">{self.name}</h3>
+"""
+
+
+        card += """<div class="list-group">"""
+
+
+
+        for production in self.productions:
+            card += production.html()
+            
+        card += """</div>"""
+
+        card += """
+        </div>
+        </div>
+        """
+        
+        return card
+    
     
 class Production:
     """
@@ -444,20 +468,41 @@ class Production:
         A comment on this production.
     """
     def __init__(self, event, name, status, pipeline, comment=None, **kwargs):
-        self.event = event
+        self.event = event if isinstance(event, Event) else event[0]
         self.name = name
         if status:
             self.status_str = status.lower()
         else:
             self.status_str = "none"
-        self.pipeline = pipeline.lower()
         self.comment = comment
-        self.meta = deepcopy(self.event.meta)
+
+        # Start by adding pipeline defaults
+        if pipeline in self.event.ledger.data['pipelines']:
+            self.meta = deepcopy(self.event.ledger.data['pipelines'][pipeline])
+        else:
+            self.meta = {}
+        # Update with the event and project defaults
+        self.meta = update(self.meta, self.event.meta)
         if "productions" in self.meta:
             self.meta.pop("productions")
 
         self.meta = update(self.meta, kwargs)
 
+        if not "sampler" in self.meta:
+            self.meta['sampler'] = {}
+        if "cip jobs" in self.meta:
+            # TODO: Should probably raise a deprecation warning
+            self.meta['sampler']['cip jobs'] = self.meta['cip jobs']
+
+        if not "likelihood" in self.meta:
+            self.meta['likelihood'] = {}
+        if "lmax" in self.meta:
+            # TODO: Should probably raise a deprecation warning
+            self.meta['sampler']['lmax'] = self.meta['lmax']
+        
+        self.pipeline = pipeline
+        self.pipeline = known_pipelines[pipeline.lower()](self)
+        
         if "review" in self.meta:
             self.review = Review.from_dict(self.meta['review'], production=self)
             self.meta.pop("review")
@@ -524,7 +569,13 @@ class Production:
         """
         return needs
 
-
+    @property
+    def dependencies(self):
+        if "needs" in self.meta:
+            return self._process_dependencies(self.meta['needs'])
+        else:
+            return None
+    
     def results(self, filename=None, handle=False, hash=None):
         store = Store(root=config.get("storage", "results_store"))
         if not filename:
@@ -823,17 +874,17 @@ class Production:
         if "template" in self.meta:
             template = f"{self.meta['template']}.ini"
         else:
-            template = f"{self.pipeline.name}.ini"
+            template = f"{self.pipeline.name.lower()}.ini"
 
-        pipeline = known_pipelines[self.pipeline]
-        if hasattr("config_template", pipeline):
+        pipeline = self.pipeline
+        if hasattr(pipeline, "config_template"):
             template_file = pipeline.config_template
         else:
             try:
                 template_directory = config.get("templating", "directory")
                 template_file = os.path.join(f"{template_directory}", template)
                 if not os.path.exists(template_file):
-                raise Exception
+                    raise Exception
             except:
                 from pkg_resources import resource_filename
                 template_file = resource_filename("asimov", f'configs/{template}')
@@ -866,7 +917,10 @@ class Production:
             card += f"""<p class="asimov-comment">{self.comment}</p>"""
         if self.pipeline:
             card += self.pipeline.html()
-                
+
+        if self.status:
+            card += f"""<p class="asimov-status">{self.status}</p>"""
+            
         if self.rundir:
             card += f"""<p class="asimov-rundir"><code>{production.rundir}</code></p>"""
         else:

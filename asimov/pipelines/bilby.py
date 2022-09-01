@@ -24,7 +24,7 @@ class Bilby(Pipeline):
         The category of the job.
         Defaults to "C01_offline".
     """
-
+    name = "Bilby"
     STATUS = {"wait", "stuck", "stopped", "running", "finished"}
 
     def __init__(self, production, category=None):
