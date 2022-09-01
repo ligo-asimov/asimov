@@ -84,20 +84,20 @@ $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/events/gw150914.ya
 Alternatively, a new event with no configured settings can be added to your project by running
 
 ```
-$ asimov event create GW150914
+$ asimov event create GW150914_095045
 ```
 
 Many analyses can be run on a single event (these are called "productions" in asimov parlence).
 We can add some pre-configured analyses (the same set of analyses which were used for the GWTC-3 catalogue) by running
 
 ```
-$ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/analyses/gwtc3-default.yaml -e GW150914
+$ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/analyses/gwtc3-default.yaml -e GW150914_095045
 ```
 Note that if you omit the `-e` argument asimov will ask which event the analyses should be applied to.
 
 Alternatively, you can add analyses at the command line, for example you can add a new lalinference production to an event using
 ```
-$ asimov production create GW150914 lalinference --approximant IMRPhenomPv2
+$ asimov production create GW150914_095045 lalinference --approximant IMRPhenomPv2
 ```
 
 For a full description of the workflow management process see the documentation.

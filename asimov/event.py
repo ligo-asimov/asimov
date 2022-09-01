@@ -516,9 +516,10 @@ class Production:
         
         # Check that the upper frequency is included, otherwise calculate it
         if "quality" in self.meta:
-            if ("high-frequency" not in self.meta['quality']) and ("sample-rate" in self.meta['quality']):
+            if ("maximum frequency" not in self.meta['quality']) and ("sample rate" in self.meta['lieklihood']):
                 # Account for the PSD roll-off with the 0.875 factor
-                self.meta['quality']['high-frequency'] = int(0.875 * self.meta['quality']['sample-rate']/2)
+                for ifo in self.ifos:
+                    self.meta['quality']['maximum frequency'][ifo] = int(0.875 * self.meta['likelihood']['sample rate']/2)
 
 
                 
@@ -535,8 +536,8 @@ class Production:
             
         if ('quality' in self.meta) and ("event time" in self.meta):
             if "segment start" not in self.meta['quality']:
-                self.meta['quality']['segment start'] = self.meta['event time'] - self.meta['quality']['segment-length'] + 2
-                self.event.meta['quality']['segment start'] = self.meta['quality']['segment start']
+                self.meta['likelihood']['segment start'] = self.meta['event time'] - self.meta['data']['segment length'] + 2
+                self.event.meta['likelihood']['segment start'] = self.meta['data']['segment start']
 
             
         # Gather the appropriate prior data for this production
@@ -545,8 +546,8 @@ class Production:
 
         # Need to fetch the correct PSDs for this sample rate
         if 'psds' in self.meta:
-            if self.quality['sample-rate'] in self.meta['psds']:
-                self.psds = self.meta['psds'][self.quality['sample-rate']]
+            if self.meta['likelihood']['sample rate'] in self.meta['psds']:
+                self.psds = self.meta['psds'][self.meta['likelihood']['sample rate']]
             else:
                 self.psds = {}
         else:
