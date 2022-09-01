@@ -251,6 +251,8 @@ class BayesWave(Pipeline):
                     self.production.job_id = cluster
                     return cluster, PipelineLogger(stdout)
                 else:
+                    logger.info(stdout)
+                    logger.error(stderr)
                     raise PipelineException(f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
                                             issue=self.production.event.issue_object,
                                             production=self.production.name)
