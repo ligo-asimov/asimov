@@ -101,8 +101,7 @@ class Pipeline:
         self.logger = logger
         
     def __repr__(self):
-        return self.name
-
+        return self.name.lower()
         
     def detect_completion(self):
         """
@@ -328,7 +327,6 @@ class Pipeline:
         """
 
         out = ""
-
         out += """<div class="asimov-pipeline">"""
         out += f"""<p class="asimov-pipeline-name">{self.name}</p>"""
         out += """</div>"""

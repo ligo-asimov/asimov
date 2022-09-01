@@ -4,6 +4,8 @@ Code for the project ledger.
 from functools import reduce
 
 import yaml
+import asimov
+from asimov.utils import update
 
 import asimov
 from asimov.event import Event
@@ -32,11 +34,8 @@ class YAMLLedger(Ledger):
         with open(location, "r") as ledger_file:
             self.data = yaml.safe_load(ledger_file)
 
-        self.data["events"] = [
-            update(self.get_defaults(), event, inplace=False)
-            for event in self.data["events"]
-        ]
-        self.events = {ev["name"]: ev for ev in self.data["events"]}
+        self.data['events'] = [update(self.get_defaults(), event) for event in self.data['events']]
+        self.events = {ev['name']: ev for ev in self.data['events']}
         self.data.pop("events")
 
     @classmethod
@@ -234,6 +233,24 @@ class YAMLLedger(Ledger):
         self.events[event.name] = event.to_dict()
         self.save()
 
+    def get_defaults(self):
+        """
+        Gather project-level defaults from the ledger.
+
+        At present data, quality, priors, and likelihood settings can all be set at a project level as defaults.
+        """
+        defaults = {}
+        if "data" in self.data:
+            defaults['data'] = self.data['data']
+        if "priors" in self.data:
+            defaults['priors'] = self.data['priors']
+        if "quality" in self.data:
+            defaults['quality'] = self.data['quality']
+        if "likelihood" in self.data:
+            defaults['likelihood'] = self.data['likelihood']
+        if "scheduler" in self.data:
+            defaults['scheduler'] = self.data['scheduler']
+        return defaults
         
     def get_event(self, event=None):
         if event:
@@ -319,11 +336,12 @@ class DatabaseLedger(Ledger):
         """
         Return all of the events in the ledger.
         """
-        return [Event.from_dict(page) for page in self.db.tables["event"].all()]
+        return [Event.from_dict(page)
+                for page in self.db.tables["event"].all()]
 
     def get_defaults(self):
         raise NotImplementedError
-
+    
     def get_event(self, event=None):
         """
         Find a specific event in the ledger and return it.

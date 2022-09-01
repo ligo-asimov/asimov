@@ -5,8 +5,13 @@ import glob
 import os
 import re
 import subprocess
-from shutil import copyfile, copytree
-
+from ..pipeline import Pipeline, PipelineException, PipelineLogger
+from ..ini import RunConfiguration
+from ..git import AsimovFileNotFound
+from ..storage import Store, AlreadyPresentException
+from asimov import logger
+from asimov import config
+from shutil import copyfile
 import numpy as np
 
 from asimov import config
@@ -29,13 +34,12 @@ class BayesWave(Pipeline):
         The category of the job.
         Defaults to "C01_offline".
     """
-
     name = "BayesWave"
     STATUS = {"wait", "stuck", "stopped", "running", "finished"}
 
     def __init__(self, production, category=None):
         super(BayesWave, self).__init__(production, category)
-        self.logger.info("Using the Bayeswave pipeline")
+        self.logger = logger
         if not production.pipeline.lower() == "bayeswave":
             raise PipelineException
 
