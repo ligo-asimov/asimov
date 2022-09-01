@@ -144,12 +144,7 @@ class BayesWave(Pipeline):
             if "To submit:" not in str(out):
                 self.production.status = "stuck"
 
-                if "issue_object" in self.production.event:
-                    raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
-                                            issue=self.production.event.issue_object,
-                                            production=self.production.name)
-                else:
-                    raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
+                raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
                                             production=self.production.name)
             else:
                 if hasattr(self.production.event, "issue_object"):
