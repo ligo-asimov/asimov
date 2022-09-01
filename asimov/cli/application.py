@@ -43,7 +43,7 @@ def apply(file, event):
                 prompt = "Which event should these be applied to?"
                 event = str(click.prompt(prompt))
 
-            event_o = ledger.get_event(event)
+            event_o = ledger.get_event(event)[0]
             production = asimov.event.Production.from_dict(document, event=event_o)
             event_o.add_production(production)
             ledger.update_event(event_o)

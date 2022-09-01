@@ -169,30 +169,10 @@ def html(event, webdir):
                   "checked": "info"
                   }
 
-
     for event in events:
+        card = ""
         # This is a quick test to try and improve readability
-
-
-        card = f"""
-<div class="card event-data" id="card-{event.name}">
-<div class="card-body">
-<h3 class="card-title">{event.name}</h3>
-"""
-
-        prods = {}
-        for prod in event.productions:
-            prods[prod.name] = prod
-
-        card += """<div class="list-group">"""
-
-
-
-        for production_name, production in prods.items():
-
-            card += production.html()
-            
-        card += """</div>"""
+        card += event.html()
         
         # card += """<p class="card-text">Card text</p>""" # 
         card += """
