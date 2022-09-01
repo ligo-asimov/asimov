@@ -9,6 +9,8 @@ from ..pipeline import Pipeline, PipelineException, PipelineLogger
 from ..ini import RunConfiguration
 from ..git import AsimovFileNotFound
 from ..storage import Store, AlreadyPresentException
+
+from asimov.utils import set_directory
 from asimov import logger
 from asimov import config
 from shutil import copyfile
@@ -41,7 +43,7 @@ class BayesWave(Pipeline):
             self.category = "C01_offline"
             self.logger.info("Assuming C01_offline calibration.")
 
-    def build_dag(self, user=None):
+    def build_dag(self, user=None, dryrun=False):
         """
         Construct a DAG file in order to submit a production to the
         condor scheduler using bayeswave_pipe
@@ -58,25 +60,25 @@ class BayesWave(Pipeline):
         PipelineException
            Raised if the construction of the DAG fails.
         """
-        if self.production.event.repository:
-            os.chdir(os.path.join(self.production.event.repository.directory,
-                                  self.category))
-            try:
-                gps_file = self.production.get_timefile()
-            except AsimovFileNotFound:
-                if "event time" in self.production.meta:
-                    gps_time = self.production.get_meta("event time")
-                    with open("gpstime.txt", "w") as f:
-                        f.write(str(gps_time))
-                    gps_file = os.path.join(f"{self.production.category}", f"gpstime.txt")
-                    self.production.event.repository.add_file(f"gpstime.txt", gps_file)
-                else:
-                    raise PipelineException("Cannot find the event time.")
-        else:
-            gps_time = self.production.get_meta("event time")
-            with open("gpstime.txt", "w") as f:
-                f.write(str(gps_time))
-                gps_file = os.path.join("gpstime.txt")
+        
+        with set_directory(os.path.join(self.production.event.repository.directory, self.category)):
+            if self.production.event.repository:    
+                try:
+                    gps_file = self.production.get_timefile()
+                except AsimovFileNotFound:
+                    if "event time" in self.production.meta:
+                        gps_time = self.production.get_meta("event time")
+                        with open("gpstime.txt", "w") as f:
+                            f.write(str(gps_time))
+                        gps_file = os.path.join(f"{self.production.category}", f"gpstime.txt")
+                        self.production.event.repository.add_file(f"gpstime.txt", gps_file)
+                    else:
+                        raise PipelineException("Cannot find the event time.")
+            else:
+                gps_time = self.production.get_meta("event time")
+                with open("gpstime.txt", "w") as f:
+                    f.write(str(gps_time))
+                    gps_file = os.path.join("gpstime.txt")
 
         if self.production.event.repository:
             ini = self.production.get_configuration()
@@ -131,28 +133,32 @@ class BayesWave(Pipeline):
             
         self.logger.info(" ".join(command))
 
-        pipe = subprocess.Popen(command, 
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
-        out, err = pipe.communicate()
-        if "To submit:" not in str(out):
-            self.production.status = "stuck"
-
-            if "issue_object" in self.production.event:
-                raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
-                                        issue=self.production.event.issue_object,
-                                        production=self.production.name)
-            else:
-                raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
-                                        production=self.production.name)
+        if dryrun:
+            print(" ".join(command))
         else:
-            if hasattr(self.production.event, "issue_object"):
-                return PipelineLogger(message=out,
-                                      issue=self.production.event.issue_object,
-                                      production=self.production.name)
+        
+            pipe = subprocess.Popen(command, 
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT)
+            out, err = pipe.communicate()
+            if "To submit:" not in str(out):
+                self.production.status = "stuck"
+
+                if "issue_object" in self.production.event:
+                    raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
+                                            issue=self.production.event.issue_object,
+                                            production=self.production.name)
+                else:
+                    raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
+                                            production=self.production.name)
             else:
-                return PipelineLogger(message=out,
-                                      production=self.production.name)
+                if hasattr(self.production.event, "issue_object"):
+                    return PipelineLogger(message=out,
+                                          issue=self.production.event.issue_object,
+                                          production=self.production.name)
+                else:
+                    return PipelineLogger(message=out,
+                                          production=self.production.name)
 
     def detect_completion(self):
          results_dir = glob.glob(f"{self.production.rundir}/trigtime_*")
@@ -185,7 +191,7 @@ class BayesWave(Pipeline):
         pass
 
 
-    def submit_dag(self):
+    def submit_dag(self, dryrun=False):
         """
         Submit a DAG file to the condor cluster.
 
@@ -209,32 +215,36 @@ class BayesWave(Pipeline):
         PipelineException
            This will be raised if the pipeline fails to submit the job.
         """
-        os.chdir(self.production.rundir)
+        with set_directory(self.production.rundir):
 
-        self.before_submit()
-        
-        try:
+            self.before_submit()
+
             command = ["condor_submit_dag",
                        "-batch-name", f"bwave/{self.production.event.name}/{self.production.name}",
-                                   os.path.join(self.production.rundir, f"{self.production.name}.dag")]
-            dagman = subprocess.Popen(command,
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT)
-        except FileNotFoundError as error:
-            raise PipelineException("It looks like condor isn't installed on this system.\n"
-                                    f"""I wanted to run {" ".join(command)}.""")
+                       os.path.join(self.production.rundir, f"{self.production.name}.dag")]
 
-        stdout, stderr = dagman.communicate()
+            if dryrun:
+                print(" ".join(command))
+            else:
+                try:
+                    dagman = subprocess.Popen(command,
+                                          stdout=subprocess.PIPE,
+                                          stderr=subprocess.STDOUT)
+                except FileNotFoundError as error:
+                    raise PipelineException("It looks like condor isn't installed on this system.\n"
+                                            f"""I wanted to run {" ".join(command)}.""")
 
-        if "submitted to cluster" in str(stdout):
-            cluster = re.search("submitted to cluster ([\d]+)", str(stdout)).groups()[0]
-            self.production.status = "running"
-            self.production.job_id = cluster
-            return cluster, PipelineLogger(stdout)
-        else:
-            raise PipelineException(f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
-                                    issue=self.production.event.issue_object,
-                                    production=self.production.name)
+                stdout, stderr = dagman.communicate()
+
+                if "submitted to cluster" in str(stdout):
+                    cluster = re.search("submitted to cluster ([\d]+)", str(stdout)).groups()[0]
+                    self.production.status = "running"
+                    self.production.job_id = cluster
+                    return cluster, PipelineLogger(stdout)
+                else:
+                    raise PipelineException(f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
+                                            issue=self.production.event.issue_object,
+                                            production=self.production.name)
     
     def upload_assets(self):
         """

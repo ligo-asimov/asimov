@@ -55,7 +55,7 @@ class Bilby(Pipeline):
         if "prior file" in self.production.meta:
             return self.production.meta['prior file']
         else:
-            duration = int(self.production.meta['quality']['segment-length'])
+            duration = int(self.production.meta['data']['segment length'])
             scale_factor = 1 # Check this
             template = None
 
