@@ -433,7 +433,7 @@ class Event:
             data.pop("issue")
         if "ledger" in data:
             data.pop("ledger")
-        if "pipelines" in dictionary:
+        if "pipelines" in data:
             dictionary.pop("pipelines")
         return data
 
