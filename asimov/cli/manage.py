@@ -85,22 +85,22 @@ def submit(event, update, dryrun):
                     pipe.clean(dryrun=dryrun)
                     pipe.submit_dag(dryrun=dryrun)
             else:
-                if production.pipeline.lower() in known_pipelines:
-                    pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
-                    try:
-                        pipe.build_dag(dryrun=dryrun)
-                    except PipelineException:
-                        logger.error("The pipeline failed to build a DAG file.",
-                                     production=production)
-                        click.echo(click.style("●", fg="red") + f" Unable to submit {production.name}")
-                    try:
-                        pipe.submit_dag(dryrun=dryrun)
-                        production.status = "running"
+                #if production.pipeline.lower() in known_pipelines:
+                pipe = production.pipeline#known_pipelines[production.pipeline.lower()](production, "C01_offline")
+                try:
+                    pipe.build_dag(dryrun=dryrun)
+                except PipelineException:
+                    logger.error("The pipeline failed to build a DAG file.",
+                                 production=production)
+                    click.echo(click.style("●", fg="red") + f" Unable to submit {production.name}")
+                try:
+                    pipe.submit_dag(dryrun=dryrun)
+                    production.status = "running"
 
-                    except PipelineException as e:
-                        production.status = "stuck"
-                        logger.error(f"The pipeline failed to submit the DAG file to the cluster. {e}",
-                                     production=production)
+                except PipelineException as e:
+                    production.status = "stuck"
+                    logger.error(f"The pipeline failed to submit the DAG file to the cluster. {e}",
+                                 production=production)
 
 
 @click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
