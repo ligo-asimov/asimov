@@ -89,8 +89,6 @@ class BayesWave(Pipeline):
 
         
 
-        with set_directory(os.path.join(self.production.event.repository.directory, self.category)):
-
         if self.production.event.repository:
             ini = self.production.get_configuration()
             if not user:
@@ -118,11 +116,9 @@ class BayesWave(Pipeline):
         if self.production.rundir:
             rundir = self.production.rundir
         else:
-            rundir = os.path.join(
-                config.get("general", "rundir_default"),
-                self.production.event.name,
-                self.production.name,
-            )
+            rundir = os.path.join(config.get("general", "rundir_default"),
+                                  self.production.event.name,
+                                  self.production.name)
             self.production.rundir = rundir
 
         gps_time = self.production.get_meta("event time")
