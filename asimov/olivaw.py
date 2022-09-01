@@ -43,10 +43,11 @@ def olivaw(ctx):
 
     # Check that we're running in an actual asimov project
 
-    if not os.path.exists("asimov.conf"):
-        # This isn't the root of an asimov project, let's fail.
-        click.secho("This isn't an asimov project", fg="white", bg="red")
-        sys.exit(1)
+    # if not os.path.exists("asimov.conf"):
+    #     # This isn't the root of an asimov project, let's fail.
+    #     click.secho("This isn't an asimov project", fg="white", bg="red")
+    #     sys.exit(1)
+    pass
 
 
 # Project initialisation
