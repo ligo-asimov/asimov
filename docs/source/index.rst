@@ -63,10 +63,21 @@ Users' guide
    olivaw/review
 
 .. toctree::
+   :maxdepth: 2
+   :caption: The Ledger
+
+   ledger
+      
+   
+.. toctree::
    :maxdepth: 1
    :caption: Pipeline Guides
 
+   pipelines
    pipelines/lalinference
+   pipelines/bilby
+   pipelines/rift
+   pipelines/bayeswave
    
 Advanced topics
 ---------------
@@ -89,6 +100,8 @@ Developers' Guide
    ../../CONTRIBUTING.rst
    ../../CODE-OF-CONDUCT.rst
 
+   pipelines-dev
+   
    restful-api
    
 Module documentation
