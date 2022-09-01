@@ -86,6 +86,8 @@ class Bilby(Pipeline):
             self.logger.info(f"{self.production.meta['prior file']}")
             return self.production.meta["prior file"]
         else:
+            duration = int(self.production.meta['data']['segment length'])
+            scale_factor = 1 # Check this
             template = None
 
             prior_parameters = {}

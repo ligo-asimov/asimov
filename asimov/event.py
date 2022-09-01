@@ -614,9 +614,10 @@ class Production:
 
         # Check that the upper frequency is included, otherwise calculate it
         if "quality" in self.meta:
-            if ("maximum frequency" not in self.meta['quality']) and ("sample rate" in self.meta['lieklihood']):
+            if ("maximum frequency" not in self.meta['quality']) and ("sample rate" in self.meta['likelihood']):
+                self.meta['quality']['maximum frequency'] = {}
                 # Account for the PSD roll-off with the 0.875 factor
-                for ifo in self.ifos:
+                for ifo in self.meta['interferometers']:
                     self.meta['quality']['maximum frequency'][ifo] = int(0.875 * self.meta['likelihood']['sample rate']/2)
 
         # Get the data quality recommendations
@@ -928,6 +929,7 @@ class Production:
             ini_loc = self.meta["ini"]
         else:
             # We'll need to search the repository for it.
+            print(self.name, self.category, self.event.repository.directory)
             try:
                 ini_loc = self.event.repository.find_prods(self.name, self.category)[0]
                 if not os.path.exists(ini_loc):
