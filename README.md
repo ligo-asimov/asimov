@@ -102,7 +102,15 @@ $ asimov init "Test project"
 where you can replace `"Test project"` with the name you want to give your project.
 A project will be set-up in your current working directory.
 
-You can add an existing event with preconfigured settings using the `asimov apply` function, for example, to add GW150914 to the project you can run
+In order to start setting up analyses we should download some default settings.
+We'll download the default configurations for jobs which are going to be run on the LIGO data grid.
+We can do this with the `asimov apply` command, which pulls-in data from a file either locally or online.
+
+```
+$ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml
+```
+
+Now you can add an existing event with preconfigured settings using the `asimov apply` function, for example, to add GW150914 to the project you can run
 
 ```
 $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/events/gw150914.yaml
