@@ -1,28 +1,64 @@
-{% if priors.keys() contains "geocentric time" %}
-{% comment %}
-We need to add in a prior for geocentric time
-{% endcomment %}
-geocent_time = {{priors['geocentric time']['type']}}(name="geocent_time", minimum={{priors['geocentric time']['minimum']}},     					  maximum={{priors['geocentric time']['maximum']}},  boundary={{priors['geocentric time']['boundary'] | default: None}})
-{% endif %}
 # Chirp mass
-chirp_mass = {{priors['chirp mass']['type'] | default: "bilby.gw.prior.UniformInComponentsChirpMass" }}(name='chirp_mass', minimum={{priors['chirp mass']['minimum']}},    maximum={{priors['chirp mass']['maximum']}}, unit='$M_\{\{\odot\}\}$')
+chirp_mass = {{priors['chirp mass']['type'] | default: UniformInComponentsChirpMass }}(
+    name='chirp_mass',
+    minimum={{priors['chirp mass']['minimum']}},
+    maximum={{priors['chirp mass']['maximum']}},
+    unit='$M_\{\{\odot\}\}$')
 # Mass ratio
-mass_ratio = {{priors['mass ratio']['type'] | default: "bilby.gw.prior.UniformInComponentsMassRatio" }}(name='mass_ratio', minimum={{priors['mass ratio']['minimum']}},    maximum={{priors['mass ratio']['maximum']}})
+mass_ratio = {{priors['mass ratio']['type'] | default: UniformInComponentsMassRatio }}(
+    name='mass_ratio',
+    minimum={{priors['mass ratio']['minimum']}},
+    maximum={{priors['mass ratio']['maximum']}}
+)
 # Component masses
-mass_1 = {{priors['mass 1']['type'] | default: Constraint}}(name='mass_1', minimum={{priors['mass 1']['minimum']}}, maximum={{priors['mass 1']['maximum']}})
-mass_2 = {{priors['mass 2']['type'] | default: Constraint}}(name='mass_2', minimum={{priors['mass 2']['minimum']}}, maximum={{priors['mass 2']['maximum']}})
+mass_1 = {{priors['mass 1']['type'] | default: Constraint}}(
+    name='mass_1',
+    minimum={{priors['mass 1']['minimum']}},
+    maximum={{priors['mass 1']['maximum']}}
+)
+mass_2 = {{priors['mass 2']['type'] | default: Constraint}}(
+    name='mass_2',
+    minimum={{priors['mass 2']['minimum']}},
+    maximum={{priors['mass 2']['maximum']}}
+)
 # Component spins
-a_1 = {{ priors['spin 1']['type'] | default: Uniform}}(name='a_1', minimum={{ priors['spin 1']['minimum'] | default: 0}}, maximum={{ priors['spin 1']['maximum'] | default: 0.99}})
-a_2 = {{ priors['spin 2']['type'] | default: Uniform}}(name='a_2', minimum={{ priors['spin 2']['minimum'] | default: 0}}, maximum={{ priors['spin 2']['maximum'] | default: 0.99}})
+a_1 = {{ priors['spin 1']['type'] | default: Uniform}}(
+    name='a_1',
+    minimum={{ priors['spin 1']['minimum'] | default: 0}},
+    maximum={{ priors['spin 1']['maximum'] | default: 0.99}}
+)
+a_2 = {{ priors['spin 2']['type'] | default: Uniform}}(
+    name='a_2',
+    minimum={{ priors['spin 2']['minimum'] | default: 0}},
+    maximum={{ priors['spin 2']['maximum'] | default: 0.99}}
+)
 # Component spins
-tilt_1 = {{ priors['tilt 1']['type'] | default: Sine}}(name='tilt_1')
-tilt_2 = {{ priors['tilt 2']['type'] | default: Sine}}(name='tilt_2')
+tilt_1 = {{ priors['tilt 1']['type'] | default: Sine}}(
+    name='tilt_1'
+)
+tilt_2 = {{ priors['tilt 2']['type'] | default: Sine}}(
+    name='tilt_2'
+)
 
-phi_12 = {{ priors['phi 12']['type'] | default: Uniform}}(name='phi_12', minimum={{ priors['phi 12']['minimum'] | default: 0}}, maximum={{ priors['phi 12']['maximum'] | default: "2 * np.pi"}}, boundary={{priors['phi 12']['boundary'] | default: "'periodic'"}})
-phi_jl = {{ priors['phi jl']['type'] | default: Uniform}}(name='phi_jl', minimum={{ priors['phi jl']['minimum'] | default: 0}}, maximum={{ priors['phi jl']['maximum'] | default: "2 * np.pi"}}, boundary={{priors['phi jl']['boundary'] | default: "'periodic'"}})
+phi_12 = {{ priors['phi 12']['type'] | default: Uniform}}(
+    name='phi_12',
+    minimum={{ priors['phi 12']['minimum'] | default: 0}},
+    maximum={{ priors['phi 12']['maximum'] | default: "2 * np.pi"}},
+    boundary={{priors['phi 12']['boundary'] | default: 'periodic'}}
+)
+phi_jl = {{ priors['phi jl']['type'] | default: Uniform}}(
+    name='phi_jl',
+    minimum={{ priors['phi jl']['minimum'] | default: 0}},
+    maximum={{ priors['phi jl']['maximum'] | default: "2 * np.pi"}},
+    boundary={{priors['phi jl']['boundary'] | default: 'periodic'}}
+    )
 # Extrinsic parameters
-luminosity_distance =  {{ priors['luminosity distance']['type'] | default: PowerLaw}}({% for key in priors['luminosity distance'].keys() %}{% if key != "type" %}{{key | replace: " ", "_"}}={{priors['luminosity distance'][key]}},{% endif %} {% endfor %} unit='Mpc')
-
+luminosity_distance =  {{ priors['luminosity distance']['type'] | default: PowerLaw}}(
+    alpha={{ priors['luminosity distance']['alpha'] | default: 2}},
+    name='luminosity_distance',
+    minimum={{ priors['luminosity distance']['minimum']}},
+    maximum={{ priors['luminosity distance']['maximum']}},
+    unit='Mpc')
 dec = Cosine(name='dec')
 ra = Uniform(name='ra', minimum=0, maximum=2 * np.pi, boundary='periodic')
 

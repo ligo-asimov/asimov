@@ -1,5 +1,6 @@
 """Bilby Pipeline specification."""
 
+import os
 import glob
 import os
 import re
@@ -10,6 +11,8 @@ from .. import config, logger
 import re
 import numpy as np
 
+from liquid import Liquid
+import htcondor
 
 class Bilby(Pipeline):
     """
@@ -85,6 +88,8 @@ class Bilby(Pipeline):
         else:
             template = None
 
+            prior_parameters = {}
+            
             if "event type" in self.production.meta:
                 event_type = self.production.meta["event type"].lower()
             else:
@@ -106,24 +111,18 @@ class Bilby(Pipeline):
                 except (configparser.NoOptionError, configparser.NoSectionError):
                     from pkg_resources import resource_filename
 
-                    template = resource_filename(
-                        "asimov", f"priors/{template_filename}"
-                    )
-
-            priors = {}
-            priors = update(priors, self.production.event.ledger.data["priors"])
-            priors = update(priors, self.production.event.meta["priors"])
-            priors = update(priors, self.production.meta["priors"])
+            #with open(template, "r") as old_prior:
+            #    prior_string = old_prior.read().format(**prior_parameters)
 
             liq = Liquid(template)
-            rendered = liq.render(priors=priors, config=config)
-
+            rendered = liq.render(priors=self.production.meta['priors'], config=config)
+            
             prior_name = f"{self.production.name}.prior"
             prior_file = os.path.join(os.getcwd(), prior_name)
             self.logger.info(f"Saving the new prior file as {prior_file}")
             with open(prior_file, "w") as new_prior:
                 new_prior.write(rendered)
-
+                
             repo = self.production.event.repository
             try:
 

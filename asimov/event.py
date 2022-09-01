@@ -433,6 +433,8 @@ class Event:
             data.pop("issue")
         if "ledger" in data:
             data.pop("ledger")
+        if "pipelines" in dictionary:
+            dictionary.pop("pipelines")
         return data
 
     def to_yaml(self):
@@ -813,6 +815,8 @@ class Production:
 
         if "ledger" in dictionary:
             dictionary.pop("ledger")
+        if "pipelines" in dictionary:
+            dictionary.pop("pipelines")
             
         if not event:
             output = dictionary
