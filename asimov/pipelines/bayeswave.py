@@ -60,25 +60,28 @@ class BayesWave(Pipeline):
         PipelineException
            Raised if the construction of the DAG fails.
         """
-        
-        with set_directory(os.path.join(self.production.event.repository.directory, self.category)):
-            if self.production.event.repository:    
-                try:
-                    gps_file = self.production.get_timefile()
-                except AsimovFileNotFound:
-                    if "event time" in self.production.meta:
-                        gps_time = self.production.get_meta("event time")
+        if self.production.event.repository:    
+            try:
+                gps_file = self.production.get_timefile()
+            except AsimovFileNotFound:
+                if "event time" in self.production.meta:
+                    gps_time = self.production.get_meta("event time")
+                    with set_directory(os.path.join(self.production.event.repository.directory, self.category)):
                         with open("gpstime.txt", "w") as f:
                             f.write(str(gps_time))
-                        gps_file = os.path.join(f"{self.production.category}", f"gpstime.txt")
-                        self.production.event.repository.add_file(f"gpstime.txt", gps_file)
-                    else:
-                        raise PipelineException("Cannot find the event time.")
-            else:
-                gps_time = self.production.get_meta("event time")
-                with open("gpstime.txt", "w") as f:
-                    f.write(str(gps_time))
-                    gps_file = os.path.join("gpstime.txt")
+                            gps_file = os.path.join(f"{self.production.category}", f"gpstime.txt")
+                            self.production.event.repository.add_file(f"gpstime.txt", gps_file)
+                else:
+                    raise PipelineException("Cannot find the event time.")
+        else:
+            gps_time = self.production.get_meta("event time")
+            with open("gpstime.txt", "w") as f:
+                f.write(str(gps_time))
+                gps_file = os.path.join("gpstime.txt")
+
+        
+
+        with set_directory(os.path.join(self.production.event.repository.directory, self.category)):
 
         if self.production.event.repository:
             ini = self.production.get_configuration()
