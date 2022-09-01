@@ -614,15 +614,10 @@ class Production:
 
         # Check that the upper frequency is included, otherwise calculate it
         if "quality" in self.meta:
-            if ("maximum frequency" not in self.meta["quality"]) and (
-                "sample rate" in self.meta["likelihood"]
-            ):
-                self.meta["quality"]["maximum frequency"] = {}
+            if ("maximum frequency" not in self.meta['quality']) and ("sample rate" in self.meta['lieklihood']):
                 # Account for the PSD roll-off with the 0.875 factor
-                for ifo in self.meta["interferometers"]:
-                    self.meta["quality"]["maximum frequency"][ifo] = int(
-                        0.875 * self.meta["likelihood"]["sample rate"] / 2
-                    )
+                for ifo in self.ifos:
+                    self.meta['quality']['maximum frequency'][ifo] = int(0.875 * self.meta['likelihood']['sample rate']/2)
 
         # Get the data quality recommendations
         if "quality" in self.event.meta:
@@ -630,46 +625,28 @@ class Production:
         else:
             self.quality = {}
 
-        if "quality" in self.meta:
-            if "quality" in kwargs:
-                self.meta["quality"].update(kwargs["quality"])
-            self.quality = self.meta["quality"]
-
-        if ("quality" in self.meta) and ("event time" in self.meta):
-            if "segment start" not in self.meta["quality"]:
-                self.meta["likelihood"]["segment start"] = (
-                    self.meta["event time"] - self.meta["data"]["segment length"] + 2
-                )
-                # self.event.meta['likelihood']['segment start'] = self.meta['data']['segment start']
-
-        # Update waveform data
-        if "waveform" not in self.meta:
-            self.logger.info("Didn't find waveform information in the metadata")
-            self.meta["waveform"] = {}
-        if "approximant" in self.meta:
-            self.logger.warning(
-                "Found deprecated approximant information, "
-                "moving to waveform area of ledger"
-            )
-            approximant = self.meta.pop("approximant")
-            self.meta["waveform"]["approximant"] = approximant
-        if "reference frequency" in self.meta["likelihood"]:
-            self.logger.warning(
-                "Found deprecated ref freq information, "
-                "moving to waveform area of ledger"
-            )
-            ref_freq = self.meta["likelihood"].pop("reference frequency")
-            self.meta["waveform"]["reference frequency"] = ref_freq
-
-        # Gather the PSDs for the job
-        self.psds = self._collect_psds()
+        if ('quality' in self.meta):
+            if ('quality' in kwargs):
+               self.meta['quality'].update(kwargs['quality'])
+            self.quality = self.meta['quality']
+            
+        if ('quality' in self.meta) and ("event time" in self.meta):
+            if "segment start" not in self.meta['quality']:
+                self.meta['likelihood']['segment start'] = self.meta['event time'] - self.meta['data']['segment length'] + 2
+                self.event.meta['likelihood']['segment start'] = self.meta['data']['segment start']
 
         # Gather the appropriate prior data for this production
         if "priors" in self.meta:
             self.priors = self.meta["priors"]
 
-    def __hash__(self):
-        return int(f"{hash(self.name)}{abs(hash(self.event.name))}")
+        # Need to fetch the correct PSDs for this sample rate
+        if 'psds' in self.meta:
+            if self.meta['likelihood']['sample rate'] in self.meta['psds']:
+                self.psds = self.meta['psds'][self.meta['likelihood']['sample rate']]
+            else:
+                self.psds = {}
+        else:
+            self.psds = {}
 
     def __eq__(self, other):
         return (self.name == other.name) & (self.event == other.event)
