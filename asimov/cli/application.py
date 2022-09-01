@@ -9,7 +9,7 @@ import click
 import requests
 
 from asimov import current_ledger as ledger
-
+from asimov.utils import update
 import asimov.event
 
 @click.command()
@@ -47,3 +47,8 @@ def apply(file, event):
             production = asimov.event.Production.from_dict(document, event=event_o)
             event_o.add_production(production)
             ledger.update_event(event_o)
+
+        elif document['kind'] == "configuration":
+            document.pop("kind")
+            update(ledger.data, document)
+            ledger.save()
