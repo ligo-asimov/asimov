@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-.. _ledger:
-
-=======
->>>>>>> v0.4-release
 The Asimov Ledger
 =================
 
@@ -54,25 +49,8 @@ While editing the ledger directly is the most powerful approach it also presents
 Detector information
 --------------------
 
-Information about which detectors should be used for an analysis is contained under the ``interferometers`` key.
 
-This should be a list of detector abbreviations, for example ``[H1, L1, V1]``.
 
-Examples
-~~~~~~~~
-
-In order to provide the IFO list for all analyses in a given event:
-
-.. code-block::
-
-   - name: GW150915
-     interferometers:
-     - L1
-     - H1
-     productions:
-       Prod1: ...
-
-       
 Data information
 ----------------
 
@@ -104,9 +82,7 @@ Examples
   Files should be provided for each detector, indexed by the detector abbreviation.
 
   For example
-  
   ::
-     
      data:
        calibration:
          H1: /home/cal/H1-calibration.dat
@@ -116,9 +92,7 @@ Examples
   This section defines the data channels which should be used in the analysis.
   These should be provided for each detector.
   For example
-  
   ::
-     
      data:
        channels:
 	 H1: H1:DCS-CALIB_STRAIN_C02
@@ -128,9 +102,7 @@ Examples
   This section defines the frame types which should be used in the analysis.
   These should be provided for each detector.
   For example
-  
   ::
-     
      data:
        frame-types:
 	 H1: H1_HOFT_C02
@@ -140,25 +112,11 @@ Examples
   This section defines the segments which should be used in the analysis.
   These should be provided for each detector.
   For example
-  
   ::
-     
      data:
        segments:
 	 H1: H1:DMT-ANALYSIS_READY:1
 	 L1: L1:DMT-ANALYSIS_READY:1
-
-``data files``
-  This section should define data files which contain the analysis data to be used
-  in the analysis, and should be provided for each detector.
-  For example
-  
-  ::
-     
-     data:
-       data files:
-         H1: ./H1-file.gwf
-	 L1: ./L1-file.gwf
 	 
 Data quality information
 ------------------------
@@ -169,12 +127,9 @@ Examples
 .. code-block::
 
    quality:
-     minimum frequency:
+     lower-frequency:
        H1: 20
        L1: 20
-     maximum frequency:
-       H1: 2048
-       L1: 2048
 
 Likelihood settings
 -------------------
@@ -184,110 +139,24 @@ Examples
 
 .. code-block::
 
-   likelihood:
-   
-     psd length: 4
-     reference frequency: 20
-     sample rate: 2048
-     segment start: 1126259460.391
-     start frequency: 13.333333333333334
-     window length: 4
+   psd length: 4
+   reference frequency: 20
+   sample rate: 2048
+   segment start: 1126259460.391
+  
+   start frequency: 13.333333333333334
+   upper frequency: 896
+   window length: 4
 
 Sampler settings
 ----------------
 
 Examples
 ~~~~~~~~
-
-.. code-block:: yaml
-
-		scheduler:
-  		  accounting group: ligo.dev.o4.cbc.pe.bilby
-		  request cpus: 4
-
-
-
+   
 Prior settings
 --------------
 
 Examples
 ~~~~~~~~
 
-.. code-block:: yaml
-
-    priors:
-      chirp mass:
-	type: UniformInComponentsChirpMass
-	minimum: 0
-	maximum: 100
-      mass ratio:
-	type: UniformInComponentsMassRatio
-	minimum: 0.1
-	maximum: 1.0
-      mass 1:
-	type: Constraint
-	minimum: 0
-	maximum: 1
-      mass 2:
-	type: Constraint
-	minimum: 0
-	maximum: 1
-      spin 1:
-	type: Uniform
-	minimum: 0
-	maximum: 1
-      spin 2:
-	type: Uniform
-	minimum: 0
-	maximum: 1
-      tilt 1:
-	type: Sine
-      tilt 2:
-	type: Sine
-      phi 12:
-	type: Uniform
-      phi jl:
-	type: Uniform
-      luminosity distance:
-	type: PowerLaw
-	minimum: 0
-	maximum: 1000
-	alpha: 2
-      dec:
-	type: Cosine
-      ra:
-	type: Uniform
-      theta jn:
-	type: Sine
-      psi:
-	type: Uniform
-      phase:
-	type: Uniform
-	boundary: periodic
-
-Postprocessing settings
------------------------
-
-Examples
-~~~~~~~~
-
-.. code-block:: yaml
-
-
-		postprocessing:
-		  pesummary:
-		    accounting group: ligo.dev.o4.cbc.pe.lalinference
-		    cosmology: Planck15_lal
-		    evolve spins: forward
-		    multiprocess: 4
-		    redshift: exact
-		    regenerate posteriors:
-		    - redshift
-		    - mass_1_source
-		    - mass_2_source
-		    - chirp_mass_source
-		    - total_mass_source
-		    - final_mass_source
-		    - final_mass_source_non_evolved
-		    - radiated_energy
-		    skymap samples: 2000

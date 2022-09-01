@@ -1,5 +1,3 @@
-.. _rift-pipelines:
-
 RIFT pipelines
 ==============
 
@@ -9,12 +7,8 @@ A number of metadata are required to configure RIFT which are not required for o
 Review Status
 -------------
 
-.. warning::
-   
-   **v0.4.0**
-     The current integration with RIFT is experimental, and is not reviewed.
-     It *must not* be used for collaboration parameter estimation analyses.
-     A reviewed version is expected to be available in the v0.5 series of releases.
+.. note::
+   The current integration with RIFT is fully reviewed and is suitable for use with all collaboration analyses.
 
 
 Examples
