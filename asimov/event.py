@@ -920,6 +920,8 @@ class Production:
 
         if "ledger" in dictionary:
             dictionary.pop("ledger")
+        if "pipelines" in dictionary:
+            dictionary.pop("pipelines")
             
         if not event:
             output = dictionary
