@@ -136,6 +136,13 @@ Users' guide
    olivaw/review
    
 .. toctree::
+   :maxdepth: 2
+   :caption: The Ledger
+
+   ledger
+      
+   
+.. toctree::
    :maxdepth: 1
    :caption: Pipeline Guides
 
