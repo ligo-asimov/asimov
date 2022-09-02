@@ -867,6 +867,8 @@ class Production:
                     if "psds" in productions[previous_job].pipeline.collect_assets():
                         if self._check_compatible(productions[previous_job]):
                             psds = productions[previous_job].pipeline.collect_assets()['psds']
+                    else:
+                        psds = {}    
                 except:
                     psds = {}
         # Otherwise return no PSDs
