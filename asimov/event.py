@@ -274,7 +274,11 @@ class Event:
                 # We need to fetch the calibration data
                 from asimov.utils import find_calibrations
                 data['data']["calibration"] = find_calibrations(data['event time'])
-        
+
+        if not "working directory" in data:
+            data['working directory'] = os.path.join(config.get("general", "rundir_default"),
+                                                     data['name'])
+                
         if not repo and "repository" in data:
             data.pop("repository")
         event = cls.from_dict(data, issue=issue, update=update)
@@ -378,7 +382,7 @@ class Event:
                     prod_dict.pop(dupe)
                 prod_names.append(production.name)
                 data['productions'].append({production.name: prod_dict})
-
+        data['working directory'] = self.work_dir
         if "issue" in data:
             data.pop("issue")
         if "ledger" in data:
@@ -896,6 +900,7 @@ class Production:
         """
 
         self.psds = self._collect_psds()
+        print(psds)
 
         if "template" in self.meta:
             template = f"{self.meta['template']}.ini"
