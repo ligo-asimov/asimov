@@ -148,7 +148,7 @@ class Pipeline:
         """
 
         psds = self.production.psds
-        calibration = [os.path.join(self.production.event.repository.directory, cal) for cal in self.production.meta['calibration'].values()]
+        calibration = [os.path.join(self.production.event.repository.directory, cal) for cal in self.production.meta['data']['calibration'].values()]
         configfile = self.production.event.repository.find_prods(self.production.name, self.category)[0]
         command = [
             "--webdir", os.path.join(config.get('general', 'webroot'), self.production.event.name, self.production.name,  "results"),
@@ -160,8 +160,8 @@ class Pipeline:
             "--evolve_spins", "True",
             "--multi_process", "4",
             "--approximant", self.production.meta['approximant'],
-            "--f_low", str(min(self.production.meta['quality']['lower-frequency'].values())),
-            "--f_ref", str(self.production.meta['quality']['reference-frequency']),
+            "--f_low", str(min(self.production.meta['quality']['minimum frequency'].values())),
+            "--f_ref", str(self.production.meta['likelihood']['reference frequency']),
             "--regenerate", "redshift mass_1_source mass_2_source chirp_mass_source total_mass_source final_mass_source final_mass_source_non_evolved radiated_energy",
             "--config", os.path.join(self.production.event.repository.directory, self.category, configfile)]
         # Samples
