@@ -886,7 +886,8 @@ class Production:
             # We'll need to search the repository for it.
             print(self.name, self.category, self.event.repository.directory)
             try:
-                ini_loc = self.event.repository.find_prods(self.name, self.category)[0]
+                ini_loc = self.event.repository.find_prods(self.name,
+                                                       self.category)[0]
                 if not os.path.exists(ini_loc):
                     raise ValueError("Could not open the ini file.")
             except IndexError:
