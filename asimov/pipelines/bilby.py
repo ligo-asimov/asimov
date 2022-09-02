@@ -5,6 +5,9 @@ import glob
 import os
 import re
 import subprocess
+
+from asimov.utils import update
+
 from ..pipeline import Pipeline, PipelineException, PipelineLogger
 from ..ini import RunConfiguration
 from .. import config, logger
