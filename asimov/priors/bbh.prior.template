@@ -12,8 +12,8 @@ a_2 = {{ priors['spin 2']['type'] | default: Uniform}}(name='a_2', minimum={{ pr
 tilt_1 = {{ priors['tilt 1']['type'] | default: Sine}}(name='tilt_1')
 tilt_2 = {{ priors['tilt 2']['type'] | default: Sine}}(name='tilt_2')
 
-phi_12 = {{ priors['phi 12']['type'] | default: Uniform}}(name='phi_12', minimum={{ priors['phi 12']['minimum'] | default: 0}}, maximum={{ priors['phi 12']['maximum'] | default: "2 * np.pi"}}, boundary={{priors['phi 12']['boundary'] | default: 'periodic'}})
-phi_jl = {{ priors['phi jl']['type'] | default: Uniform}}(name='phi_jl', minimum={{ priors['phi jl']['minimum'] | default: 0}}, maximum={{ priors['phi jl']['maximum'] | default: "2 * np.pi"}}, boundary={{priors['phi jl']['boundary'] | default: 'periodic'}})
+phi_12 = {{ priors['phi 12']['type'] | default: Uniform}}(name='phi_12', minimum={{ priors['phi 12']['minimum'] | default: 0}}, maximum={{ priors['phi 12']['maximum'] | default: "2 * np.pi"}}, boundary={{priors['phi 12']['boundary'] | default: "'periodic'"}})
+phi_jl = {{ priors['phi jl']['type'] | default: Uniform}}(name='phi_jl', minimum={{ priors['phi jl']['minimum'] | default: 0}}, maximum={{ priors['phi jl']['maximum'] | default: "2 * np.pi"}}, boundary={{priors['phi jl']['boundary'] | default: "'periodic'"}})
 # Extrinsic parameters
 luminosity_distance =  {{ priors['luminosity distance']['type'] | default: PowerLaw}}(alpha={{ priors['luminosity distance']['alpha'] | default: 2}},    name='luminosity_distance', minimum={{ priors['luminosity distance']['minimum']}}, maximum={{ priors['luminosity distance']['maximum']}}, unit='Mpc')
 dec = Cosine(name='dec')
