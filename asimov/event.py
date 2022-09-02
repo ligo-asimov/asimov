@@ -353,6 +353,22 @@ class Event:
             if calibration.keys() != data["interferometers"]:
                 # We need to fetch the calibration data
                 from asimov.utils import find_calibrations
+                data['data']["calibration"] = find_calibrations(data['event time'])
+        
+        if not repo and "repository" in data:
+            data.pop("repository")
+        event = cls.from_dict(data, issue=issue, update=update)
+        
+        if issue:
+            event.issue_object = issue
+            event.from_notes()
+
+        return event
+
+    @classmethod
+    def from_issue(cls, issue, update=False, repo=True):
+        """
+        Parse an issue description to generate this event.
 
                 try:
                     data["data"]["calibration"] = find_calibrations(data["event time"])
