@@ -32,7 +32,7 @@ def create(event, pipeline, family, comment, needs, template, status, approximan
 
     """
 
-    event = ledger.get_event(event)
+    event = ledger.get_event(event)[0]
     #
     event_prods = event.productions
     names = [production.name for production in event_prods]
