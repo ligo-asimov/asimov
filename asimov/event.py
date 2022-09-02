@@ -377,7 +377,7 @@ class Event:
             if calibration.keys() != data['interferometers']:
                 # We need to fetch the calibration data
                 from asimov.utils import find_calibrations
-                data["calibration"] = find_calibrations(data['event time'])
+                data['data']["calibration"] = find_calibrations(data['event time'])
         
         if not repo and "repository" in data:
             data.pop("repository")
