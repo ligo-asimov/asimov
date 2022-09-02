@@ -36,7 +36,7 @@ def monitor(event, update, dry_run):
             
             # Deal with jobs which need to be stopped first
             if production.status.lower() == "stop":
-                pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
+                pipe = production.pipeline(production, "C01_offline")
                 if not dry_run:
                     pipe.eject_job()
                     production.status = "stopped"
@@ -79,9 +79,9 @@ def monitor(event, update, dry_run):
             except ValueError as e:
                 click.echo(e)
                 click.echo(f"\t\t{production.status.lower()}")
-                if production.pipeline.lower() in known_pipelines:
+                if production.pipeline:
                     #click.echo("Investigating...")
-                    pipe = known_pipelines[production.pipeline.lower()](production, "C01_offline")
+                    pipe = production.pipeline
 
                     if production.status.lower() == "stop":
                         pipe.eject_job()

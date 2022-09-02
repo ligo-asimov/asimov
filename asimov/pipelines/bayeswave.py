@@ -250,18 +250,32 @@ class BayesWave(Pipeline):
         """
         psds = {}
         detectors = self.production.meta['interferometers']
-        sample = self.production.meta["quality"]["sample-rate"]
+        sample = self.production.meta["likelihood"]["sample rate"]
         git_location = os.path.join(self.category, "psds")
         
-        for det in dets:
-            asset = f"{self.production.rundir}/ROQdata/0/BayesWave_PSD_{det}/post/clean/glitch_median_PSD_forLI_{det}.dat"
-            if os.path.exists(asset):
-                psds[det] = asset
-                self.production.event.repository.add_file(
-                    asset,
-                    os.path.join(git_location, str(sample), f"psd_{det}.dat"),
-                    commit_message = f"Added the PSD for {det}.")
+        for detector, asset in self.collect_assets()['psds']:
+            self.production.event.repository.add_file(
+                asset,
+                os.path.join(git_location, str(sample), f"psd_{det}.dat"),
+                commit_message = f"Added the PSD for {det}.")
 
+    def store_assets(self):
+        """
+        Add the assets to the store.
+        """
+        
+        sample_rate = self.production.meta['quality']['sample-rate']
+        for detector, asset in self.collect_assets()['psds']:
+            store = Store(root=config.get("storage", "directory"))
+            try:
+                store.add_file(self.production.event.name, self.production.name,
+                               file = f"{det}-{sample_rate}-psd.dat")
+            except Exception as e:
+                error = PipelineLogger(f"There was a problem committing the PSD for {det} to the store.\n\n{e}",
+                                       issue=self.production.event.issue_object,
+                                       production=self.production.name)
+                error.submit_comment()
+                
     def collect_logs(self):
         """
         Collect all of the log files which have been produced by this production and 
@@ -282,40 +296,15 @@ class BayesWave(Pipeline):
         Since this job also generates the PSDs these should be added to the production ledger.
         """
         results_dir = glob.glob(f"{self.production.rundir}/trigtime_*")[0]
-        sample_rate = self.production.meta['quality']['sample-rate']
-
-        store = Store(root=config.get("storage", "directory"))
-        
+        psds = {}
         for det in self.production.meta['interferometers']:
             asset = os.path.join(results_dir, "post", "clean", f"glitch_median_PSD_forLI_{det}.dat")
-            destination = os.path.join(self.category, "psds", str(sample_rate), f"{det}-psd.dat")
+            if os.path.exists(asset):
+                psds[det] = asset
 
-            try:
-                self.production.event.repository.add_file(asset, destination)
-            except Exception as e:
-                error = PipelineLogger(f"There was a problem committing the PSD for {det} to the repository.\n\n{e}",
-                                    issue=self.production.event.issue_object,
-                                    production=self.production.name)
-                error.submit_comment()
-
-            # Add to the event ledger
-            if "psds" not in self.production.event.meta:
-                self.production.event.meta['psds'] = {}
-            if sample_rate not in self.production.event.meta['psds']:
-                self.production.event.meta['psds'][sample_rate] = {}
-                
-            self.production.event.meta['psds'][sample_rate][det] = destination
-            # Let's have a better way of doing this
-            self.production.event.issue_object.update_data()
-            copyfile(asset, f"{det}-{sample_rate}-psd.dat")
-            try:
-                store.add_file(self.production.event.name, self.production.name,
-                               file = f"{det}-{sample_rate}-psd.dat")
-            except Exception as e:
-                error = PipelineLogger(f"There was a problem committing the PSD for {det} to the store.\n\n{e}",
-                                    issue=self.production.event.issue_object,
-                                    production=self.production.name)
-                error.submit_comment()
+        outputs = {}
+        outputs['psds'] = psds
+        return outputs
             
     def supress_psd(self, ifo, fmin, fmax):
         """
