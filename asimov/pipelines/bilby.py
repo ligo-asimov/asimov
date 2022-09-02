@@ -116,8 +116,13 @@ class Bilby(Pipeline):
             #with open(template, "r") as old_prior:
             #    prior_string = old_prior.read().format(**prior_parameters)
 
+            priors = {}
+            priors = update(priors, self.production.event.ledger.data['priors'])
+            priors = update(priors, self.production.event.meta['priors'])
+            priors = update(priors, self.production.meta['priors'])
+            
             liq = Liquid(template)
-            rendered = liq.render(priors=self.production.meta['priors'], config=config)
+            rendered = liq.render(priors=priors, config=config)
             
             prior_name = f"{self.production.name}.prior"
             prior_file = os.path.join(os.getcwd(), prior_name)
