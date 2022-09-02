@@ -90,13 +90,7 @@ class Pipeline():
     def __init__(self, production, category=None):
         self.production = production
 
-        if not category:
-            if "Prod" in production.name:
-                self.category = "C01_offline"
-            else:
-                self.category = "online"
-        else:
-            self.category = category
+        self.category = production.category
         self.logger = logger
         
     def __repr__(self):
