@@ -123,6 +123,11 @@ class Bilby(Pipeline):
             priors = update(priors, self.production.event.meta["priors"])
             priors = update(priors, self.production.meta["priors"])
 
+            priors = {}
+            priors = update(priors, self.production.event.ledger.data['priors'])
+            priors = update(priors, self.production.event.meta['priors'])
+            priors = update(priors, self.production.meta['priors'])
+            
             liq = Liquid(template)
             rendered = liq.render(priors=priors, config=config)
 
