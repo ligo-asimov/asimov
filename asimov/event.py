@@ -848,7 +848,7 @@ class Production:
         """
         Collect the required psds for this production.
         """
-
+        psds = {}
         # If the PSDs are specifically provided in the ledger, 
         # use those.
         if 'psds' in self.meta:
