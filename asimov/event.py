@@ -543,25 +543,8 @@ class Production:
         self.event = event if isinstance(event, Event) else event[0]
         self.name = name
 
-        pathlib.Path(
-            os.path.join(config.get("logging", "directory"), self.event.name, name)
-        ).mkdir(parents=True, exist_ok=True)
-        logfile = os.path.join(
-            config.get("logging", "directory"), self.event.name, name, "asimov.log"
-        )
-
-        self.logger = logger.getChild("analysis").getChild(
-            f"{self.event.name}/{self.name}"
-        )
-        self.logger.setLevel(LOGGER_LEVEL)
-
-        fh = logging.FileHandler(logfile)
-        formatter = logging.Formatter("%(asctime)s - %(message)s", "%Y-%m-%d %H:%M:%S")
-        fh.setFormatter(formatter)
-        self.logger.addHandler(fh)
-
         self.category = config.get("general", "calibration_directory")
-
+        
         if status:
             self.status_str = status.lower()
         else:
@@ -638,8 +621,12 @@ class Production:
         if "priors" in self.meta:
             self.priors = self.meta["priors"]
 
-        self.category = config.get("general", "calibration_directory")
-
+    def __hash__(self):
+        return int(f"{hash(self.name)}{abs(hash(self.event.name))}")
+            
+    def __eq__(self, other):
+        return (self.name == other.name) & (self.event == other.event)
+            
     def _process_dependencies(self, needs):
         """
         Process the dependencies list for this production.
