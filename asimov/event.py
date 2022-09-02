@@ -1116,7 +1116,6 @@ class Production:
         self.logger.info("Creating config file.")
 
         self.psds = self._collect_psds()
-        print(psds)
 
         if "template" in self.meta:
             template = f"{self.meta['template']}.ini"
