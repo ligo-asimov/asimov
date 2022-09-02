@@ -463,6 +463,9 @@ class Production:
     def __init__(self, event, name, status, pipeline, comment=None, **kwargs):
         self.event = event if isinstance(event, Event) else event[0]
         self.name = name
+
+        self.category = config.get("general", "calibration_directory")
+        
         if status:
             self.status_str = status.lower()
         else:
@@ -540,8 +543,6 @@ class Production:
         # Gather the appropriate prior data for this production
         if 'priors' in self.meta:
             self.priors = self.meta['priors']
-
-        self.category = config.get("general", "calibration_directory")
 
     def __hash__(self):
         return int(f"{hash(self.name)}{abs(hash(self.event.name))}")
