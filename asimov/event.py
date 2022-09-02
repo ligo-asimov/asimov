@@ -802,6 +802,8 @@ class Production:
             try:
                 ini_loc = self.event.repository.find_prods(self.name,
                                                        self.category)[0]
+                if not os.path.exists(ini_loc):
+                    raise ValueError("Could not open the ini file.")
             except IndexError:
                 raise ValueError("Could not open the ini file.")
         try:
