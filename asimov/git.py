@@ -205,7 +205,7 @@ class EventRepo():
 
         self.update()
         path = f"{os.path.join(os.getcwd(), self.directory, category)}/{name}.ini"
-        return path
+        return [path]
 
     def upload_prod(self, production, rundir, preferred=False, category="C01_offline", rootdir="public_html/LVC/projects/O3/C01/", rename = False):
         """
