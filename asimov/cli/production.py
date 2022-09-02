@@ -78,92 +78,29 @@ def create(event, pipeline, family, comment, needs, template, status, approximan
         ledger.events[event.name] = event.to_dict()
         ledger.save()
 
+# @click.option("--file", "file", default=None)
+# @click.argument("production")
+# @click.argument("event")
+# @production.command()
+# def results(event, production, file, hash=None):
+#     """
+#     Fetch or list the results of a production.
+#     """
+#     event = ledger.get_event(event)[0]
+#     production = [production_o for production_o in event.productions if production_o.name == production][0]
+#     store = Store(root=config.get("storage", "results_store"))
 
-@click.option(
-    "--status",
-    "-s",
-    default=None,
-    help="Change the run status. Options: ready | wait | stuck | stop | cancelled",
-)
-@click.argument("production")
-@click.argument("event")
-@production.command()
-def set(event, production, status):
-    """
-    Set or update properties such as the status of a production.
-    Note that some properties cannot be updated once the production is being run,
-    and you should create a new production instead.
-    """
-    event = ledger.get_event(event=event)[0]
-    production = [
-        production_o
-        for production_o in event.productions
-        if production_o.name == production
-    ][0]
-
-    accepted_states = {"ready", "wait", "stuck", "stop", "cancelled"}
-    if status:
-        if status in accepted_states:
-            production.status = status
-            # ledger.save()
-            click.echo(
-                click.style("●", fg="green")
-                + f" {production.name} status updated to {status}"
-            )
-        else:
-            click.echo(
-                click.style("●", fg="red")
-                + f" Unable to change the state of {production.name} to {status}."
-            )
-
-
-@click.argument("production")
-@click.argument("event")
-@production.command()
-def show(event, production):
-    """
-    Show the entire metadata for a given production.
-    """
-    event = ledger.get_event(event=event)[0]
-    production = [
-        production_o
-        for production_o in event.productions
-        if production_o.name == production
-    ][0]
-
-    meta = copy(production.meta)
-    meta.pop("ledger")
-    output = yaml.dump(meta, default_flow_style=False)
-    click.echo_via_pager(output)
-
-
-@click.option("--file", "file", default=None)
-@click.argument("production")
-@click.argument("event")
-@production.command()
-def results(event, production, file, hash=None):
-    """
-    Fetch or list the results of a production.
-    """
-    event = ledger.get_event(event)[0]
-    production = [
-        production_o
-        for production_o in event.productions
-        if production_o.name == production
-    ][0]
-    store = Store(root=config.get("storage", "directory"))
-
-    if not file:
-        try:
-            items = store.manifest.list_resources(event.name, production.name).items()
-            click.secho(f"{'Resource':30} {'Hash':32} {'UUID':32}")
-            click.secho("-" * 96)
-            for resource, details in items:
-                click.secho(f"{resource:30} {details['hash']:32} {details['uuid']:32}")
-        except KeyError:
-            click.secho("There are no results for this production.")
-    else:
-        try:
-            click.echo(store.fetch_file(event, production, file, hash))
-        except FileNotFoundError:
-            click.secho(f"{file} could not be found for this production.")
+#     if not file:
+#         try:
+#             items = store.manifest.list_resources(event.name, production.name).items()
+#             click.secho(f"{'Resource':30} {'Hash':32} {'UUID':32}")
+#             click.secho("-"*96)
+#             for resource, details in items:
+#                 click.secho(f"{resource:30} {details['hash']:32} {details['uuid']:32}")
+#         except KeyError:
+#             click.secho("There are no results for this production.")
+#     else:
+#         try:
+#             click.echo(store.fetch_file(event, production, file, hash))
+#         except FileNotFoundError:
+#             click.secho(f"{file} could not be found for this production.")

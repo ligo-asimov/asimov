@@ -15,19 +15,11 @@ from .review import Review
 from asimov import config, logger
 from asimov.storage import Store
 from asimov.pipelines import known_pipelines
+from asimov.utils import update
+from liquid import Liquid
 
-from .git import EventRepo
-from .ini import RunConfiguration
-from .review import Review
-
-def update(d, u):
-    """Recursively update a dictionary."""
-    for k, v in u.items():
-        if isinstance(v, collections.abc.Mapping):
-            d[k] = update(d.get(k, {}), v)
-        else:
-            d[k] = v
-    return d
+from ligo.gracedb.rest import GraceDb, HTTPError
+from copy import copy, deepcopy
 
 class DescriptionException(Exception):
     """Exception for event description problems."""
@@ -307,7 +299,7 @@ class Event:
             raise DescriptionException(f"Some of the required parameters are missing from this issue.")
 
         try:
-            calibration = data["calibration"]
+            calibration = data['data']["calibration"]
         except KeyError:
             calibration = {}
 
@@ -323,7 +315,7 @@ class Event:
             if calibration.keys() != data['interferometers']:
                 # We need to fetch the calibration data
                 from asimov.utils import find_calibrations
-                data["calibration"] = find_calibrations(data['event time'])
+                data['data']["calibration"] = find_calibrations(data['event time'])
         
         if not repo and "repository" in data:
             data.pop("repository")
@@ -639,33 +631,12 @@ class Production:
                 self.meta['likelihood']['segment start'] = self.meta['event time'] - self.meta['data']['segment length'] + 2
                 #self.event.meta['likelihood']['segment start'] = self.meta['data']['segment start']
 
+        # Gather the PSDs for the job
+        self.psds = self._collect_psds()
+            
         # Gather the appropriate prior data for this production
         if "priors" in self.meta:
             self.priors = self.meta["priors"]
-
-        # Need to fetch the correct PSDs for this sample rate
-        if 'psds' in self.meta:
-            if self.meta['likelihood']['sample rate'] in self.meta['psds']:
-                self.psds = self.meta['psds'][self.meta['likelihood']['sample rate']]
-            else:
-                self.psds = {}
-        else:
-            self.psds = {}
-
-    def __eq__(self, other):
-        return (self.name == other.name) & (self.event == other.event)
-
-    def __hash__(self):
-        return int(f"{hash(self.name)}{abs(hash(self.event.name))}")
-            
-    def __eq__(self, other):
-        return (self.name == other.name) & (self.event == other.event)
-            
-        for ifo, psd in self.psds.items():
-            if self.event.repository:
-                self.psds[ifo] = os.path.join(self.event.repository.directory, psd)
-            else:
-                self.psds[ifo] = psd
 
         self.category = config.get("general", "calibration_directory")
 
@@ -855,11 +826,8 @@ class Production:
         """
         if sample_rate is None:
             try:
-                if (
-                    "likelihood" in self.meta
-                    and "sample rate" in self.meta["likelihood"]
-                ):
-                    sample_rate = self.meta["likelihood"]["sample rate"]
+                if "likelihood" in self.meta and "sample rate" in self.meta['likelihood']:
+                    sample_rate = self.meta['likelihood']['sample rate']
                 else:
                     raise DescriptionException(
                         "The sample rate for this event cannot be found.",
@@ -875,11 +843,9 @@ class Production:
 
         if (len(self.psds) > 0) and (format == "ascii"):
             return self.psds
-        elif format == "xml":
+        elif (format=="xml"):
             # TODO: This is a hack, and we need a better way to sort this.
-            files = glob.glob(
-                f"{self.event.repository.directory}/{self.category}/psds/{sample_rate}/*.xml.gz"
-            )
+            files = glob.glob(f"{self.event.repository.directory}/{self.category}/psds/{sample_rate}/*.xml.gz")
             return files
 
     def get_timefile(self):
@@ -895,7 +861,6 @@ class Production:
             return self.event.repository.find_timefile(self.category)
         except FileNotFoundError:
             new_file = os.path.join("gps.txt")
-            print(os.getcwd())
             with open(new_file, "w") as f:
                 f.write(f"{self.event.meta['event time']}")
             self.event.repository.add_file(new_file, os.path.join(self.category, new_file), "Added a new GPS timefile.")
@@ -979,35 +944,43 @@ class Production:
         """
         Collect the required psds for this production.
         """
-        psds = {}
-        # If the PSDs are specifically provided in the ledger,
-        # use those.
-        if "psds" in self.meta:
-            if self.meta["likelihood"]["sample rate"] in self.meta["psds"]:
-                psds = self.meta["psds"][self.meta["likelihood"]["sample rate"]]
 
+        # If the PSDs are specifically provided in the ledger, 
+        # use those.
+        if 'psds' in self.meta:
+            if self.meta['likelihood']['sample rate'] in self.meta['psds']:
+                psds = self.meta['psds'][self.meta['likelihood']['sample rate']]
+        
         # First look through the list of the job's dependencies
         # to see if they're provided by a job there.
         elif self.dependencies:
             productions = {}
             for production in self.event.productions:
                 productions[production.name] = production
-
             for previous_job in self.dependencies:
                 try:
                     # Check if the job provides PSDs as an asset and were produced with compatible settings
                     if "psds" in productions[previous_job].pipeline.collect_assets():
                         if self._check_compatible(productions[previous_job]):
-                            psds = productions[previous_job].pipeline.collect_assets()[
-                                "psds"
-                            ]
-                    else:
-                        psds = {}
-                except Exception:
+                            psds = productions[previous_job].pipeline.collect_assets()['psds']
+                except:
                     psds = {}
         # Otherwise return no PSDs
         else:
             psds = {}
+
+        return psds
+
+    def _check_compatible(self, other_production):
+        """
+        Check that the data settings in two productions are sufficiently compatible
+        that one can be used as a dependency of the other.
+        """
+        compatible = True
+
+        comaptible = (self.meta['likelihood'] == other_production.meta['likelihood'])
+        compatible = (self.meta['data'] == other_production.meta['data'])
+        return compatible
 
     def make_config(self, filename, template_directory=None, dryrun=False):
         """
@@ -1021,8 +994,6 @@ class Production:
            The path to the directory containing the pipeline config templates.
            Defaults to the directory specified in the asimov configuration file.
         """
-
-        self.logger.info("Creating config file.")
 
         self.psds = self._collect_psds()
 

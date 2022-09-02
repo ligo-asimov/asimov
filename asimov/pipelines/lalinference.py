@@ -29,7 +29,6 @@ class LALInference(Pipeline):
         The category of the job.
         Defaults to "C01_offline".
     """
-
     name = "lalinference"
     STATUS = {"wait", "stuck", "stopped", "running", "finished"}
 

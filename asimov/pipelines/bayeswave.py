@@ -261,38 +261,34 @@ class BayesWave(Pipeline):
         """
         Upload the PSDs from this job.
         """
+        psds = {}
+        detectors = self.production.meta['interferometers']
         sample = self.production.meta["likelihood"]["sample rate"]
         git_location = os.path.join(self.category, "psds")
-
-        for detector, asset in self.collect_assets()["psds"]:
+        
+        for detector, asset in self.collect_assets()['psds']:
             self.production.event.repository.add_file(
                 asset,
-                os.path.join(git_location, str(sample), f"psd_{detector}.dat"),
-                commit_message=f"Added the PSD for {detector}.",
-            )
+                os.path.join(git_location, str(sample), f"psd_{det}.dat"),
+                commit_message = f"Added the PSD for {det}.")
 
     def store_assets(self):
         """
         Add the assets to the store.
         """
-
-        sample_rate = self.production.meta["likelihood"]["sample rate"]
-        self.logger.info(self.collect_assets())
-        for detector, asset in self.collect_assets()["psds"].items():
+        
+        sample_rate = self.production.meta['quality']['sample-rate']
+        for detector, asset in self.collect_assets()['psds']:
             store = Store(root=config.get("storage", "directory"))
             try:
-                store.add_file(
-                    self.production.event.name,
-                    self.production.name,
-                    file=asset,
-                    new_name=f"{detector}-{sample_rate}-psd.dat",
-                )
+                store.add_file(self.production.event.name, self.production.name,
+                               file = f"{det}-{sample_rate}-psd.dat")
             except Exception as e:
-                self.logger.error(
-                    f"There was a problem committing the PSD for {detector} to the store."
-                )
-                self.logger.exception(e)
-
+                error = PipelineLogger(f"There was a problem committing the PSD for {det} to the store.\n\n{e}",
+                                       issue=self.production.event.issue_object,
+                                       production=self.production.name)
+                error.submit_comment()
+                
     def collect_logs(self):
         """
         Collect all of the log files which have been produced by this production and
@@ -326,17 +322,15 @@ class BayesWave(Pipeline):
         """
         results_dir = glob.glob(f"{self.production.rundir}/trigtime_*")[0]
         psds = {}
-        for det in self.production.meta["interferometers"]:
-            asset = os.path.join(
-                results_dir, "post", "clean", f"glitch_median_PSD_forLI_{det}.dat"
-            )
+        for det in self.production.meta['interferometers']:
+            asset = os.path.join(results_dir, "post", "clean", f"glitch_median_PSD_forLI_{det}.dat")
             if os.path.exists(asset):
                 psds[det] = asset
 
         outputs = {}
-        outputs["psds"] = psds
+        outputs['psds'] = psds
         return outputs
-
+            
     def supress_psd(self, ifo, fmin, fmax):
         """
         Suppress portions of a PSD.

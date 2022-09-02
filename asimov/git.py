@@ -217,6 +217,7 @@ class EventRepo():
         """
 
         self.update()
+        path = f"{os.path.join(os.getcwd(), self.directory, category)}/{name}*.ini"
         prods = glob.glob(f"{os.path.join(self.directory, category)}/{name}*.ini")
         return prods
 
