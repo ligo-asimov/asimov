@@ -988,7 +988,6 @@ class Production:
         """
 
         self.psds = self._collect_psds()
-        print(psds)
 
         if "template" in self.meta:
             template = f"{self.meta['template']}.ini"
