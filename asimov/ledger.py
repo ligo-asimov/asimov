@@ -2,7 +2,7 @@
 Code for the project ledger.
 """
 from functools import reduce
-
+from copy import deepcopy
 import yaml
 import asimov
 
@@ -33,7 +33,7 @@ class YAMLLedger(Ledger):
         with open(location, "r") as ledger_file:
             self.data = yaml.safe_load(ledger_file)
 
-        self.data['events'] = [update(self.get_defaults(), event) for event in self.data['events']]
+        self.data['events'] = [update(self.get_defaults(), event, inplace=False) for event in self.data['events']]
         self.events = {ev['name']: ev for ev in self.data['events']}
         self.data.pop("events")
 
@@ -85,11 +85,20 @@ class YAMLLedger(Ledger):
                         overloaded = {}
                         if category in self.data:
                             inherited = self.data[category]
-                            if (values != inherited[prior]):
+                            if isinstance(values, dict):
+                                overload_inner = {}
+                                for key, value in values.items():
+                                    if value != inherited[prior][key]:
+                                        overload_inner[key] = value
+                                if len(overload_inner)>0:
+                                    overloaded[prior] = overload_inner
+                                    #print(overloaded)
+                            elif (values != inherited[prior]):
                                 overloaded[prior] = values
-                    if len(overloaded)>0:
-                        #print(event['name'], "overloaded", category, event)
-                        self.data['events'][i][category] = overloaded
+                        if len(overloaded)>0:
+                            if category not in self.data['events'][i]: self.data['events'][i][category] = {}
+                            self.data['events'][i][category] = update(deepcopy(self.data['events'][i][category]), overloaded, inplace=False)
+
 
         for category in categories:
             for i, event in enumerate(self.data['events']):
@@ -102,21 +111,27 @@ class YAMLLedger(Ledger):
                             inherited = {}
                             if "pipeline" in production[prod_name]:
                                 if category in self.data['pipelines'][production[prod_name]['pipeline']]:
-                                    inherited = update(inherited, self.data['pipelines'][production[prod_name]['pipeline']][category])
+                                    inherited = update(inherited, self.data['pipelines'][production[prod_name]['pipeline']][category], inplace=False)
                             if category in self.data:
-                                inherited = update(inherited, self.data[category])
+                                inherited = update(inherited, self.data[category], inplace=False)
                             if category in self.data['events'][i]:
-                                inherited = update(inherited, self.data['events'][i][category])
-
-
-                            if prior in inherited:
-                                if (values != inherited[prior]):
-                                    overloaded[prior] = values
-                            else:
+                                inherited = update(inherited, self.data['events'][i][category], inplace=False)
+                                
+                            if isinstance(values, dict):
+                                overload_inner = {}
+                                for key, value in values.items():
+                                    if value != inherited[prior][key]:
+                                        overload_inner[key] = value
+                                if len(overload_inner)>0:
+                                    overloaded[prior] = overload_inner
+                                    print(overloaded)
+                            elif (values != inherited[prior]):
                                 overloaded[prior] = values
                         if len(overloaded)>0:
-                            #print(event['name'], "overloaded", category, event)
-                            self.data['events'][i]['productions'][prod_i][prod_name][category] = overloaded
+                            if category not in self.data['events'][i]: self.data['events'][i][category] = {}
+                            self.data['events'][i][category] = update(self.data['events'][i][category], overloaded, inplace=False)
+
+
                         
         
         with open(self.location, "w") as ledger_file:
