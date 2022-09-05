@@ -2,7 +2,7 @@
 Code for the project ledger.
 """
 from functools import reduce
-
+from copy import deepcopy
 import yaml
 
 import asimov
