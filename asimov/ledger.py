@@ -83,8 +83,9 @@ class YAMLLedger(Ledger):
                     event_data = self.data['events'][i].pop(category)
                     for prior, values in event_data.items():
                         overloaded = {}
-                        inherited = self.data[category]
-                        if (values != inherited[prior]):
+                        if category in self.data:
+                            inherited = self.data[category]
+                            if (values != inherited[prior]):
                             overloaded[prior] = values
                     if len(overloaded)>0:
                         #print(event['name'], "overloaded", category, event)
