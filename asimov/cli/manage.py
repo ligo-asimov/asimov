@@ -58,6 +58,8 @@ def build(event, dryrun):
                                                                    f"{production.name}.ini"))
                             logger.info("Configuration committed to event repository.",
                                         production=production)
+                            ledger.update_event(event)
+                            
                         except Exception as e:
                             logger.error(f"Configuration could not be committed to repository.\n{e}",
                                          production=production)
@@ -99,6 +101,7 @@ def submit(event, update, dryrun):
 
                 except PipelineException as e:
                     production.status = "stuck"
+                    ledger.update_event(event)
                     logger.error(f"The pipeline failed to submit the DAG file to the cluster. {e}",
                                  production=production)
 

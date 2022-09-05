@@ -5,8 +5,10 @@ from functools import reduce
 
 import yaml
 import asimov
-from asimov.utils import update
 
+from deepdiff import DeepDiff
+
+from asimov.utils import update
 from asimov.event import Event, Production
 from asimov import config
 import asimov.database
@@ -62,7 +64,60 @@ class YAMLLedger(Ledger):
         self.save()
             
     def save(self):
+        """
+        Update the ledger YAML file with the data from the various events.
+
+        Notes
+        -----
+        The save function checks the difference between the default values for each production and event
+        before saving them, in order to attempt to reduce the duplication within the ledger.
+
+        
+        """
         self.data['events'] = list(self.events.values())
+
+        categories = {"priors", "sampler", "likelihood", "quality", "data", "scheduler"}
+        for category in categories:
+            for i, event in enumerate(self.data['events']):
+                if category in event.keys():
+                    event_data = self.data['events'][i].pop(category)
+                    for prior, values in event_data.items():
+                        overloaded = {}
+                        inherited = self.data[category]
+                        if (values != inherited[prior]):
+                            overloaded[prior] = values
+                    if len(overloaded)>0:
+                        #print(event['name'], "overloaded", category, event)
+                        self.data['events'][i][category] = overloaded
+
+        for category in categories:
+            for i, event in enumerate(self.data['events']):
+                for prod_i, production in enumerate(event['productions']):
+                    prod_name = list(production.keys())[0]
+                    if category in event['productions'][prod_i][prod_name].keys():
+                        production_data = self.data['events'][i]['productions'][prod_i][prod_name].pop(category)
+                        for prior, values in production_data.items():
+                            overloaded = {}
+                            inherited = {}
+                            if "pipeline" in production[prod_name]:
+                                if category in self.data['pipelines'][production[prod_name]['pipeline']]:
+                                    inherited = update(inherited, self.data['pipelines'][production[prod_name]['pipeline']][category])
+                            if category in self.data:
+                                inherited = update(inherited, self.data[category])
+                            if category in self.data['events'][i]:
+                                inherited = update(inherited, self.data['events'][i][category])
+
+
+                            if prior in inherited:
+                                if (values != inherited[prior]):
+                                    overloaded[prior] = values
+                            else:
+                                overloaded[prior] = values
+                        if len(overloaded)>0:
+                            #print(event['name'], "overloaded", category, event)
+                            self.data['events'][i]['productions'][prod_i][prod_name][category] = overloaded
+                        
+        
         with open(self.location, "w") as ledger_file:
             ledger_file.write(
                 yaml.dump(self.data, default_flow_style=False))

@@ -1,7 +1,7 @@
 # Chirp mass
-chirp_mass = {{priors['chirp mass']['type'] | default: UniformInComponentsChirpMass }}(name='chirp_mass', minimum={{priors['chirp mass']['minimum']}},    maximum={{priors['chirp mass']['maximum']}}, unit='$M_\{\{\odot\}\}$')
+chirp_mass = {{priors['chirp mass']['type'] | default: "bilby.gw.prior.UniformInComponentsChirpMass" }}(name='chirp_mass', minimum={{priors['chirp mass']['minimum']}},    maximum={{priors['chirp mass']['maximum']}}, unit='$M_\{\{\odot\}\}$')
 # Mass ratio
-mass_ratio = {{priors['mass ratio']['type'] | default: UniformInComponentsMassRatio }}(name='mass_ratio', minimum={{priors['mass ratio']['minimum']}},    maximum={{priors['mass ratio']['maximum']}})
+mass_ratio = {{priors['mass ratio']['type'] | default: "bilby.gw.prior.UniformInComponentsMassRatio" }}(name='mass_ratio', minimum={{priors['mass ratio']['minimum']}},    maximum={{priors['mass ratio']['maximum']}})
 # Component masses
 mass_1 = {{priors['mass 1']['type'] | default: Constraint}}(name='mass_1', minimum={{priors['mass 1']['minimum']}}, maximum={{priors['mass 1']['maximum']}})
 mass_2 = {{priors['mass 2']['type'] | default: Constraint}}(name='mass_2', minimum={{priors['mass 2']['minimum']}}, maximum={{priors['mass 2']['maximum']}})
