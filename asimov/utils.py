@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 from pathlib import Path
+from copy import deepcopy
 from asimov import logger
 import os
 import glob
@@ -53,8 +54,11 @@ def find_calibrations(time):
             "V1": virgo}
 
 
-def update(d, u):
+def update(d, u, inplace=True):
     """Recursively update a dictionary."""
+    if not inplace:
+        d = deepcopy(d)
+        u = deepcopy(u)
     for k, v in u.items():
         if isinstance(v, collections.abc.Mapping):
             d[k] = update(d.get(k, {}), v)

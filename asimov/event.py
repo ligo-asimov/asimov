@@ -861,6 +861,7 @@ class Production:
             productions = {}
             for production in self.event.productions:
                 productions[production.name] = production
+
             for previous_job in self.dependencies:
                 try:
                     # Check if the job provides PSDs as an asset and were produced with compatible settings
@@ -869,8 +870,9 @@ class Production:
                             psds = productions[previous_job].pipeline.collect_assets()['psds']
                     else:
                         psds = {}    
-                except:
+                except Exception as e:
                     psds = {}
+                    print(e)
         # Otherwise return no PSDs
         else:
             psds = {}
