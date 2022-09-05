@@ -6,8 +6,6 @@ from functools import reduce
 import yaml
 import asimov
 
-from deepdiff import DeepDiff
-
 from asimov.utils import update
 from asimov.event import Event, Production
 from asimov import config
