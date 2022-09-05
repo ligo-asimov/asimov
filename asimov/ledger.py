@@ -84,7 +84,7 @@ class YAMLLedger(Ledger):
                         if category in self.data:
                             inherited = self.data[category]
                             if (values != inherited[prior]):
-                            overloaded[prior] = values
+                                overloaded[prior] = values
                     if len(overloaded)>0:
                         #print(event['name'], "overloaded", category, event)
                         self.data['events'][i][category] = overloaded
