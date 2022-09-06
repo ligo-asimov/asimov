@@ -138,7 +138,7 @@ def clone(location):
         os.getcwd(), config.get("project", "name").lower().replace(" ", "-")
     )
     pathlib.Path(root).mkdir(parents=True, exist_ok=True)
-    # os.chdir(root)
+    #os.chdir(root)
     config.set("project", "root", root)
     # Make the virtual environment
     # builder = venv.EnvBuilder(system_site_packages=False,
