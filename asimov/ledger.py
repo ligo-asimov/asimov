@@ -79,10 +79,10 @@ class YAMLLedger(Ledger):
         categories = {"priors", "sampler", "likelihood", "quality", "data", "scheduler"}
         for category in categories:
             for i, event in enumerate(self.data['events']):
+                overloaded = {}
                 if category in event.keys():
                     event_data = self.data['events'][i].pop(category)
                     for prior, values in event_data.items():
-                        overloaded = {}
                         if category in self.data:
                             inherited = self.data[category]
                             if isinstance(values, dict):
@@ -95,20 +95,21 @@ class YAMLLedger(Ledger):
                                     #print(overloaded)
                             elif (values != inherited[prior]):
                                 overloaded[prior] = values
+                        else:
+                            overloaded = event_data
                         if len(overloaded)>0:
                             if category not in self.data['events'][i]: self.data['events'][i][category] = {}
                             self.data['events'][i][category] = update(deepcopy(self.data['events'][i][category]), overloaded, inplace=False)
-
 
         for category in categories:
             for i, event in enumerate(self.data['events']):
                 for prod_i, production in enumerate(event['productions']):
                     prod_name = list(production.keys())[0]
+                    overloaded = {}
+                    inherited = {}
                     if category in event['productions'][prod_i][prod_name].keys():
                         production_data = self.data['events'][i]['productions'][prod_i][prod_name].pop(category)
                         for prior, values in production_data.items():
-                            overloaded = {}
-                            inherited = {}
                             if "pipeline" in production[prod_name]:
                                 if category in self.data['pipelines'][production[prod_name]['pipeline']]:
                                     inherited = update(inherited, self.data['pipelines'][production[prod_name]['pipeline']][category], inplace=False)
@@ -120,18 +121,20 @@ class YAMLLedger(Ledger):
                             if isinstance(values, dict):
                                 overload_inner = {}
                                 for key, value in values.items():
-                                    if value != inherited[prior][key]:
+                                    if prior in inherited:
+                                        if value != inherited[prior][key]:
+                                            overload_inner[key] = value
+                                    else:
                                         overload_inner[key] = value
                                 if len(overload_inner)>0:
                                     overloaded[prior] = overload_inner
-                                    print(overloaded)
                             elif (values != inherited[prior]):
                                 overloaded[prior] = values
+                        else:
+                            overloaded = production_data
                         if len(overloaded)>0:
-                            if category not in self.data['events'][i]: self.data['events'][i][category] = {}
-                            self.data['events'][i][category] = update(self.data['events'][i][category], overloaded, inplace=False)
-
-
+                            if category not in self.data['events'][i]['productions'][prod_i][prod_name]: self.data['events'][i][productions][prod_i][prod_name][category] = {}
+                            self.data['events'][i][productions][prod_i][prod_name][category] = update(self.data['events'][i][productions][prod_i][prod_name][category], overloaded, inplace=False)
                         
         
         with open(self.location, "w") as ledger_file:
