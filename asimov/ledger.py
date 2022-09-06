@@ -132,7 +132,7 @@ class YAMLLedger(Ledger):
                             overloaded = production_data
                         if len(overloaded)>0:
                             if category not in self.data['events'][i]['productions'][prod_i][prod_name]: self.data['events'][i]['productions'][prod_i][prod_name][category] = {}
-                            self.data['events'][i][productions][prod_i][prod_name][category] = update(self.data['events'][i]['productions'][prod_i][prod_name][category], overloaded, inplace=False)
+                            self.data['events'][i]['productions'][prod_i][prod_name][category] = update(self.data['events'][i]['productions'][prod_i][prod_name][category], overloaded, inplace=False)
                         
         
         with open(self.location, "w") as ledger_file:
