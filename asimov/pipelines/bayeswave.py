@@ -167,10 +167,8 @@ class BayesWave(Pipeline):
                                           production=self.production.name)
 
     def detect_completion(self):
-        self.logger.info("Checking for completion.")
-        psds = self.collect_assets()["psds"]
+        psds = self.collect_assets()['psds']
         if len(list(psds.values())) > 0:
-            self.logger.info("PSDs detected, job complete.")
             return True
         else:
             self.logger.info("Bayeswave job completion was not detected.")
