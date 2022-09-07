@@ -157,13 +157,10 @@ class BayesWave(Pipeline):
                                           production=self.production.name)
 
     def detect_completion(self):
-         results_dir = glob.glob(f"{self.production.rundir}/trigtime_*")
-         if len(results_dir)>0:
-             if len(glob.glob(os.path.join(results_dir[0], "post", "clean", f"glitch_median_PSD_forLI_*.dat"))) > 0:
-                 return True
-             else:
-                 return False
-         else:
+        psds = self.collect_assets()['psds']
+        if len(list(psds.values())) > 0:
+            return True
+        else:
             self.logger.info("Bayeswave job completion was not detected.")
             return False
             
