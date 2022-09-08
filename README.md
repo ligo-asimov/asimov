@@ -67,8 +67,15 @@ $ conda install -c conda-forge ligo-asimov
 
 ## Get started
 
-Asimov supports a variety of different ways of running, but the simplest way, running a workflow on a local machine, can be set up with a single command:
+Asimov supports a variety of different ways of running, but the simplest way, running a workflow on a local machine, can be set up with a single command.
 
+We start by setting up a project, which is a directory which keeps all of the analyses and the required metadata together.
+A project can include just a single event or a whole selection of events, for example if you're producing a catalogue.
+First create a directory to store your project:
+```
+$ mkdir my-new-project
+```
+and then get asimov to set things up
 ```
 $ asimov init "Test project"
 ```
