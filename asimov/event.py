@@ -1112,7 +1112,6 @@ class Production:
                         psds = {}
                 except Exception:
                     psds = {}
-                    print(e)
         # Otherwise return no PSDs
         else:
             psds = {}
