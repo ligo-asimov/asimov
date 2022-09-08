@@ -10,19 +10,12 @@ import numpy as np
 from glue.lal import Cache
 from gwdatafind import find_urls
 
-from asimov import config, ledger
+from asimov import config
+from asimov import current_ledger as ledger
 from asimov.event import Production, Event,  DescriptionException
 from asimov import gitlab
 from asimov.cli import find_calibrations, CALIBRATION_NOTE
-
-def update(d, u):
-    for k, v in u.items():
-        if isinstance(v, collections.abc.Mapping):
-            d[k] = update(d.get(k, {}), v)
-        else:
-            d[k] = v
-    return d
-
+from asimov.utils import update
 
 @click.group()
 def event():
@@ -173,13 +166,11 @@ def configurator(event, json_data=None):
     new_data["quality"]["sample-rate"] = int(data["srate"])
     new_data["quality"]["lower-frequency"] = {}
     # Factor 0.875 to account for PSD roll off
-    new_data["likelihood"]["upper-frequency"] = {
-        ifo: int(0.875 * data["srate"] / 2) for ifo in event.meta["interferometers"]
-    }
-    new_data["quality"]["start-frequency"] = data["f_start"]
-    new_data["quality"]["segment-length"] = int(data["seglen"])
-    new_data["quality"]["window-length"] = int(data["seglen"])
-    new_data["quality"]["psd-length"] = int(data["seglen"])
+    new_data["likelihood"]["upper-frequency"] = {ifo: int(0.875 * data["srate"]/2) for ifo in event.meta['interferometers']}
+    new_data["quality"]["start-frequency"] = data['f_start']
+    new_data["quality"]["segment-length"] = int(data['seglen'])
+    new_data["quality"]["window-length"] = int(data['seglen'])
+    new_data["quality"]["psd-length"] = int(data['seglen'])
 
     def decide_fref(freq):
         if (freq >= 5) and (freq < 10):
