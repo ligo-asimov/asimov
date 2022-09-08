@@ -109,11 +109,15 @@ We can do this with the `asimov apply` command, which pulls-in data from a file 
 ```
 $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml
 ```
+and we can also load default priors the same way:
+```
+$ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml
+```
 
 Now you can add an existing event with preconfigured settings using the `asimov apply` function, for example, to add GW150914 to the project you can run
 
 ```
-$ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/events/gw150914.yaml
+$ asimov apply -f https://git.ligo.org/asimov/data/-/raw/testing/events/gwtc-2-1/GW150914_095045.yaml
 ```
 
 Alternatively, a new event with no configured settings can be added to your project by running
