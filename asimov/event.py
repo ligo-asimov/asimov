@@ -960,7 +960,6 @@ class Production:
                         psds = {}    
                 except Exception as e:
                     psds = {}
-                    print(e)
         # Otherwise return no PSDs
         else:
             psds = {}
