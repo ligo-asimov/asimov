@@ -93,7 +93,6 @@ A project can include just a single event or a whole selection of events, for ex
 First create a directory to store your project:
 ```
 $ mkdir my-new-project
-$ cd my-new-project
 ```
 and then get asimov to set things up
 ```
