@@ -84,6 +84,9 @@ where you can replace `"Test project"` with the name you want to give your proje
 A project will be set-up in your current working directory.
 
 In order to start setting up analyses we next need to download some default settings.
+
+An analysis is a pipeline run, and asimov supports `bayeswave`, `bilby` in the default installation.
+
 We'll download the default configurations for jobs which are going to be run on the LIGO data grid.
 We do this using the `asimov apply` command, which pulls-in data from a file either locally or online.
 
@@ -95,7 +98,7 @@ and the load default priors the same way:
 $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml
 ```
 
-Now you can add an existing event with preconfigured settings using the `asimov apply` function, for example, to add GW150914 to the project you can run
+Now you can add an existing event, by downloading the event data settings using the `asimov apply` function, for example, to add GW150914 to the project you can run
 
 ```
 $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/testing/events/gwtc-2-1/GW150914_095045.yaml
@@ -110,16 +113,16 @@ $ asimov event create GW150914_095045
 ```
 
 Many analyses can be run on a single event (these are called "productions" in asimov parlence).
-We can add some pre-configured analyses (the same set of analyses which were used for the GWTC-3 catalogue) by running
+We can add some pre-configured analyses by downloading some analysis configuration settings.
 
 ```
 $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/analyses/gwtc3-default.yaml -e GW150914_095045
 ```
 Note that if you omit the `-e` argument asimov will ask which event the analyses should be applied to.
 
-Alternatively, you can add analyses at the command line, for example you can add a new lalinference production to an event using
+Alternatively, you can add analyses at the command line, for example you can add a new bilby production to an event using
 ```
-$ asimov production create GW150914_095045 lalinference --approximant IMRPhenomPv2
+$ asimov production create GW150914_095045 bilby --approximant IMRPhenomPv2
 ```
 
 For a full description of the workflow management process see the documentation.
