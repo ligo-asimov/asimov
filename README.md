@@ -93,6 +93,7 @@ A project can include just a single event or a whole selection of events, for ex
 First create a directory to store your project:
 ```
 $ mkdir my-new-project
+$ cd my-new-project
 ```
 and then get asimov to set things up
 ```
@@ -101,14 +102,14 @@ $ asimov init "Test project"
 where you can replace `"Test project"` with the name you want to give your project.
 A project will be set-up in your current working directory.
 
-In order to start setting up analyses we should download some default settings.
+In order to start setting up analyses we next need to download some default settings.
 We'll download the default configurations for jobs which are going to be run on the LIGO data grid.
-We can do this with the `asimov apply` command, which pulls-in data from a file either locally or online.
+We do this using the `asimov apply` command, which pulls-in data from a file either locally or online.
 
 ```
 $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml
 ```
-and we can also load default priors the same way:
+and the load default priors the same way:
 ```
 $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml
 ```
@@ -118,6 +119,8 @@ Now you can add an existing event with preconfigured settings using the `asimov 
 ```
 $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/testing/events/gwtc-2-1/GW150914_095045.yaml
 ```
+
+This downloads the settings which were used for analysing GW150914 for the GWTC-2.1 catalogue paper, and stores them in the ledger file in the project (`ledger.yml`).
 
 Alternatively, a new event with no configured settings can be added to your project by running
 
