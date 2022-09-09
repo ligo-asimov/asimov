@@ -162,7 +162,7 @@ class Bilby(Pipeline):
                    ini,
                    "--label", job_label,
                    "--outdir", f"{cwd}/{self.production.rundir}",
-                   "--accounting", config.get("bilby", "accounting")
+                   "--accounting", f"{self.production.meta['scheduler']['accounting group']}"
         ]
 
         if dryrun:
