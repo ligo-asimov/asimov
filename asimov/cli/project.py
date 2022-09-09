@@ -9,7 +9,7 @@ except ImportError:
 
 import os
 import shutil
-import getpass
+import yaml
 
 import click
 
@@ -77,12 +77,18 @@ def init(name, root, working="working", checkouts="checkouts", results="results"
     config.set("ledger", "engine", "yamlfile")
     config.set("ledger", "location", "ledger.yml")
 
+    # Set the default environment
+    python_loc = shutils.which("python").split("/")[:-2]
+    config.set("pipelines", "environment", python_loc)
+    
     Ledger.create(engine="yamlfile",
                   name=project_name,
                   location="ledger.yml")
 
     with open("asimov.conf", "w") as config_file:
         config.write(config_file)
+
+    click.echo(click.style("●", fg="green") + f" New project created successfully!")
 
 
 @click.command()
