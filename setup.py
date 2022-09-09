@@ -16,7 +16,7 @@ test_requirements = [
 ]
 
 setup(
-    name='ligo-asimov',
+    name='asimov',
     use_scm_version=True,
     setup_requires=['setuptools_scm'],
     description="""A Python package for managing and interacting with data analysis jobs.""",
@@ -37,7 +37,7 @@ setup(
     install_requires=requirements,
     license="MIT license",
     zip_safe=True,
-    keywords='supervisor, pe, ligo, asimov',
+    keywords='pe, ligo, asimov',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Science/Research',
