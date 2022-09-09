@@ -134,6 +134,16 @@ Examples
        segments:
 	 H1: H1:DMT-ANALYSIS_READY:1
 	 L1: L1:DMT-ANALYSIS_READY:1
+
+``data files``
+  This section should define data files which contain the analysis data to be used
+  in the analysis, and should be provided for each detector.
+  For example
+  ::
+     data:
+       data files:
+         H1: ./H1-file.gwf
+	 L1: ./L1-file.gwf
 	 
 Data quality information
 ------------------------
