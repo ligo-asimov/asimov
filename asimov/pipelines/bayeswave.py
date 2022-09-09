@@ -123,9 +123,8 @@ class BayesWave(Pipeline):
 
         gps_time = self.production.get_meta("event time")
 
-        pipe_cmd = os.path.join(
-            config.get("pipelines", "environment"), "bin", "bayeswave_pipe"
-        )
+        
+        pipe_cmd = os.path.join(config.get("pipelines", "environment"), "bin", "bayeswave_pipe")
 
         command = [
             pipe_cmd,
