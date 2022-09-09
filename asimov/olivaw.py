@@ -18,9 +18,10 @@ from asimov import condor
 import asimov.pipelines
 
 # Replace this with a better logfile handling module please
-# from glob import glob
-import asimov  # NoQA
-import asimov.pipelines  # NoQA
+#from glob import glob
+import asimov
+
+from git.exc import GitCommandError
 
 # Import CLI bits from elsewhere
 from asimov import cli
@@ -34,6 +35,8 @@ from asimov.cli import project
 from asimov.cli import production
 from asimov.cli import application
 
+
+@click.version_option(asimov.__version__)
 @click.group()
 @click.pass_context
 def olivaw(ctx):

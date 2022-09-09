@@ -583,6 +583,9 @@ class Production:
             self.meta['likelihood'] = {}
         if not "marginalization" in self.meta['likelihood']:
             self.meta['likelihood']['marginalization']
+
+        if not "data files" in self.meta['data']:
+            self.meta['data']['data files'] = {}
             
         if "lmax" in self.meta:
             # TODO: Should probably raise a deprecation warning
