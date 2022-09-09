@@ -12,7 +12,7 @@ from asimov import config
 
 class Ledger:
     @classmethod
-    def create(cls, engine=None, location=None):
+    def create(cls, name=None, engine=None, location=None):
         """
         Create a ledger.
         """
@@ -21,7 +21,10 @@ class Ledger:
             engine = config.get("ledger", "engine")
 
         if engine == "yamlfile":
-            YAMLLedger.create(location)
+            YAMLLedger.create(location, name)
+
+        elif engine in {"tinydb", "mongodb"}:
+            DatabaseLedger.create()
         elif engine == "gitlab":
             raise NotImplementedError("This hasn't been ported to the new interface yet. Stay tuned!")
             
@@ -41,11 +44,11 @@ class YAMLLedger(Ledger):
     def create(cls, name, location="ledger.yml"):
 
         data = {}
-        data["asimov"] = {}
-        data["asimov"]["version"] = asimov.__version__
-        data["events"] = []
-        data["project"] = {}
-        data["project"]["name"] = name
+        data['asimov'] = {}
+        data['asimov']['version'] = asimov.__version__
+        data['events'] = []
+        data['project'] = {}
+        data['project']['name'] = name
         with open(location, "w") as ledger_file:
             ledger_file.write(yaml.dump(data, default_flow_style=False))
 

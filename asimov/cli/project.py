@@ -77,7 +77,9 @@ def init(name, root, working="working", checkouts="checkouts", results="results"
     config.set("ledger", "engine", "yamlfile")
     config.set("ledger", "location", "ledger.yml")
 
-    Ledger.create(engine="yamlfile", location="ledger.yml")
+    Ledger.create(engine="yamlfile",
+                  name=project_name,
+                  location="ledger.yml")
 
     with open("asimov.conf", "w") as config_file:
         config.write(config_file)
