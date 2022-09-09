@@ -64,7 +64,6 @@ def monitor(event, update, dry_run):
 
                     elif job.status.lower() == "stuck":
                         click.echo("\t\tJob is stuck on condor")
-                        event.status = "stuck"
                         production.status = "stuck"
                         stuck += 1
                         # production.meta['stage'] = 'production'
