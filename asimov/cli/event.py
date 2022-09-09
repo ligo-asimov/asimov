@@ -127,6 +127,14 @@ def create(name=None, oldname=None, gid=None, superevent=None, repo=None, search
     event.meta["working directory"] = working_dir
     pathlib.Path(working_dir).mkdir(parents=True, exist_ok=True)
     ledger.update_event(event)
+
+@click.argument("delete")
+@event.command()
+def delete(event):
+    """
+    Delete an event from the ledger.
+    """
+    ledger.delete_event(event_name=event)
     
 @click.argument("event")
 @click.option("--yaml", "yaml", default=None)
