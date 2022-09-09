@@ -204,11 +204,7 @@ def monitor(ctx, event, update, dry_run, chain):
                         finish += 1
                         production.status = "finished"
                         pipe.after_completion()
-                        click.secho(
-                            f"  \t  ● {production.name} - Completion detected",
-                            fg="green",
-                        )
-                        job_list.refresh()
+                        click.secho(f"  \t  ● {production.status.lower()} - Completion detected", fg="green")
                     else:
                         # It looks like the job has been evicted from the cluster
                         click.echo(

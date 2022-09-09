@@ -121,13 +121,17 @@ def submit(event, update, dryrun):
                     click.echo(click.style("●", fg="red") + f" Unable to submit {production.name}")
                 try:
                     pipe.submit_dag(dryrun=dryrun)
+                    click.echo(click.style("●", fg="green") + f" Submitted {production.event.name}/{production.name}")
                     production.status = "running"
 
                 except PipelineException as e:
                     production.status = "stuck"
+                    click.echo(click.style("●", fg="red") + f" Unable to submit {production.name}")
                     ledger.update_event(event)
                     logger.error(f"The pipeline failed to submit the DAG file to the cluster. {e}",
                                  production=production)
+                # Update the ledger
+                ledger.update_event(event)
 
 
 @click.option("--event", "event", default=None, help="The event which the ledger should be returned for, optional.")
