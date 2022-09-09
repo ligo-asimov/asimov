@@ -18,7 +18,7 @@ import asimov.pipelines
 
 # Replace this with a better logfile handling module please
 #from glob import glob
-
+import asimov
 
 from git.exc import GitCommandError
 
@@ -34,6 +34,8 @@ from asimov.cli import project
 from asimov.cli import production
 from asimov.cli import application
 
+
+@click.version_option(asimov.__version__)
 @click.group()
 def olivaw():
     """
