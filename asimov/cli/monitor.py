@@ -58,6 +58,9 @@ def monitor(event, update, dry_run):
                 if not dry_run:
                     if job.status.lower() == "running":
                         click.echo(f"  \t  " + click.style("●", "green") + f" {production.name} is running (condor id: {production.meta['job id']})")
+                        if not "profiling" in production.meta: production.meta['profiling'] = {}
+                        production.meta['profiling'] = job.get_data()['WallClockCheckpoint']
+                        production.status = "running"
                     elif job.status.lower() == "processing":
                         click.echo(f"  \t  " + click.style("●", "green") + f" {production.name} is postprocessing (condor id: {production.meta['job id']})")
                     elif job.status.lower() == "stuck":
@@ -108,4 +111,4 @@ def monitor(event, update, dry_run):
                 if production.status == "stuck":
                     click.echo(f"  \t  " + click.style("●", "yellow") + f" {production.name} is stuck")
                     
-                ledger.update_event(event)
+            ledger.update_event(event)
