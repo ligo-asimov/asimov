@@ -82,7 +82,7 @@ def monitor(ctx, event, update, dry_run, chain):
                     elif job.status.lower() == "processing":
                         click.echo(f"  \t  " + click.style("●", "green") + f" {production.status.lower()} is postprocessing (condor id: {production.meta['job id']})")
                     elif job.status.lower() == "stuck":
-                        click.echo(f"  \t  " + click.style("●", "orange") + f" {production.status.lower()} is stuck on the scheduler (condor id: {production.meta['job id']})")
+                        click.echo(f"  \t  " + click.style("●", "yellow") + f" {production.status.lower()} is stuck on the scheduler (condor id: {production.meta['job id']})")
                         production.status = "stuck"
                         stuck += 1
                     else:
@@ -153,7 +153,7 @@ def monitor(ctx, event, update, dry_run, chain):
                         click.secho(f"  \t  ● {production.status.lower()} - Completion detected", fg="green")
                     else:
                         # It looks like the job has been evicted from the cluster
-                        click.echo(f"  \t  " + click.style("●", "orange") + f" {production.status.lower()} is stuck; attempting a rescue")
+                        click.echo(f"  \t  " + click.style("●", "yellow") + f" {production.status.lower()} is stuck; attempting a rescue")
                         try:
                             pipe.resurrect()
                         except Exception:  # Sorry, but there are many ways the above command can fail
@@ -161,6 +161,6 @@ def monitor(ctx, event, update, dry_run, chain):
                             click.echo(f"  \t  " + click.style("●", "red") + f" {production.status.lower()} is stuck; automatic rescue was not possible")
 
                 if production.status == "stuck":
-                    click.echo(f"  \t  " + click.style("●", "orange") + f" {production.status.lower()} is stuck")
+                    click.echo(f"  \t  " + click.style("●", "yellow") + f" {production.status.lower()} is stuck")
                     
                 ledger.update_event(event)
