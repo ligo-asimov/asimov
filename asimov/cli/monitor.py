@@ -78,11 +78,11 @@ def monitor(ctx, event, update, dry_run, chain):
 
                 if not dry_run:
                     if job.status.lower() == "running":
-                        click.echo(f"  \t  " + click.style("●", "green") + f" {production.status.lower()} is running (condor id: {job.id})")
+                        click.echo(f"  \t  " + click.style("●", "green") + f" {production.status.lower()} is running (condor id: {production.meta['job id']})")
                     elif job.status.lower() == "processing":
-                        click.echo(f"  \t  " + click.style("●", "green") + f" {production.status.lower()} is postprocessing (condor id: {job.id})")
+                        click.echo(f"  \t  " + click.style("●", "green") + f" {production.status.lower()} is postprocessing (condor id: {production.meta['job id']})")
                     elif job.status.lower() == "stuck":
-                        click.echo(f"  \t  " + click.style("●", "orange") + f" {production.status.lower()} is stuck on the scheduler (condor id: {job.id})")
+                        click.echo(f"  \t  " + click.style("●", "orange") + f" {production.status.lower()} is stuck on the scheduler (condor id: {production.meta['job id']})")
                         production.status = "stuck"
                         stuck += 1
                     else:
