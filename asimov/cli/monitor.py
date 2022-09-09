@@ -77,21 +77,14 @@ def monitor(ctx, event, update, dry_run, chain):
                     raise ValueError  # Pass to the exception handler
 
                 if not dry_run:
-
+                    if job.status.lower() == "running":
+                        click.echo(f"  \t  " + click.style("●", "green") + f" {production.status.lower()} is running (condor id: {job.id})")
                     elif job.status.lower() == "processing":
-                        pass
-
+                        click.echo(f"  \t  " + click.style("●", "green") + f" {production.status.lower()} is postprocessing (condor id: {job.id})")
                     elif job.status.lower() == "stuck":
-                        click.echo("\t\tJob is stuck on condor")
+                        click.echo(f"  \t  " + click.style("●", "orange") + f" {production.status.lower()} is stuck on the scheduler (condor id: {job.id})")
                         production.status = "stuck"
                         stuck += 1
-                        # production.meta['stage'] = 'production'
-
-                    # elif job.status.lower() == "stuck":
-                    #     click.echo("\t\tPost-processing is stuck on condor")
-                    #     production.status = "stuck"
-                    #     stuck += 1
-                    #     production.meta['stage'] = "post"
                     else:
                         running += 1
 
@@ -105,20 +98,10 @@ def monitor(ctx, event, update, dry_run, chain):
                     if production.status.lower() == "stop":
                         pipe.eject_job()
                         production.status = "stopped"
-                        click.echo(
-                            "  \t  "
-                            + click.style("●", "red")
-                            + f" {production.name} has been stopped"
-                        )
-                        job_list.refresh()
+                        click.echo(f"  \t  " + click.style("●", "red") + f" {production.status.lower()} has been stopped")
                     elif production.status.lower() == "finished":
                         pipe.after_completion()
-                        click.echo(
-                            "  \t  "
-                            + click.style("●", "green")
-                            + f" {production.name} has finished and post-processing has been started"
-                        )
-                        job_list.refresh()
+                        click.echo(f"  \t  " + click.style("●", "green") + f" {production.status.lower()} has finished and post-processing has been started")
                     elif production.status.lower() == "processing":
                         # Need to check the upload has completed
                         if pipe.detect_completion_processing():
@@ -161,9 +144,8 @@ def monitor(ctx, event, update, dry_run, chain):
                             )
                             production.meta["job id"] = None
                         except ValueError as e:
-                            logger.error("Could not collect condor profiling data.")
-                            logger.exception(e)
-                            pass
+                            click.echo(e)
+                            production.meta['stage'] = "after processing"
 
                         finish += 1
                         production.status = "finished"
@@ -171,24 +153,14 @@ def monitor(ctx, event, update, dry_run, chain):
                         click.secho(f"  \t  ● {production.status.lower()} - Completion detected", fg="green")
                     else:
                         # It looks like the job has been evicted from the cluster
-                        click.echo(
-                            "  \t  "
-                            + click.style("●", "yellow")
-                            + f" {production.name} is stuck; attempting a rescue"
-                        )
+                        click.echo(f"  \t  " + click.style("●", "orange") + f" {production.status.lower()} is stuck; attempting a rescue")
                         try:
                             pipe.resurrect()
                         except Exception:  # Sorry, but there are many ways the above command can fail
                             production.status = "stuck"
-                            click.echo(
-                                "  \t  "
-                                + click.style("●", "red")
-                                + f" {production.name} is stuck; automatic rescue was not possible"
-                            )
+                            click.echo(f"  \t  " + click.style("●", "red") + f" {production.status.lower()} is stuck; automatic rescue was not possible")
 
                 if production.status == "stuck":
-                    event.state = "stuck"
+                    click.echo(f"  \t  " + click.style("●", "orange") + f" {production.status.lower()} is stuck")
+                    
                 ledger.update_event(event)
-
-        if chain:
-            ctx.invoke(report.html)
