@@ -100,6 +100,7 @@ class Bilby(Pipeline):
             repo = self.production.event.repository
             try:
                 repo.add_file(prior_file, os.path.join("C01_offline", prior_name))
+                os.remove(prior_file)
             except:
                 pass
             return os.path.join(self.production.event.repository.directory, "C01_offline", prior_name)
