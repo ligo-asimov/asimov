@@ -72,7 +72,7 @@ def init(name, root, working="working", checkouts="checkouts", results="results"
     config.set("ledger", "location", "ledger.yml")
 
     # Set the default environment
-    python_loc = shutils.which("python").split("/")[:-2]
+    python_loc = shutil.which("python").split("/")[:-2]
     config.set("pipelines", "environment", python_loc)
     
     Ledger.create(engine="yamlfile",
