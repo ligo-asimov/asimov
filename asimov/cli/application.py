@@ -36,6 +36,7 @@ def apply(file, event):
             document.pop("kind")
             event = asimov.event.Event.from_yaml(yaml.dump(document))
             ledger.update_event(event)
+            click.echo(click.style("●", fg="green") + f" Successfully applied  {event.name}")
 
         elif document['kind'] == "analysis":
             document.pop("kind")
@@ -47,8 +48,10 @@ def apply(file, event):
             production = asimov.event.Production.from_dict(document, event=event_o)
             event_o.add_production(production)
             ledger.update_event(event_o)
+            click.echo(click.style("●", fg="green") + f" Successfully applied {production.name} to {event_o.name}")
 
         elif document['kind'] == "configuration":
             document.pop("kind")
             update(ledger.data, document)
             ledger.save()
+            click.echo(click.style("●", fg="green") + f" Successfully applied a configuration update")
