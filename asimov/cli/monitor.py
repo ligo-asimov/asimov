@@ -59,20 +59,21 @@ def monitor(event, update, dry_run):
                     if job.status.lower() == "running":
                         pass
 
-                    if job.status.lower() == "processing":
+                    elif job.status.lower() == "processing":
                         pass
 
-                    if event.state == "running" and job.status.lower() == "stuck":
+                    elif job.status.lower() == "stuck":
                         click.echo("\t\tJob is stuck on condor")
-                        event.state = "stuck"
+                        event.status = "stuck"
                         production.status = "stuck"
                         stuck += 1
-                        production.meta['stage'] = 'production'
-                    elif event.state == "processing" and job.status.lower() == "stuck":
-                        click.echo("\t\tPost-processing is stuck on condor")
-                        production.status = "stuck"
-                        stuck += 1
-                        production.meta['stage'] = "post"
+                        # production.meta['stage'] = 'production'
+
+                    # elif job.status.lower() == "stuck":
+                    #     click.echo("\t\tPost-processing is stuck on condor")
+                    #     production.status = "stuck"
+                    #     stuck += 1
+                    #     production.meta['stage'] = "post"
                     else:
                         running += 1
 
