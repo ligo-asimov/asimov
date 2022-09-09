@@ -120,7 +120,7 @@ $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/defaults/productio
 Now you can add an existing event, by downloading the event data settings using the `asimov apply` function, for example, to add GW150914 to the project you can run
 
 ```
-$ asimov apply -f https://git.ligo.org/asimov/data/-/raw/testing/events/gwtc-2-1/GW150914_095045.yaml
+$ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/events/gwtc-2-1/GW150914_095045.yaml
 ```
 
 This downloads the settings which were used for analysing GW150914 for the GWTC-2.1 catalogue paper, and stores them in the ledger file in the project (`ledger.yml`).
@@ -151,7 +151,7 @@ Many analyses can be run on a single event (these are called "productions" in as
 We can add some pre-configured analyses by downloading some analysis configuration settings.
 
 ```
-$ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/analyses/gwtc3-default.yaml -e GW150914_095045
+$ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/analyses/production-default.yaml -e GW150914_095045
 ```
 Note that if you omit the `-e` argument asimov will ask which event the analyses should be applied to.
 
