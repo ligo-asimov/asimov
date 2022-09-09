@@ -107,7 +107,7 @@ def monitor(event, update, dry_run):
                         finish += 1
                         production.status = "finished"
                         pipe.after_completion()
-
+                        click.secho(f"  \t  ● {production.status.lower()} - Completion detected", fg="green")
                     else:
                         # It looks like the job has been evicted from the cluster
                         click.echo(f"Attempting to rescue {production.name}")
