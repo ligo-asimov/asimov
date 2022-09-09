@@ -73,7 +73,7 @@ def init(name, root, working="working", checkouts="checkouts", results="results"
 
     # Set the default environment
     python_loc = shutil.which("python").split("/")[:-2]
-    config.set("pipelines", "environment", "/".join(python_loc))
+    config.set("pipelines", "environment", os.path.join(python_loc))
     
     Ledger.create(engine="yamlfile",
                   name=project_name,
