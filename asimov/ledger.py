@@ -21,7 +21,7 @@ class Ledger:
             engine = config.get("ledger", "engine")
 
         if engine == "yamlfile":
-            YAMLLedger.create(location, name)
+            YAMLLedger.create(location=location, name=name)
 
         elif engine in {"tinydb", "mongodb"}:
             DatabaseLedger.create()
