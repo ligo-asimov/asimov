@@ -78,56 +78,21 @@ def monitor(ctx, event, update, dry_run, chain):
 
                 if not dry_run:
 
-                    if (
-                        job.status.lower() == "running"
-                        and production.status == "processing"
-                    ):
-                        click.echo(
-                            "  \t  "
-                            + click.style("●", "green")
-                            + f" Postprocessing for {production.name} is running"
-                            + f" (condor id: {production.meta['job id']})"
-                        )
+                    elif job.status.lower() == "processing":
+                        pass
 
-                    elif (
-                        job.status.lower() == "running"
-                        and production.status == "processing"
-                    ):
-                        click.echo(
-                            "  \t  "
-                            + click.style("●", "green")
-                            + f" {production.name} is postprocessing (condor id: {production.meta['job id']})"
-                        )
-                        production.meta["postprocessing"]["status"] = "running"
-
-                    elif job.status.lower() == "running":
-                        click.echo(
-                            "  \t  "
-                            + click.style("●", "green")
-                            + f" {production.name} is running (condor id: {production.meta['job id']})"
-                        )
-                        if "profiling" not in production.meta:
-                            production.meta["profiling"] = {}
-                        production.status = "running"
-
-                    elif job.status.lower() == "completed":
-                        pipe.after_completion()
-                        click.echo(
-                            "  \t  "
-                            + click.style("●", "green")
-                            + f" {production.name} has finished and post-processing has been started"
-                        )
-                        job_list.refresh()
-
-                    elif job.status.lower() == "held":
-                        click.echo(
-                            "  \t  "
-                            + click.style("●", "yellow")
-                            + f" {production.name} is held on the scheduler"
-                            + f" (condor id: {production.meta['job id']})"
-                        )
+                    elif job.status.lower() == "stuck":
+                        click.echo("\t\tJob is stuck on condor")
+                        event.status = "stuck"
                         production.status = "stuck"
                         stuck += 1
+                        # production.meta['stage'] = 'production'
+
+                    # elif job.status.lower() == "stuck":
+                    #     click.echo("\t\tPost-processing is stuck on condor")
+                    #     production.status = "stuck"
+                    #     stuck += 1
+                    #     production.meta['stage'] = "post"
                     else:
                         running += 1
 
