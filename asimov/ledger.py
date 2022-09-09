@@ -102,7 +102,22 @@ class YAMLLedger(Ledger):
         """
         self.events[event.name] = event.to_dict()
         self.save()
-            
+
+    def delete_event(self, event_name):
+        """
+        Remove an event from the ledger.
+
+        Parameters
+        ----------
+        event_name : str
+           The name of the event to remove from the ledger.
+        """
+        event = self.events.pop(event_name)
+        if "trash" not in self.data: self.data['trash'] = {}
+        if "events" not in self.data['trash']: self.data['trash']['events'] = {}
+        self.data['trash']['events'][event_name] = event
+        self.save()
+        
     def save(self):
         """
         Update the ledger YAML file with the data from the various events.
