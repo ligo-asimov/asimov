@@ -71,8 +71,8 @@ The sampling section of the ledger can be used to specify both the bilby sampler
 	The random seed to be used for sampling.
 	Defaults to `None`.
 	
-``threads``
-	The number of threads to be used for sampling.
+``parallel jobs``
+	The number of parallel jobs to be used for sampling.
 	Defaults to `4`.
 
 ``sampler kwargs``
