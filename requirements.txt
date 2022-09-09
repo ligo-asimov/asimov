@@ -11,6 +11,6 @@ pytz
 pyyaml
 requests
 gwpy
-lscsoft-glue
+lscsoft-glue==2.0.0
 flask
 tinydb
