@@ -57,22 +57,13 @@ def monitor(event, update, dry_run):
 
                 if not dry_run:
                     if job.status.lower() == "running":
-                        pass
-
+                        click.echo(f"  \t  " + click.style("●", "green") + f" {production.status.lower()} is running (condor id: {job.id})")
                     elif job.status.lower() == "processing":
-                        pass
-
+                        click.echo(f"  \t  " + click.style("●", "green") + f" {production.status.lower()} is postprocessing (condor id: {job.id})")
                     elif job.status.lower() == "stuck":
-                        click.echo("\t\tJob is stuck on condor")
+                        click.echo(f"  \t  " + click.style("●", "orange") + f" {production.status.lower()} is stuck on the scheduler (condor id: {job.id})")
                         production.status = "stuck"
                         stuck += 1
-                        # production.meta['stage'] = 'production'
-
-                    # elif job.status.lower() == "stuck":
-                    #     click.echo("\t\tPost-processing is stuck on condor")
-                    #     production.status = "stuck"
-                    #     stuck += 1
-                    #     production.meta['stage'] = "post"
                     else:
                         running += 1
 
@@ -86,19 +77,16 @@ def monitor(event, update, dry_run):
                     if production.status.lower() == "stop":
                         pipe.eject_job()
                         production.status = "stopped"
-
+                        click.echo(f"  \t  " + click.style("●", "red") + f" {production.status.lower()} has been stopped")
                     elif production.status.lower() == "finished":
-                        click.echo("Finished")
                         pipe.after_completion()
-
+                        click.echo(f"  \t  " + click.style("●", "green") + f" {production.status.lower()} has finished and post-processing has been started")
                     elif production.status.lower() == "processing":
                     # Need to check the upload has completed
                         try:
                             pipe.after_processing()
                         except ValueError as e:
                             click.echo(e)
-                            #production.status = "stuck"
-                            #stuck += 1
                             production.meta['stage'] = "after processing"
 
                     elif pipe.detect_completion() and production.status.lower() == "running":
@@ -110,21 +98,14 @@ def monitor(event, update, dry_run):
                         click.secho(f"  \t  ● {production.status.lower()} - Completion detected", fg="green")
                     else:
                         # It looks like the job has been evicted from the cluster
-                        click.echo(f"Attempting to rescue {production.name}")
-                        #event.state = "stuck"
-                        #production.status = "stuck"
-                        #production.meta['stage'] = 'production'
+                        click.echo(f"  \t  " + click.style("●", "orange") + f" {production.status.lower()} is stuck; attempting a rescue")
                         try:
                             pipe.resurrect()
                         except:
                             production.status = "stuck"
-                            production.meta['error'] = "resurrection error"
+                            click.echo(f"  \t  " + click.style("●", "red") + f" {production.status.lower()} is stuck; automatic rescue was not possible")
 
                 if production.status == "stuck":
-                    event.state = "stuck"
+                    click.echo(f"  \t  " + click.style("●", "orange") + f" {production.status.lower()} is stuck")
+                    
                 ledger.update_event(event)
-
-            if (running > 0) and (stuck == 0):
-                event.state = "running"
-            elif (stuck == 0) and (running == 0) and (finish > 0):
-                event.state = "finished"
