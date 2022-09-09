@@ -101,6 +101,8 @@ def make_project(
     with open(os.path.join(".asimov", "asimov.conf"), "w") as config_file:
         config.write(config_file)
 
+    click.echo(click.style("●", fg="green") + f" New project created successfully!")
+
 
 @click.command()
 @click.argument("name")
