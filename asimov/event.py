@@ -377,7 +377,11 @@ class Event:
             if calibration.keys() != data['interferometers']:
                 # We need to fetch the calibration data
                 from asimov.utils import find_calibrations
-                data['data']["calibration"] = find_calibrations(data['event time'])
+                try:
+                    data['data']["calibration"] = find_calibrations(data['event time'])
+                except ValueError:
+                    data['data']["calibration"] = {}
+                    logger.warning("Could not find calibration files for data['name']")
 
         if not "working directory" in data:
             data['working directory'] = os.path.join(config.get("general", "rundir_default"),
