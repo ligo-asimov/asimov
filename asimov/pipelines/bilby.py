@@ -42,7 +42,7 @@ class Bilby(Pipeline):
         """
         results_dir = glob.glob(f"{self.production.rundir}/result")
         if len(results_dir)>0: # dynesty_merge_result.json
-            if len(glob.glob(os.path.join(results_dir[0], f"*merge_result.json"))) > 0:
+            if len(glob.glob(os.path.join(results_dir[0], f"*merge*_result.*"))) > 0:
                 return True
             else:
                 return False
