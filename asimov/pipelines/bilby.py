@@ -276,7 +276,7 @@ class Bilby(Pipeline):
         """
         Collect the combined samples file for PESummary.
         """
-        return glob.glob(os.path.join(self.production.rundir, "result", "*_merge_result.json"))
+        return glob.glob(os.path.join(self.production.rundir, "result", "*_merge*_result.*"))
         
     def after_completion(self):
         self.logger.info(f"Job has completed. Running PE Summary.", production=self.production, channels=['mattermost'])
