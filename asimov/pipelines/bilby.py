@@ -315,16 +315,8 @@ class Bilby(Pipeline):
         """
         Collect the combined samples file for PESummary.
         """
-
-        if absolute:
-            rundir = os.path.abspath(self.production.rundir)
-        else:
-            rundir = self.production.rundir
-        self.logger.info(f"Rundir for samples: {rundir}")
-        return glob.glob(
-            os.path.join(rundir, "result", "*_merge*_result.hdf5")
-        ) + glob.glob(os.path.join(rundir, "result", "*_merge*_result.json"))
-
+        return glob.glob(os.path.join(self.production.rundir, "result", "*_merge*_result.*"))
+        
     def after_completion(self):
         post_pipeline = PESummaryPipeline(production=self.production)
         self.logger.info("Job has completed. Running PE Summary.")
