@@ -44,16 +44,8 @@ class Bilby(Pipeline):
         """
         self.logger.info("Checking if the bilby job has completed")
         results_dir = glob.glob(f"{self.production.rundir}/result")
-        if len(results_dir) > 0:  # dynesty_merge_result.json
-            results_files = glob.glob(
-                os.path.join(results_dir[0], "*merge*_result.hdf5")
-            )
-            results_files += glob.glob(
-                os.path.join(results_dir[0], "*merge*_result.json")
-            )
-            self.logger.debug(f"results files {results_files}")
-            if len(results_files) > 0:
-                self.logger.info("Results files found, the job is finished.")
+        if len(results_dir)>0: # dynesty_merge_result.json
+            if len(glob.glob(os.path.join(results_dir[0], f"*merge*_result.*"))) > 0:
                 return True
             else:
                 self.logger.info("No results files found.")
