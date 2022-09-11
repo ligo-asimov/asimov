@@ -70,6 +70,8 @@ def monitor(ctx, event, update, dry_run, chain):
                     if not dry_run:
                         if production.meta['job id'] in job_list.jobs:
                             job = job_list.jobs[production.meta['job id']]
+                        else:
+                            job = None
                     else:
                         logger.debug(
                             f"Running analysis: {event}/{production.name}, cluster {production.meta['job id']}"
