@@ -31,7 +31,7 @@ def build(event, dryrun):
         click.echo(f"● Working on {event.name}")
         ready_productions = event.get_all_latest()
         for production in ready_productions:
-            click.echo(f"\tWorking on production {production.name}", nl=False)
+            click.echo(f"\tWorking on production {production.name}")
             if production.status in {"running", "stuck", "wait", "finished", "uploaded", "cancelled", "stopped"}: continue
             try:
                 configuration = production.get_configuration()

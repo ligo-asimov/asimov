@@ -98,6 +98,20 @@ def set(event, production, status):
         else:
             click.echo(click.style("●", fg="red") + f" Unable to change the state of {production.name} to {status}.")
 
+
+@click.argument("production")
+@click.argument("event")
+@production.command()
+def show(event, production):
+    """
+    Show the entire metadata for a given production.
+    """
+    event = ledger.get_event(event=event)[0]
+    production = [production_o for production_o in event.productions if production_o.name == production][0]
+
+    output = pprint.pformat(production.meta)
+    click.echo_via_pager(output)
+    
 # @click.option("--file", "file", default=None)
 # @click.argument("production")
 # @click.argument("event")
