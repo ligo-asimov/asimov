@@ -116,6 +116,7 @@ def monitor(ctx, event, update, dry_run, chain):
                         if pipe.detect_completion_processing():
                             try:
                                 pipe.after_processing()
+                                click.echo(f"  \t  " + click.style("●", "green") + f" {production.name} has been finalised and stored")
                             except ValueError as e:
                                 click.echo(e)
                         else:
