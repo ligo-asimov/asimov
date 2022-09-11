@@ -5,6 +5,7 @@ import json
 from math import floor
 import ligo.gracedb
 import gwpy
+import pprint
 
 import click
 
