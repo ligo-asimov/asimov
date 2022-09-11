@@ -283,6 +283,7 @@ class Bilby(Pipeline):
         cluster = self.run_pesummary()
         self.production.meta['job id'] = int(cluster)
         self.production.status = "processing"
+        self.production.event.update_data()
 
     def collect_logs(self):
         """

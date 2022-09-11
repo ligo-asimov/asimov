@@ -80,27 +80,28 @@ def monitor(event, update, dry_run):
                         running += 1
 
             except (ValueError, AttributeError) as e:
-                #click.echo(e)
-                #click.echo(f"\t\t{production.status.lower()}")
                 if production.pipeline:
-                    #click.echo("Investigating...")
+                    
                     pipe = production.pipeline
 
                     if production.status.lower() == "stop":
                         pipe.eject_job()
                         production.status = "stopped"
                         click.echo(f"  \t  " + click.style("●", "red") + f" {production.name} has been stopped")
+                        job_list.refresh()                        
                     elif production.status.lower() == "finished":
                         pipe.after_completion()
                         click.echo(f"  \t  " + click.style("●", "green") + f" {production.name} has finished and post-processing has been started")
+                        job_list.refresh()
                     elif production.status.lower() == "processing":
                     # Need to check the upload has completed
-                        try:
-                            pipe.after_processing()
-                        except ValueError as e:
-                            click.echo(e)
-                            production.meta['stage'] = "after processing"
-
+                        if pipe.detect_completion_processing():
+                            try:
+                                pipe.after_processing()
+                            except ValueError as e:
+                                click.echo(e)
+                        else:
+                            click.echo(f"  \t  " + click.style("●", "green") + f" {production.name} has finished and post-processing is running")
                     elif pipe.detect_completion() and production.status.lower() == "running":
                         # The job has been completed, collect its assets
                         production.meta['job id'] = None
@@ -108,6 +109,7 @@ def monitor(event, update, dry_run):
                         production.status = "finished"
                         pipe.after_completion()
                         click.secho(f"  \t  ● {production.name} - Completion detected", fg="green")
+                        job_list.refresh()
                     else:
                         # It looks like the job has been evicted from the cluster
                         click.echo(f"  \t  " + click.style("●", "yellow") + f" {production.name} is stuck; attempting a rescue")
