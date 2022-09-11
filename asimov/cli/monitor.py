@@ -32,6 +32,10 @@ def monitor(ctx, event, update, dry_run, chain):
     """
     Monitor condor jobs' status, and collect logging information.
     """
+
+    # First pull the condor job listing
+    job_list = condor.CondorJobList()
+    
     for event in ledger.get_event(event):
         stuck = 0
         running = 0
@@ -64,10 +68,8 @@ def monitor(ctx, event, update, dry_run, chain):
             try:
                 if "job id" in production.meta:
                     if not dry_run:
-                        if production.meta["job id"] in job_list.jobs:
-                            job = job_list.jobs[production.meta["job id"]]
-                        else:
-                            job = None
+                        if production['job id'] in job_list.jobs:
+                            job = job_list.jobs[production['job id']]
                     else:
                         logger.debug(
                             f"Running analysis: {event}/{production.name}, cluster {production.meta['job id']}"
@@ -82,18 +84,20 @@ def monitor(ctx, event, update, dry_run, chain):
                         if not "profiling" in production.meta: production.meta['profiling'] = {}
                         #production.meta['profiling'] = job.get_data()['WallClockCheckpoint']
                         production.status = "running"
-                    elif job.status.lower() == "processing":
-                        click.echo(f"  \t  " + click.style("●", "green") + f" {production.name} is postprocessing (condor id: {production.meta['job id']})")
-                    elif job.status.lower() == "stuck":
-                        click.echo(f"  \t  " + click.style("●", "yellow") + f" {production.name} is stuck on the scheduler (condor id: {production.meta['job id']})")
+                    elif job.status.lower() == "completed":
+                        click.echo(f"  \t  " + click.style("●", "green") + f" {production.name} has completed")
+                    #elif job.status.lower() == "processing":
+                    #    click.echo(f"  \t  " + click.style("●", "green") + f" {production.name} is postprocessing (condor id: {production.meta['job id']})")
+                    elif job.status.lower() == "held":
+                        click.echo(f"  \t  " + click.style("●", "yellow") + f" {production.name} is held on the scheduler (condor id: {production.meta['job id']})")
                         production.status = "stuck"
                         stuck += 1
                     else:
                         running += 1
 
             except ValueError as e:
-                click.echo(e)
-                click.echo(f"\t\t{production.status.lower()}")
+                #click.echo(e)
+                #click.echo(f"\t\t{production.status.lower()}")
                 if production.pipeline:
                     #click.echo("Investigating...")
                     pipe = production.pipeline
