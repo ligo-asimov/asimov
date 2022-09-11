@@ -40,7 +40,7 @@ def monitor(event, update, dry_run):
             
             # Deal with jobs which need to be stopped first
             if production.status.lower() == "stop":
-                pipe = production.pipeline(production, "C01_offline")
+                pipe = production.pipeline
                 if not dry_run:
                     pipe.eject_job()
                     production.status = "stopped"
