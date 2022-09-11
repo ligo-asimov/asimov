@@ -90,6 +90,7 @@ Advanced topics
    yamlformat
    gitlab-interface
    test-interface
+   clusters
 
 Developers' Guide
 -----------------
