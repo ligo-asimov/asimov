@@ -196,7 +196,12 @@ class Pipeline:
             
             hostname_job = htcondor.Submit(submit_description)
 
-            schedulers = htcondor.Collector().locate(htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler"))
+            try:
+                # There should really be a specified submit node, and if there is, use it.
+                schedulers = htcondor.Collector().locate(htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler"))
+            except:
+                # If you can't find a specified scheduler, use the first one you find
+                schedulers = htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd)[0]
 
             schedd = htcondor.Schedd(schedulers)
             with schedd.transaction() as txn:   
