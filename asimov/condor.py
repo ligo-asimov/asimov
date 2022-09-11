@@ -46,6 +46,23 @@ class CondorJob:
     def __str__(self):
         return repr(self)
 
+    def to_dict(self):
+        """
+        Turn a job into a dictionary representation.
+        """
+        output = {}
+
+        output['name'] = self.name
+        output['id'] = self.idno
+        output['hosts'] = self.hosts
+        output['status'] = self._status
+        output['command'] = self.command
+
+        if cls.dag:
+            output['dag id'] = self.dag
+        
+        return output
+        
     @classmethod
     def from_dict(cls, dictionary):
         """
@@ -163,14 +180,14 @@ class CondorJobList:
 
         for datum in retdat:
             if not datum.dag:
-                self.jobs[datum.idno] = datum
+                self.jobs[datum.idno] = datum.to_dict()
                 # # Now search for subjobs
         for datum in retdat:
             if datum.dag:
                 if datum.dag in self.jobs:
                     self.jobs[datum.dag].add_subjob(datum)
                 else:
-                    self.jobs[datum.idno] = datum
+                    self.jobs[datum.idno] = datum.to_dict()
 
         with open("_cache_jobs.yaml", "w") as f:
             f.write(yaml.dump(self.jobs))
