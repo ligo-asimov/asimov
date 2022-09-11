@@ -167,20 +167,20 @@ class CondorJobList:
             
             retdat = []
             for datum in data:
-            if "ClusterId" in datum:
-                job = dict(id=int(float(datum['ClusterId'])),
-                           command=datum['Cmd'],
-                           hosts=datum["CurrentHosts"],
-                           status=datum["JobStatus"]
-                       )
-                if "HoldReason" in datum:
-                    job["hold"] =  datum["HoldReason"]
-                if "JobBatchName" in datum:
-                    job["name"] =  datum["JobBatchName"]
-                if not "DAG_Status" in datum and "DAGManJobID" in datum:
-                    job["dag id"] = int(float(datum['DAGManJobId']))
-                    
-            retdat.append(CondorJob.from_dict(job))
+                if "ClusterId" in datum:
+                    job = dict(id=int(float(datum['ClusterId'])),
+                               command=datum['Cmd'],
+                               hosts=datum["CurrentHosts"],
+                               status=datum["JobStatus"]
+                           )
+                    if "HoldReason" in datum:
+                        job["hold"] =  datum["HoldReason"]
+                    if "JobBatchName" in datum:
+                        job["name"] =  datum["JobBatchName"]
+                    if not "DAG_Status" in datum and "DAGManJobID" in datum:
+                        job["dag id"] = int(float(datum['DAGManJobId']))
+
+                retdat.append(CondorJob.from_dict(job))
 
         for datum in retdat:
             if not datum.dag:
