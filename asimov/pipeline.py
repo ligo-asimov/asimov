@@ -182,7 +182,7 @@ class Pipeline:
             "log": f"{self.production.rundir}/pesummary.log",
             "request_cpus": "4",
             "getenv": "true",
-            "batch-name": f"PESummary/{self.production.event.name}/{self.production.name}",
+            "batch_name": f"PESummary/{self.production.event.name}/{self.production.name}",
             "request_memory": "8192MB",
             "request_disk": "8192MB",
         }
