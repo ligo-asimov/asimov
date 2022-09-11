@@ -120,8 +120,6 @@ def show(event, production):
     event = ledger.get_event(event=event)[0]
     production = [production_o for production_o in event.productions if production_o.name == production][0]
 
-    click.secho("Configuration", bold=True)
-    click.secho("-------------")
     meta = copy(production.meta)
     meta.pop("ledger")
     output = yaml.dump(meta, default_flow_style=False)
