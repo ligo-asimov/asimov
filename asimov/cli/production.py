@@ -86,7 +86,7 @@ def set(event, production, status):
     Note that some properties cannot be updated once the production is being run, 
     and you should create a new production instead.
     """
-    event = ledger.get_event()[0]
+    event = ledger.get_event(event=event)
     production = [production_o for production_o in event.productions if production_o.name == production][0]
     
     accepted_states = {"ready", "wait", "stuck", "stop", "cancelled"}
