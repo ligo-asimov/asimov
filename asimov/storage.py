@@ -280,7 +280,7 @@ class Store:
         
         this_uuid = uuid.uuid4()
 
-        self.manifest.add_record(event, production, file, hash, this_uuid)
+        self.manifest.add_record(event, production, os.path.basename(file), hash, this_uuid)
 
         destination = os.path.join(self.root, event, production, this_uuid.hex)
         
