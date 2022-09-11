@@ -116,30 +116,30 @@ def show(event, production):
     output = yaml.dump(meta, default_flow_style=False)
     click.echo_via_pager(output)
     
-# @click.option("--file", "file", default=None)
-# @click.argument("production")
-# @click.argument("event")
-# @production.command()
-# def results(event, production, file, hash=None):
-#     """
-#     Fetch or list the results of a production.
-#     """
-#     event = ledger.get_event(event)[0]
-#     production = [production_o for production_o in event.productions if production_o.name == production][0]
-#     store = Store(root=config.get("storage", "results_store"))
+@click.option("--file", "file", default=None)
+@click.argument("production")
+@click.argument("event")
+@production.command()
+def results(event, production, file, hash=None):
+    """
+    Fetch or list the results of a production.
+    """
+    event = ledger.get_event(event)[0]
+    production = [production_o for production_o in event.productions if production_o.name == production][0]
+    store = Store(root=config.get("storage", "directory"))
 
-#     if not file:
-#         try:
-#             items = store.manifest.list_resources(event.name, production.name).items()
-#             click.secho(f"{'Resource':30} {'Hash':32} {'UUID':32}")
-#             click.secho("-"*96)
-#             for resource, details in items:
-#                 click.secho(f"{resource:30} {details['hash']:32} {details['uuid']:32}")
-#         except KeyError:
-#             click.secho("There are no results for this production.")
-#     else:
-#         try:
-#             click.echo(store.fetch_file(event, production, file, hash))
-#         except FileNotFoundError:
-#             click.secho(f"{file} could not be found for this production.")
+    if not file:
+        try:
+            items = store.manifest.list_resources(event.name, production.name).items()
+            click.secho(f"{'Resource':30} {'Hash':32} {'UUID':32}")
+            click.secho("-"*96)
+            for resource, details in items:
+                click.secho(f"{resource:30} {details['hash']:32} {details['uuid']:32}")
+        except KeyError:
+            click.secho("There are no results for this production.")
+    else:
+        try:
+            click.echo(store.fetch_file(event, production, file, hash))
+        except FileNotFoundError:
+            click.secho(f"{file} could not be found for this production.")
 
