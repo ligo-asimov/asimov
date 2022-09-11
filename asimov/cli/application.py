@@ -46,9 +46,12 @@ def apply(file, event):
 
             event_o = ledger.get_event(event)[0]
             production = asimov.event.Production.from_dict(document, event=event_o)
-            event_o.add_production(production)
-            ledger.update_event(event_o)
-            click.echo(click.style("●", fg="green") + f" Successfully applied {production.name} to {event_o.name}")
+            try:
+                event_o.add_production(production)
+                ledger.update_event(event_o)
+                click.echo(click.style("●", fg="green") + f" Successfully applied {production.name} to {event_o.name}")
+            except ValueError:
+                click.echo(click.style("●", fg="red") + f" Could not apply {production.name} to {event_o.name} as an analysis already exists with this name")
 
         elif document['kind'] == "configuration":
             document.pop("kind")
