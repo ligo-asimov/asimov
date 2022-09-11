@@ -78,6 +78,29 @@ def create(event, pipeline, family, comment, needs, template, status, approximan
         ledger.events[event.name] = event.to_dict()
         ledger.save()
 
+
+@click.option("--status", "-s", default=None, help="Change the run status. Options: ready | wait | stuck | stop | cancelled" )
+@click.argument("production")
+@click.argument("event")
+@production.command()
+def set(status):
+    """
+    Set or update properties such as the status of a production.
+    Note that some properties cannot be updated once the production is being run, 
+    and you should create a new production instead.
+    """
+    event = ledger.get_event[0]
+    production = [production_o for production_o in event.productions if production_o.name == production][0]
+    
+    accepted_states = {"ready", "wait", "stuck", "stop", "cancelled"}
+    if status:
+        if status in accepted_states:
+            production.status = status
+            ledger.save()
+            click.echo(click.style("●", fg="green") + f" {production.name} status updated to {status}")
+        else:
+            click.echo(click.style("●", fg="red") + f" Unable to change the state of {production.name} to {status}.")
+
 # @click.option("--file", "file", default=None)
 # @click.argument("production")
 # @click.argument("event")
@@ -104,3 +127,4 @@ def create(event, pipeline, family, comment, needs, template, status, approximan
 #             click.echo(store.fetch_file(event, production, file, hash))
 #         except FileNotFoundError:
 #             click.secho(f"{file} could not be found for this production.")
+
