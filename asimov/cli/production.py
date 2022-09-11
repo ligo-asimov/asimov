@@ -6,6 +6,7 @@ from math import floor
 import ligo.gracedb
 import gwpy
 import pprint
+from copy import copy
 
 import click
 import yaml
@@ -119,7 +120,11 @@ def show(event, production):
     event = ledger.get_event(event=event)[0]
     production = [production_o for production_o in event.productions if production_o.name == production][0]
 
-    output = pprint.pformat(production.meta)
+    click.secho("Configuration", bold=True)
+    click.secho("-------------")
+    meta = copy(production.meta)
+    meta.pop("ledger")
+    output = yaml.dump(meta, default_flow_style=False)
     click.echo_via_pager(output)
     
 # @click.option("--file", "file", default=None)
