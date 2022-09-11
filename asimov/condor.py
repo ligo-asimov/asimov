@@ -7,11 +7,12 @@ import htcondor
 
 from asimov import config
 
-class CondorJob:
+class CondorJob( yaml.YAMLObject):
     """
     Represent a specific condor Job.
     """
-
+    yaml_loader = yaml.SafeLoader
+    
     def __init__(self, idno, command, hosts, status, **kwargs):
         """
         A representation of a condor job on a scheduler.
