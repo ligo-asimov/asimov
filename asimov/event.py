@@ -245,6 +245,9 @@ class Event:
         """
         Add an additional production to this event.
         """
+
+        if production.name in [production_o.name for production_o in event.productions]:
+            raise ValueError(f"A production with this name already exists for {self.name}. New productions must have unique names.")
         
         self.productions.append(production)
         self.graph.add_node(production)
