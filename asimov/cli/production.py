@@ -83,7 +83,7 @@ def create(event, pipeline, family, comment, needs, template, status, approximan
 @click.argument("production")
 @click.argument("event")
 @production.command()
-def set(status):
+def set(event, production, status):
     """
     Set or update properties such as the status of a production.
     Note that some properties cannot be updated once the production is being run, 
