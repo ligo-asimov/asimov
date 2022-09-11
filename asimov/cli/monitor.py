@@ -98,68 +98,36 @@ def monitor(ctx, event, update, dry_run, chain):
                         running += 1
 
             except (ValueError, AttributeError) as e:
-                #click.echo(e)
-                #click.echo(f"\t\t{production.status.lower()}")
                 if production.pipeline:
-                    #click.echo("Investigating...")
+                    
                     pipe = production.pipeline
 
                     if production.status.lower() == "stop":
                         pipe.eject_job()
                         production.status = "stopped"
                         click.echo(f"  \t  " + click.style("●", "red") + f" {production.name} has been stopped")
+                        job_list.refresh()                        
                     elif production.status.lower() == "finished":
                         pipe.after_completion()
                         click.echo(f"  \t  " + click.style("●", "green") + f" {production.name} has finished and post-processing has been started")
+                        job_list.refresh()
                     elif production.status.lower() == "processing":
-                        # Need to check the upload has completed
+                    # Need to check the upload has completed
                         if pipe.detect_completion_processing():
                             try:
                                 pipe.after_processing()
-                                click.echo(
-                                    "  \t  "
-                                    + click.style("●", "green")
-                                    + f" {production.name} has been finalised and stored"
-                                )
                             except ValueError as e:
                                 click.echo(e)
                         else:
-                            click.echo(
-                                "  \t  "
-                                + click.style("●", "green")
-                                + f" {production.name} has finished and post-processing"
-                                + f" is stuck ({production.meta['job id']})"
-                            )
-                            production.meta["postprocessing"]["status"] = "stuck"
-                    elif (
-                        pipe.detect_completion()
-                        and production.status.lower() == "processing"
-                    ):
-                        click.echo(
-                            "  \t  "
-                            + click.style("●", "green")
-                            + f" {production.name} has finished and post-processing is running"
-                        )
-                    elif (
-                        pipe.detect_completion()
-                        and production.status.lower() == "running"
-                    ):
+                            click.echo(f"  \t  " + click.style("●", "green") + f" {production.name} has finished and post-processing is running")
+                    elif pipe.detect_completion() and production.status.lower() == "running":
                         # The job has been completed, collect its assets
-                        if "profiling" not in production.meta:
-                            production.meta["profiling"] = {}
-                        try:
-                            production.meta["profiling"] = condor.collect_history(
-                                production.meta["job id"]
-                            )
-                            production.meta["job id"] = None
-                        except ValueError as e:
-                            click.echo(e)
-                            production.meta['stage'] = "after processing"
-
+                        production.meta['job id'] = None
                         finish += 1
                         production.status = "finished"
                         pipe.after_completion()
                         click.secho(f"  \t  ● {production.name} - Completion detected", fg="green")
+                        job_list.refresh()
                     else:
                         # It looks like the job has been evicted from the cluster
                         click.echo(f"  \t  " + click.style("●", "yellow") + f" {production.name} is stuck; attempting a rescue")
