@@ -79,7 +79,7 @@ def monitor(event, update, dry_run):
                     else:
                         running += 1
 
-            except ValueError as e:
+            except (ValueError, AttributeError) as e:
                 #click.echo(e)
                 #click.echo(f"\t\t{production.status.lower()}")
                 if production.pipeline:
