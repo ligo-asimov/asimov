@@ -125,7 +125,7 @@ class CondorJobList:
             self.refresh()
         else:
             age = os.stat(cache).st_mtime
-            if age > config.get("htcondor", "cache_time"):
+            if float(age) > float(config.get("htcondor", "cache_time")):
                 with open(cache, "r") as f:
                     self.jobs = yaml.safe_load(f)
             else:
