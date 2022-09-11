@@ -53,8 +53,8 @@ def monitor(event, update, dry_run):
             try:
                 if "job id" in production.meta:
                     if not dry_run:
-                        if production['job id'] in job_list.jobs:
-                            job = job_list.jobs[production['job id']]
+                        if production.meta['job id'] in job_list.jobs:
+                            job = job_list.jobs[production.meta['job id']]
                     else:
                         click.echo(f"\t\tRunning under condor")
                 else:
