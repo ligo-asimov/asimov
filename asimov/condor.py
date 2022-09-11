@@ -351,7 +351,7 @@ class CondorJobList:
 
         for datum in retdat:
             if not datum.dag:
-                self.jobs[datum.idno] = datum.to_dict()
+                self.jobs[datum.idno] = datum
                 # # Now search for subjobs
         for datum in retdat:
             if datum.dag:
