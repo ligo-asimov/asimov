@@ -93,7 +93,7 @@ def set(event, production, status):
     if status:
         if status in accepted_states:
             production.status = status
-            ledger.save()
+            #ledger.save()
             click.echo(click.style("●", fg="green") + f" {production.name} status updated to {status}")
         else:
             click.echo(click.style("●", fg="red") + f" Unable to change the state of {production.name} to {status}.")

@@ -645,8 +645,7 @@ class Production:
     @status.setter
     def status(self, value):
         self.status_str = value.lower()
-        if self.event.issue_object != None:
-            self.event.issue_object.update_data()
+        self.event.ledger.update_event(self.event)
 
     @property
     def job_id(self):
