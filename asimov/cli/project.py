@@ -65,7 +65,7 @@ def init(name, root, working="working", checkouts="checkouts", results="results"
 
     # Make the results store
     storage.Store.create(root=results, name=f"{project_name} storage")
-    config.set("storage", "results_store", results)
+    config.set("storage", "directory", results)
 
     # Make the ledger
     config.set("ledger", "engine", "yamlfile")
