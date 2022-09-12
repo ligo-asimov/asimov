@@ -18,6 +18,8 @@ def apply_page(file, event, ledger=ledger):
         r = requests.get(file)
         if r.status_code == 200:
             data = r.text
+        else:
+            raise ValueError(f"Could not download this file: {file}")
     else:
         with open(file, "r") as apply_file:
             data = apply_file.read()
