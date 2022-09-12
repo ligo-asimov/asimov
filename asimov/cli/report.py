@@ -17,7 +17,8 @@ from asimov import config
 
 @click.group()
 def report():
-    """Produce reports about the state of the project."""
+    """Produce reports about the state of the project.
+    """
     pass
 
 

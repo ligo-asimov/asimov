@@ -104,7 +104,8 @@ class Event:
             os.makedirs(self.work_dir)
 
         if "ledger" in kwargs:
-            self.ledger = kwargs['ledger']
+            if kwargs['ledger']:
+                self.ledger = kwargs['ledger']
         else:
             self.ledger = None
             
@@ -266,15 +267,17 @@ class Event:
         return f"<Event {self.name}>"
 
     @classmethod
-    def from_dict(cls, data, issue=None, update=False):
+    def from_dict(cls, data, issue=None, update=False, ledger=None):
         """
         Convert a dictionary representation of the event object to an Event object.
         """
-        event = cls(**data, issue=issue, update=update)
+        event = cls(**data, issue=issue, update=update, ledger=ledger)
+        if ledger:
+            ledger.add_event(event)
         return event
     
     @classmethod
-    def from_yaml(cls, data, issue=None, update=False, repo=True):
+    def from_yaml(cls, data, issue=None, update=False, repo=True, ledger=None):
         """
         Parse YAML to generate this event.
 
@@ -330,7 +333,7 @@ class Event:
                 
         if not repo and "repository" in data:
             data.pop("repository")
-        event = cls.from_dict(data, issue=issue, update=update)
+        event = cls.from_dict(data, issue=issue, update=update, ledger=ledger)
         
         if issue:
             event.issue_object = issue
