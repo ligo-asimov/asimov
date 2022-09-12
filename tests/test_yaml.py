@@ -14,8 +14,6 @@ name: S000000xx
 data: 
   channels:
     L1: /this/is/fake
-  calibration: 
-    L1: Fake
 working directory: {0}/tests/tmp/
 repository: {0}/tests/test_data/s000000xx/
 interferometers: 
@@ -81,16 +79,16 @@ class EventTests(unittest.TestCase):
 
     def tearDown(self):
         os.chdir(self.cwd)
-        shutil.rmtree(f"{self.cwd}/tests/tmp/project")
+        shutil.rmtree(f"{self.cwd}/tests/tmp/")
         
     def test_name(self):
         """Check the name is loaded correctly."""
         self.assertEqual(self.event.name, "S000000xx")
 
-    # def test_no_name_error(self):
-    #     """Check an exception is raised if the event name is missing."""
-    #     with self.assertRaises(asimov.event.DescriptionException):
-    #         asimov.event.Event.from_yaml(BAD_YAML.format(self.cwd))
+    def test_no_name_error(self):
+        """Check an exception is raised if the event name is missing."""
+        with self.assertRaises(asimov.event.DescriptionException):
+            asimov.event.Event.from_yaml(BAD_YAML.format(self.cwd))
 
 class ProductionTests(unittest.TestCase):
     """Tests of the YAML Production format."""
@@ -114,14 +112,14 @@ class ProductionTests(unittest.TestCase):
         self.event = asimov.event.Event("S000000xx", ledger=self.ledger)
 
     def tearDown(self):
-        shutil.rmtree(f"{self.cwd}/tests/tmp/project")
+        shutil.rmtree(f"{self.cwd}/tests/tmp/")
         os.chdir(self.cwd)
 
-    # def test_missing_name(self):
-    #     """Check that an exception is raised if the production has no name."""
-    #     production = dict(status="wait", pipeline="lalinference")
-    #     with self.assertRaises(asimov.event.DescriptionException):
-    #         asimov.event.Production.from_dict(production, event=self.event)
+    def test_missing_name(self):
+        """Check that an exception is raised if the production has no name."""
+        production = dict(status="wait", pipeline="lalinference")
+        with self.assertRaises(TypeError):
+            asimov.event.Production.from_dict(production, event=self.event)
         
     def test_missing_pipeline(self):
         """Check that an exception is raised if the production has no pipeline."""
@@ -140,8 +138,8 @@ class ProductionTests(unittest.TestCase):
             YAML_WITH_PRODUCTION_PRIORS = """
             name: S200311bg
             interferometers: [L1]
-            data:
-              calibration: {{}}
+            calibration: {{}}
+            data: 
               channels:
                 L1: /this/is/fake
             working directory: {0}/tests/tmp/
@@ -176,8 +174,8 @@ class ProductionTests(unittest.TestCase):
         YAML_WITH_PRODUCTION_PRIORS = """
         name: S200311bg
         interferometers: [L1]
+        calibration: {{}}
         data:
-          calibration: {{}}
           channels:
             L1: /this/is/fake
         working directory: {0}/tests/tmp/
