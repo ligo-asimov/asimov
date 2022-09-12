@@ -365,7 +365,7 @@ class Event:
                 
         if not repo and "repository" in data:
             data.pop("repository")
-        event = cls.from_dict(data, issue=issue, update=update)
+        event = cls.from_dict(data, issue=issue, update=update, ledger=ledger)
         
         if issue:
             event.issue_object = issue
