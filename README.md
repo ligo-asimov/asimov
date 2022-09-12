@@ -125,6 +125,24 @@ Alternatively, you can add analyses at the command line, for example you can add
 $ asimov production create GW150914_095045 bilby --approximant IMRPhenomPv2
 ```
 
+You can now build and submit your jobs to the cluster.
+First use `asimov manage build` to create the configuration files for each analysis:
+```
+$ asimov manage build
+```
+These will be added to the git repositories in the `checkouts` directory inside the project directory.
+You then submit the jobs to the cluster by running
+```
+$ asimov manage submit
+```
+
+It will normally take a long time for a parameter estimation job to finish, but you can get asimov to check up on it by running
+```
+$ asimov monitor
+```
+If the job is finished `asimov` will start post-processing using `PESummary`, and if it's fallen over it will attempt to fix the problem and resubmit it to the cluster.
+If the post-processing has finished it will move the results to a read-only directory.
+
 For a full description of the workflow management process see the documentation.
 
 
