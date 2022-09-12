@@ -100,6 +100,33 @@ test-python-310:
     - pip install coverage
     - python setup.py install
     - python -m unittest discover tests/
+#    - coverage report -m
+
+test-python-310:
+  stage: test
+  image: python:3.10
+  script:
+    - git config --global user.email "you@example.com"
+    - git config --global user.name "Your Name"
+    - pip install -r requirements.txt
+    - pip install coverage
+    - python setup.py install
+    - python -m unittest discover tests/
+#    - coverage report -m
+
+
+# pages:
+#   stage: build
+#   script:
+#   - pip install -r docs-requirements.txt
+#   - pip install -r requirements.txt
+#   - pip install .
+#   - sphinx-build -b html docs/source public
+#   artifacts:
+#     paths:
+#     - public
+#   only:
+#   - master
 
 # Build docs for multiple code versions
 pages:
