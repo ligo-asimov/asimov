@@ -12,6 +12,8 @@ from asimov import current_ledger
 from asimov.review import ReviewMessage
 @click.group()
 def review():
+    """Add and view review information and sign-offs 
+    """
     pass
 
 @click.option("--message", "-m", "message", default=None)

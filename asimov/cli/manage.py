@@ -16,6 +16,8 @@ from asimov.pipeline import PipelineException
 
 @click.group(chain=True)
 def manage():
+    """Perform management tasks such as job building and submission.
+    """
     pass
 
 

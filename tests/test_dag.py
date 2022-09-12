@@ -1,123 +1,71 @@
 import os
+import shutil
 import unittest
+
+import click
+
 import asimov.event
+from asimov.ledger import YAMLLedger
+from asimov.cli.project import make_project
+from asimov.cli.application import apply_page
 import git
+
+
+TEST_LEDGER = """
+
+"""
 
 class DAGTests(unittest.TestCase):
     """All the tests to check production DAGs are generated successfully."""
     @classmethod
     def setUpClass(cls):
         cls.cwd = os.getcwd()
-        repo = git.Repo.init(cls.cwd+"/tests/test_data/s000000xx/")
-        os.chdir(cls.cwd+"/tests/test_data/s000000xx/")
-        os.system("git add C01_offline/Prod3_test.ini C01_offline/s000000xx_gpsTime.txt")
-        os.system("git commit -m 'test'")
-        os.chdir(cls.cwd)
+        # repo = git.Repo.init(cls.cwd+"/tests/test_data/s000000xx/")
+        # os.chdir(cls.cwd+"/tests/test_data/s000000xx/")
+        # os.system("git add C01_offline/Prod3_test.ini C01_offline/s000000xx_gpsTime.txt")
+        # os.system("git commit -m 'test'")
+        # os.chdir(cls.cwd)
     
     @classmethod
     def tearDownClass(cls):
         """Destroy all the products of this test."""
-        os.system("rm asimov.conf")
-        os.system(f"rm -rf {cls.cwd}/tests/tmp/")
-        os.system(f"rm -rf {cls.cwd}/tests/test_data/s000000xx/.git")
-        try:
-            shutil.rmtree("/tmp/S000000xx")
-        except:
-            pass
-        
-    def setUp(self):
-        pass
+        # os.system("rm asimov.conf")
+        # os.system(f"rm -rf {cls.cwd}/tests/tmp/")
+        # os.system(f"rm -rf {cls.cwd}/tests/test_data/s000000xx/.git")
+        # try:
+        #     shutil.rmtree("/tmp/S000000xx")
+        # except:
+        #     pass
 
+    #
+    def setUp(self):
+        os.makedirs(f"{self.cwd}/tests/tmp/project")
+        os.chdir(f"{self.cwd}/tests/tmp/project")
+        make_project(name="Test project", root=f"{self.cwd}/tests/tmp/project")
+        self.ledger = YAMLLedger(f"ledger.yml")
+        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
+        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/events/gwtc-2-1/GW150914_095045.yaml", event=None, ledger=self.ledger)
+        
+    def tearDown(self):
+        shutil.rmtree(f"{self.cwd}/tests/tmp/")
+    
     def test_simple_dag(self):
         """Check that all jobs are run when there are no dependencies specified."""
-        TEST_YAML = """
-name: S000000xx
-repository: {0}/tests/test_data/s000000xx/
-working_directory: {0}/tests/tmp/s000000xx/
-webdir: ''
-productions:
-- Prod0:
-    rundir: {0}/tests/tmp/s000000xx/Prod0
-    pipeline: lalinference
-    comment: PSD production
-    status: ready
-- Prod1:
-    rundir: {0}/tests/tmp/s000000xx/Prod1
-    pipeline: lalinference
-    comment: PSD production
-    status: ready
-"""
-        event = asimov.event.Event.from_yaml(TEST_YAML.format(self.cwd))
+        apply_page(file = f"{self.cwd}/tests/test_data/test_simple_dag.yaml", event='GW150914_095045', ledger=self.ledger)
+        event = self.ledger.get_event('GW150914_095045')[0]
         self.assertEqual(len(event.get_all_latest()), 2)
     
     def test_linear_dag(self):
         """Check that all jobs are run when the dependencies are a chain."""
-        TEST_YAML = """
-name: S000000xx
-repository: {0}/tests/test_data/s000000xx/
-working_directory: {0}/tests/tmp/s000000xx/
-webdir: ''
-productions:
-- Prod0:
-    rundir: {0}/tests/tmp/s000000xx/Prod0
-    pipeline: lalinference
-    comment: PSD production
-    status: ready
-- Prod1:
-    rundir: {0}/tests/tmp/s000000xx/Prod1
-    pipeline: lalinference
-    comment: PSD production
-    status: ready
-    needs: Prod0
-"""
-        event = asimov.event.Event.from_yaml(TEST_YAML.format(self.cwd))
+        apply_page(file = f"{self.cwd}/tests/test_data/test_linear_dag.yaml", event='GW150914_095045', ledger=self.ledger)
+        event = self.ledger.get_event('GW150914_095045')[0]
         self.assertEqual(len(event.get_all_latest()), 1)
+        
 
     def test_complex_dag(self):
         """Check that all jobs are run when the dependencies are not a chain."""
-        TEST_YAML = """
-name: S000000xx
-repository: {0}/tests/test_data/s000000xx/
-working_directory: {0}/tests/tmp/s000000xx/
-webdir: ''
-productions:
-- Prod0:
-    rundir: {0}/tests/tmp/s000000xx/Prod0
-    pipeline: lalinference
-    comment: PSD production
-    status: finished
-- Prod1:
-    rundir: {0}/tests/tmp/s000000xx/Prod1
-    pipeline: lalinference
-    comment: PSD production
-    status: wait
-    needs: Prod0
-- Prod2:
-    rundir: {0}/tests/tmp/s000000xx/Prod2
-    pipeline: lalinference
-    comment: PSD production
-    status: wait
-    needs: Prod1
-- Prod3:
-    rundir: {0}/tests/tmp/s000000xx/Prod2
-    pipeline: lalinference
-    comment: PSD production
-    status: wait
-    needs: 
-    - Prod0
-- Prod4:
-    rundir: {0}/tests/tmp/s000000xx/Prod2
-    pipeline: lalinference
-    comment: PSD production
-    status: wait
-    needs: 
-       - Prod2
-       - Prod3
-- Prod5:
-    rundir: {0}/tests/tmp/s000000xx/Prod2
-    pipeline: lalinference
-    comment: PSD production
-    status: wait
-"""
-        event = asimov.event.Event.from_yaml(TEST_YAML.format(self.cwd))
+
+        apply_page(file = f"{self.cwd}/tests/test_data/test_complex_dag.yaml", event='GW150914_095045', ledger=self.ledger)
+        event = self.ledger.get_event('GW150914_095045')[0]
+
         self.assertEqual(len(event.get_all_latest()), 2)

@@ -12,14 +12,8 @@ from asimov import current_ledger as ledger
 from asimov.utils import update
 import asimov.event
 
-@click.command()
-@click.option("--file", "-f", 
-              help="Location of the file containing the ledger items.")
-@click.option("--event", "-e",
-              help="The event which the ledger items should be applied to (e.g. for analyses)",
-              default=None)
-def apply(file, event):
 
+def apply_page(file, event, ledger=ledger):
     if file[:4] == "http":
         r = requests.get(file)
         if r.status_code == 200:
@@ -36,7 +30,7 @@ def apply(file, event):
             document.pop("kind")
             event = asimov.event.Event.from_yaml(yaml.dump(document))
             ledger.update_event(event)
-            click.echo(click.style("●", fg="green") + f" Successfully applied  {event.name}")
+            click.echo(click.style("●", fg="green") + f" Successfully applied {event.name}")
 
         elif document['kind'] == "analysis":
             document.pop("kind")
@@ -58,3 +52,13 @@ def apply(file, event):
             update(ledger.data, document)
             ledger.save()
             click.echo(click.style("●", fg="green") + f" Successfully applied a configuration update")
+
+
+@click.command()
+@click.option("--file", "-f", 
+              help="Location of the file containing the ledger items.")
+@click.option("--event", "-e",
+              help="The event which the ledger items should be applied to (e.g. for analyses)",
+              default=None)
+def apply(file, event):
+    apply_page(file, event)

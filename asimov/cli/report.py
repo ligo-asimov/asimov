@@ -21,6 +21,8 @@ from asimov import config
 
 @click.group()
 def report():
+    """Produce reports about the state of the project.
+    """
     pass
 
 @click.option("--location", "webdir", default=None, help="The place to save the report to")

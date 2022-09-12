@@ -55,6 +55,7 @@ class YAMLLedger(Ledger):
         with open(location, "w") as ledger_file:
             ledger_file.write(
                 yaml.dump(data, default_flow_style=False))
+        
 
     def update_event(self, event):
         """
@@ -126,8 +127,9 @@ class YAMLLedger(Ledger):
                         production_data = self.data['events'][i]['productions'][prod_i][prod_name].pop(category)
                         for prior, values in production_data.items():
                             if "pipeline" in production[prod_name]:
-                                if category in self.data['pipelines'][production[prod_name]['pipeline']]:
-                                    inherited = update(inherited, self.data['pipelines'][production[prod_name]['pipeline']][category], inplace=False)
+                                if production[prod_name]['pipeline'] in self.data['pipelines']:
+                                    if category in self.data['pipelines'][production[prod_name]['pipeline']]:
+                                        inherited = update(inherited, self.data['pipelines'][production[prod_name]['pipeline']][category], inplace=False)
                             if category in self.data:
                                 inherited = update(inherited, self.data[category], inplace=False)
                             if category in self.data['events'][i]:
