@@ -101,8 +101,23 @@ def make_project(
     with open(os.path.join(".asimov", "asimov.conf"), "w") as config_file:
         config.write(config_file)
 
-    click.echo(click.style("●", fg="green") + f" New project created successfully!")
 
+@click.command()
+@click.argument("name")
+@click.option("--root", default=os.getcwd(),
+              help="Location to create the project, default is the current directory.")
+@click.option("--working", default="working",
+              help="The location to store working directories, default is a directory called 'working' inside the current directory.")
+@click.option("--checkouts", default="checkouts",
+              help="The location to store cloned git repositories.")
+@click.option("--results", default="results",
+              help="The location where the results store should be created.")
+def init(name, root, working="working", checkouts="checkouts", results="results"):
+    """
+    Roll-out a new project.
+    """
+    make_project(name, root, working=working, checkouts=checkouts, results=results)
+    click.echo(click.style("●", fg="green") + f" New project created successfully!")
 
 @click.command()
 @click.argument("name")
