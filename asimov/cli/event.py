@@ -14,7 +14,7 @@ from asimov import config
 from asimov import current_ledger as ledger
 from asimov.event import Production, Event,  DescriptionException
 from asimov import gitlab
-from asimov.cli import find_calibrations, CALIBRATION_NOTE
+from asimov.cli import find_calibrations
 from asimov.utils import update
 
 @click.group()
@@ -24,26 +24,11 @@ def event():
     """
     pass
 
-
 @click.option("--search", "-s", "search", default=None, help="Search criteria.")
-@click.option(
-    "--old", "oldname", default=None, help="The old superevent ID for this event."
-)
-@click.option(
-    "--gid",
-    "gid",
-    default=None,
-    help="The GraceDB GID for the event (for legacy events)",
-)
-@click.option(
-    "--superevent", "superevent", default=None, help="The superevent for the event."
-)
-@click.option(
-    "--repository",
-    "repo",
-    default=None,
-    help="The location of the repository for this event.",
-)
+@click.option("--old", "oldname", default=None, help="The old superevent ID for this event.")
+@click.option("--gid", "gid", default=None, help="The GraceDB GID for the event (for legacy events)")
+@click.option("--superevent", "superevent", default=None, help="The superevent for the event.")
+@click.option("--repository", "repo", default=None, help="The location of the repository for this event.")
 @click.option("--name", "-n", "name", default=None, help="The name for the event.")
 @event.command()
 def create(name=None, oldname=None, gid=None, superevent=None, repo=None, search=None):
@@ -64,42 +49,42 @@ def create(name=None, oldname=None, gid=None, superevent=None, repo=None, search
         A string of search criteria
     """
     import pathlib
-
+    
     if gid or superevent or search:
-        from ligo.gracedb.rest import GraceDb
-
+        from ligo.gracedb.rest import GraceDb, HTTPError 
         client = GraceDb(service_url=config.get("gracedb", "url"))
+        r = client.ping()
 
     if search:
         event_iterator = client.events(search)
 
         for event in event_iterator:
 
-            event = Event(
-                name=name,
-                repository=repo,
-                calibration={},
+            event = Event(name=name,
+                          repository=repo,
+                          calibration = {},
+                          interferometers=interferometers,
             )
-            working_dir = os.path.join(config.get("general", "rundir_default"), name)
+            working_dir = os.path.join(config.get('general', 'rundir_default'), name)
 
-            event.meta["working directory"] = working_dir
+            event.meta['working directory'] = working_dir
             pathlib.Path(working_dir).mkdir(parents=True, exist_ok=True)
             ledger.update_event(event)
-
+        
     if superevent:
         data = client.superevent(superevent).json()
         try:
-            event_data = client.event(data["preferred_event"]).json()
+            event_data = client.event(data['preferred_event']).json()
         except KeyError:
-            event_data = data["preferred_event_data"]
-
-        gid = data["preferred_event_data"]["graceid"]
-        interferometers = event_data["instruments"].split(",")
+            event_data = data['preferred_event_data']
+        
+        gid = data['preferred_event_data']['graceid']
+        interferometers = event_data['instruments'].split(",")
         if not name:
             name = superevent
     elif gid:
         event_data = client.event(gid).json()
-        interferometers = event_data["instruments"].split(",")
+        interferometers = event_data['instruments'].split(",")
         if not name:
             name = gid
     else:
@@ -109,11 +94,11 @@ def create(name=None, oldname=None, gid=None, superevent=None, repo=None, search
     if not repo:
         repo = None
 
-    event = Event(
-        name=name,
-        repository=repo,
-        calibration={},
-        interferometers=interferometers,
+
+    event = Event(name=name,
+                  repository=repo,
+                  calibration = {},
+                  interferometers=interferometers,
     )
 
     if oldname:
@@ -136,29 +121,29 @@ def delete(event):
     """
     ledger.delete_event(event_name=event)
     
-@click.argument("event")
-@click.option("--yaml", "yaml", default=None)
-@click.option("--ini", "ini", default=None)
-@event.command()
-def delete(event):
-    """
-    Delete an event from the ledger.
-    """
+# @click.argument("event")
+# @click.option("--yaml", "yaml", default=None)
+# @click.option("--ini", "ini", default=None)
+# @event.command()
+# def populate(event, yaml, ini):
+#     """
+#     Populate an event ledger with data from ini or yaml files.
+#     """
 
-    event = ledger.get_event(event)
-    # Check the calibration files for this event
-    click.echo("Check the calibration.")
-    click.echo(event.name)
-    calibration(event=event.name)
-    # Check the IFOs for this event
-    click.echo("Check the IFO list")
-    try:
-        checkifo(event.name)
-    except:
-        pass
+#     event = ledger.get_event(event)
+#     # Check the calibration files for this event
+#     click.echo("Check the calibration.")
+#     click.echo(event.name)
+#     calibration(event=event.name)
+#     # Check the IFOs for this event
+#     click.echo("Check the IFO list")
+#     try:
+#         checkifo(event.name)
+#     except:
+#         pass
 
-    if yaml:
-        add_data(event.name, yaml)
+#     if yaml:
+#         add_data(event.name, yaml)
 
 @click.argument("event", default=None)
 @click.option("--json", "json_data", default=None)
@@ -284,15 +269,15 @@ def calibration(event, calibration):
         ledger.update_event(event)
 
 
-@click.argument("data")
-@click.argument("event")
-@event.command()
-def load(event, data):
-    event = ledger.get_event(event)
+# @click.argument("data")
+# @click.argument("event")
+# @event.command()
+# def load(event, data):
+#     event = ledger.get_event(event)
 
-    with open(data, "r") as datafile:
-        data = yaml.safe_load(datafile.read())
+#     with open(data, "r") as datafile:
+#         data = yaml.safe_load(datafile.read())
         
-        event.meta = update(event.meta, data)
+#         event.meta = update(event.meta, data)
 
-    ledger.update_event(event)
+#     ledger.update_event(event)
