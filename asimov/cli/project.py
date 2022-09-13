@@ -19,9 +19,13 @@ from asimov.ledger import Ledger
 from asimov import gitlab
 
 
+
 def make_project(name, root, working="working", checkouts="checkouts", results="results"):
     """
-    Roll-out a new project.
+    Create a new project called NAME.
+
+    This command creates a new asimov project, creating the appropriate
+    directory structure, and creating a blank ledger.
     """
     import venv
     import pathlib

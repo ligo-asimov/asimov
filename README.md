@@ -58,12 +58,10 @@ It can be installed by running
 ```
 $ pip install asimov
 ```
-
 It is also available on conda, and can be installed by running
 ```
 $ conda install -c conda-forge ligo-asimov
 ```
-
 
 ## Get started
 
@@ -91,6 +89,7 @@ We'll download the default configurations for jobs which are going to be run on 
 We do this using the `asimov apply` command, which pulls-in data from a file either locally or online.
 
 ```
+
 $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml
 ```
 and the load default priors the same way:
@@ -103,6 +102,10 @@ Now you can add an existing event, by downloading the event data settings using 
 ```
 $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/events/gwtc-2-1/GW150914_095045.yaml
 ```
+
+where you can replace `"Test project"` with the name you want to give your project.
+A project will be set-up in your current working directory.
+
 
 This downloads the settings which were used for analysing GW150914 for the GWTC-2.1 catalogue paper, and stores them in the ledger file in the project (`ledger.yml`).
 
@@ -121,6 +124,7 @@ $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/analyses/productio
 Note that if you omit the `-e` argument asimov will ask which event the analyses should be applied to.
 
 Alternatively, you can add analyses at the command line, for example you can add a new bilby production to an event using
+
 ```
 $ asimov production create GW150914_095045 bilby --approximant IMRPhenomPv2
 ```
