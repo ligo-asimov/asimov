@@ -1,5 +1,10 @@
 """
 Code for interacting with the condor scheduler.
+
+An important function of asimov is interaction with condor schedulers in order to track the status of running jobs.
+
+In order to improve performance the code caches results from the query to the scheduler.
+
 """
 import os
 import yaml
@@ -141,7 +146,7 @@ class CondorJobList:
             self.refresh()
         else:
             age = os.stat(cache).st_mtime
-            if float(age) > float(config.get("htcondor", "cache_time")):
+            if float(age) < float(config.get("htcondor", "cache_time")):
                 with open(cache, "r") as f:
                     self.jobs = yaml.safe_load(f)
             else:
