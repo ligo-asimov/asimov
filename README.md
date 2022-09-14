@@ -4,6 +4,9 @@ Asimov is a workflow management and automation platform for scientific analyses.
 
 [Documentation](https://asimov.docs.ligo.org/asimov) · [Releases](https://git.ligo.org/asimov/asimov/-/releases) · [Issue Tracker](https://git.ligo.org/asimov/asimov/-/issues)
 
+[![Anaconda-Server Badge](https://anaconda.org/conda-forge/ligo-asimov/badges/version.svg)](https://anaconda.org/conda-forge/ligo-asimov) 
+[![Anaconda-Server Badge](https://anaconda.org/conda-forge/ligo-asimov/badges/installer/conda.svg)](https://conda.anaconda.org/conda-forge)
+
 Asimov was developed to manage and automate the parameter estimation analyses used by the LIGO, Virgo, and KAGRA collaborations to analyse gravitational wave signals, but it aims to provide tools which can be used for other workflows.
 
 Asimov has been used to organise and run the major catalogue analyses from the third observing run, O3, but it's designed to be flexible enough to allow new pipelines and analyses to be added to the framework.
