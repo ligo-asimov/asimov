@@ -17,7 +17,7 @@ test_requirements = [
 
 setup(
     name='asimov',
-    use_scm_version=True,
+    use_scm_version={"local_scheme": "no-local-version"},
     setup_requires=['setuptools_scm'],
     description="""A Python package for managing and interacting with data analysis jobs.""",
     #long_description=readme + '\n\n' + history,
