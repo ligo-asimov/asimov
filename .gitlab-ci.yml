@@ -153,8 +153,11 @@ docker-olivaw:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build -t $IMAGE_TAG -f containers/olivaw/Dockerfile .
     - docker push $IMAGE_TAG
-    
-  
+
+
+# Scan dependencies for security issues
+include:
+  - template: Security/Dependency-Scanning.gitlab-ci.yml  
       
 # deploy:wheel:
 #   stage: deploy
