@@ -201,10 +201,23 @@ include:
 deploy:wheel:
   stage: deploy
   script:
-    - pip install twine
-    - twine upload --non-interactive --skip-existing dist/*
-  rules:
-    - if: $CI_COMMIT_TAG
-  release:
-    tag_name: '$CI_COMMIT_TAG'
-    description: '$CI_COMMIT_TAG'
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $IMAGE_TAG -f containers/olivaw/Dockerfile .
+    - docker push $IMAGE_TAG
+
+
+# Scan dependencies for security issues
+include:
+  - template: Security/Dependency-Scanning.gitlab-ci.yml  
+      
+# deploy:wheel:
+#   stage: deploy
+#   script:
+#     - pip install twine
+#     - twine upload dist/*
+#   only:
+#     #- master@daniel-williams/minke
+#     - tags
+#   # except:
+#   #   - pushes
+#   #   - web
