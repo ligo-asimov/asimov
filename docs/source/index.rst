@@ -1,30 +1,6 @@
-:page_template: homepage.html
+Asimov : The PE Automator and Manager
+=====================================
 
-.. raw:: html
-	 
-	 <div class="px-4 py-5 my-5 text-center">
-	 <h1 class="display-5 fw-bold">
-	 Manage and automate analyses with <code>asimov</code>.
-	 </h1>
-	 <p class="lead mb-4">
-	 A powerful and extensible automation framework for scientific analysis workflows.
-	 </p>
-	 </div>
-
-
-.. raw:: html
-
-	 <div class="d-flex flex-column flex-lg-row align-items-md-stretch justify-content-md-center gap-3 mb-4">
-	 <div class="d-inline-block v-align-middle fs-5">
-	 <pre>$ pip install asimov</pre>
-	 </div>
-	 <a class="btn btn-lg btn-primary d-flex align-items-center justify-content-center fw-semibold"
-	    href="getting-started.html"
-	 >
-	 <i class="bi bi-book"></i><span>  </span><span style="padding-left: 1rem;">Documentation</span>
-	 </a>
-	 </div>
-	 
 `Asimov` is a python package to help with setting-up, automating, and monitoring scientific data analysis.
 It is designed to make organising a scientific project, simplifying your workflow, and making your analysis easier to reproduce.
 
@@ -38,22 +14,10 @@ Whether you're setting-up a preliminary analysis for a single gravitational wave
 
 .. raw:: html
 
-	 <div class="feature col">
-	 <i class="bi bi-bar-chart"></i>
-
 Scientific analysis management
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Asimov is able to interact with high throughput job management tools, and can submit jobs to clusters, monitor them for problems, and initiate post-processing tasks.
 Once your analysis is completed asimov can manage the data products and results, and prepare them for publication and distribution.
-
-.. raw:: html
-
-	 </div>
-
-.. raw:: html
-
-	 <div class="feature col">
-	 <i class="bi bi-cpu-fill"></i>
 
 Uniform pipeline interface
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
