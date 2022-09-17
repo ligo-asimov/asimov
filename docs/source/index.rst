@@ -10,10 +10,6 @@ Whether you're setting-up a preliminary analysis for a single gravitational wave
 
 .. raw:: html
 
-	 <div class="row g-4 py-5 row-cols-1 row-cols-lg-2">
-
-.. raw:: html
-
 Scientific analysis management
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Asimov is able to interact with high throughput job management tools, and can submit jobs to clusters, monitor them for problems, and initiate post-processing tasks.
