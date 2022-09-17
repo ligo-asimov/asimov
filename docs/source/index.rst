@@ -1,7 +1,8 @@
 Asimov : The PE Automator and Manager
 =====================================
 
-`Asimov` is a python package to help with setting-up, automating, and monitoring parameter estimation workflows for gravitational wave signals.
+`Asimov` is a python package to help with setting-up, automating, and monitoring scientific data analysis.
+It is designed to make organising a scientific project, simplifying your workflow, and making your analysis easier to reproduce.
 
 Asimov makes setting-up and running parameter estimation jobs easier.
 It can generate configuration files for several parameter estimation pipelines, and handle submitting these to a cluster.
@@ -10,9 +11,10 @@ Whether you're setting-up a preliminary analysis for a single gravitational wave
 Features
 --------
 
-Job monitoring and management
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Scientific analysis management
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Asimov is able to interact with high throughput job management tools, and can submit jobs to clusters, monitor them for problems, and initiate post-processing tasks.
+Once your analysis is completed asimov can manage the data products and results, and prepare them for publication and distribution.
 
 Uniform pipeline interface
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
