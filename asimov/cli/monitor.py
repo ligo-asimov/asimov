@@ -55,6 +55,7 @@ def stop(dry_run):
 
 
 from asimov.cli import manage
+from asimov.cli import report
 
 @click.option("--dry-run", "-n", "dry_run", is_flag=True)
 @click.command()
@@ -63,7 +64,7 @@ def start(dry_run):
 
     submit_description = {
           "executable": shutil.which("asimov"),  
-          "arguments": "monitor",
+          "arguments": "monitor --chain",
           "accounting_group": config.get("pipelines", "accounting"),
           "output": f"asimov_cron.out",
           "on_exit_remove": "false",
