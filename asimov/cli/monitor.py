@@ -9,6 +9,8 @@ from asimov import current_ledger as ledger
 from asimov import logger
 from asimov import condor
 
+from asimov.cli import manage
+
 @click.option("--dry-run", "-n", "dry_run", is_flag=True)
 @click.command()
 def start(dry_run):
@@ -33,7 +35,7 @@ def start(dry_run):
     ledger.data['cronjob'] = cluster
     ledger.save()
     click.secho(f"  \t  ● Asimov is running ({cluster})", fg="green")
-
+    
 @click.option("--dry-run", "-n", "dry_run", is_flag=True)
 @click.command()
 def stop(dry_run):
@@ -50,14 +52,8 @@ def stop(dry_run):
     help="Force the git repos to be pulled before submission occurs.",
 )
 @click.option("--dry-run", "-n", "dry_run", is_flag=True)
-@click.option(
-    "--chain",
-    "-c",
-    "chain",
-    default=False,
-    is_flag=True,
-    help="Chain multiple asimov commands",
-)
+@click.option("--chain", "-c", "chain", default=False,
+              help="Chain multiple asimov commands")
 @click.command()
 @click.pass_context
 def monitor(ctx, event, update, dry_run, chain):
@@ -65,6 +61,10 @@ def monitor(ctx, event, update, dry_run, chain):
     Monitor condor jobs' status, and collect logging information.
     """
 
+    if chain:
+        ctx.invoke(manage.build, event=event)
+        ctx.invoke(manage.submit, event=event)
+    
     # First pull the condor job listing
     job_list = condor.CondorJobList()
     
