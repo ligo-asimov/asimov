@@ -1,6 +1,5 @@
 import shutil
-import configparser
-import sys
+
 import click
 
 from asimov.cli import ACTIVE_STATES, known_pipelines
@@ -10,6 +9,39 @@ from asimov import current_ledger as ledger
 from asimov import logger
 from asimov import condor
 
+@click.option("--dry-run", "-n", "dry_run", is_flag=True)
+@click.command()
+def start(dry_run):
+    """Set up a cron job on condor to monitor the project."""
+
+    submit_description = {
+          "executable": shutil.which("asimov"),  
+          "arguments": "monitor",
+          "accounting_group": config.get("pipelines", "accounting"),
+          "output": f"asimov_cron.out",
+          "on_exit_remove": "false",
+          "error": f"asimov_cron.err",
+          "log": f"asimov_cron.log",
+          "request_cpus": "1",
+          "cron_minute": "*/15",
+          "getenv": "true",
+          "batch_name": f"asimov/monitor",
+          "request_memory": "8192MB",
+          "request_disk": "8192MB",
+    }
+    cluster = condor.submit_job(submit_description)
+    ledger.data['cronjob'] = cluster
+    ledger.save()
+    click.secho(f"  \t  ● Asimov is running ({cluster})", fg="green")
+
+@click.option("--dry-run", "-n", "dry_run", is_flag=True)
+@click.command()
+def stop(dry_run):
+    """Set up a cron job on condor to monitor the project."""
+    cluster = ledger.data['cronjob']
+    condor.delete_job(cluster)
+    click.secho(f"  \t  ● Asimov has been stopped", fg="red")
+    
 @click.argument("event", default=None, required=False)
 @click.option(
     "--update",
