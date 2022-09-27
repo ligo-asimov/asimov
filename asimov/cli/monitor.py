@@ -70,7 +70,7 @@ def start(dry_run):
           "request_cpus": "1",
           "cron_minute": "*/15",
           "getenv": "true",
-          "batch_name": f"asimov/monitor",
+          "batch_name": f"asimov/monitor/{ledger.data['project']['name']}",
           "request_memory": "8192MB",
           "request_disk": "8192MB",
     }
