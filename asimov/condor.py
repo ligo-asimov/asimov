@@ -12,6 +12,35 @@ import htcondor
 
 from asimov import config
 
+
+def submit_job(submit_description):
+    """
+    Submit a new job to the condor scheduller
+    """
+    
+    hostname_job = htcondor.Submit(submit_description)
+
+    try:
+        # There should really be a specified submit node, and if there is, use it.
+        schedulers = htcondor.Collector().locate(htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler"))
+        schedd = htcondor.Schedd(schedulers)
+    except:
+        # If you can't find a specified scheduler, use the first one you find
+        schedd = htcondor.Schedd()
+    with schedd.transaction() as txn:   
+        cluster_id = hostname_job.queue(txn)
+    return cluster_id
+
+def delete_job(cluster_id):
+    try:
+        # There should really be a specified submit node, and if there is, use it.
+        schedulers = htcondor.Collector().locate(htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler"))
+        schedd = htcondor.Schedd(schedulers)
+    except:
+        # If you can't find a specified scheduler, use the first one you find
+        schedd = htcondor.Schedd()
+    schedd.act(htcondor.JobAction.Remove, f"ClusterId == {cluster_id}")
+
 class CondorJob( yaml.YAMLObject):
     """
     Represent a specific condor Job.

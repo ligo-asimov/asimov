@@ -63,6 +63,8 @@ olivaw.add_command(report.report)
 # Configuration commands
 olivaw.add_command(configuration.configuration)
 # Monitoring commands
+olivaw.add_command(monitor.start)
+olivaw.add_command(monitor.stop)
 olivaw.add_command(monitor.monitor)
 olivaw.add_command(event.event)
 olivaw.add_command(production.production)
