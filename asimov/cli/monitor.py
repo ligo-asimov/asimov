@@ -140,6 +140,8 @@ def monitor(event, update, dry_run):
                             click.echo(f"  \t  " + click.style("●", "green") + f" {production.name} has finished and post-processing is running")
                     elif pipe.detect_completion() and production.status.lower() == "running":
                         # The job has been completed, collect its assets
+                        if not "profiling" in production.meta: production.meta['profiling'] = {}
+                        production.meta['profiling'] = condor.get_history(production.meta['job id'])
                         production.meta['job id'] = None
                         finish += 1
                         production.status = "finished"
