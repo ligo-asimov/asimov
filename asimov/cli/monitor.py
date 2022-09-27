@@ -10,6 +10,7 @@ from asimov import logger
 from asimov import condor
 
 from asimov.cli import manage
+from asimov.cli import report
 
 @click.option("--dry-run", "-n", "dry_run", is_flag=True)
 @click.command()
@@ -18,7 +19,7 @@ def start(dry_run):
 
     submit_description = {
           "executable": shutil.which("asimov"),  
-          "arguments": "monitor",
+          "arguments": "monitor --chain",
           "accounting_group": config.get("pipelines", "accounting"),
           "output": f"asimov_cron.out",
           "on_exit_remove": "false",
@@ -53,6 +54,7 @@ def stop(dry_run):
 )
 @click.option("--dry-run", "-n", "dry_run", is_flag=True)
 @click.option("--chain", "-c", "chain", default=False,
+              is_flag=True,
               help="Chain multiple asimov commands")
 @click.command()
 @click.pass_context
@@ -176,3 +178,6 @@ def monitor(ctx, event, update, dry_run, chain):
                     click.echo(f"  \t  " + click.style("●", "yellow") + f" {production.name} is stuck")
                     
             ledger.update_event(event)
+
+            if chain:
+                ctx.invoke(report.html, event=event)
