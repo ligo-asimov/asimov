@@ -42,6 +42,27 @@ def delete_job(cluster_id):
         schedd = htcondor.Schedd()
     schedd.act(htcondor.JobAction.Remove, f"ClusterId == {cluster_id}")
 
+def collect_history(cluster_id):
+    try:
+        # There should really be a specified submit node, and if there is, use it.
+        schedulers = htcondor.Collector().locate(htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler"))
+        schedd = htcondor.Schedd(schedulers)
+    except:
+        # If you can't find a specified scheduler, use the first one you find
+        schedd = htcondor.Schedd()
+        HISTORY_CLASSADS = [
+            "CompletionDate",
+            "CpusProvisioned",
+            "GpusProvisioned",
+            "CumulativeSuspensionTime",
+            "EnteredCurrentStatus",
+            "MaxHosts",
+            "RemoteWallClockTime",
+            "RequestCpus",
+        ]
+        jobs = schedd.history(f"ClusterId == {cluster_id}", projection=HISTORY_CLASSADS)
+        return jobs
+    
 class CondorJob( yaml.YAMLObject):
     """
     Represent a specific condor Job.
