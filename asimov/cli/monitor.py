@@ -174,4 +174,4 @@ def monitor(ctx, event, update, dry_run, chain):
             ledger.update_event(event)
 
             if chain:
-                ctx.invoke(report.html, event=event)
+                ctx.invoke(report.html)
