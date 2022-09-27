@@ -153,6 +153,8 @@ def stop(dry_run):
     logger.info(f"Stopped asimov cronjob {cluster}")
 
 
+from asimov.cli import manage
+
 @click.option("--dry-run", "-n", "dry_run", is_flag=True)
 @click.command()
 def start(dry_run):
@@ -177,7 +179,7 @@ def start(dry_run):
     ledger.data['cronjob'] = cluster
     ledger.save()
     click.secho(f"  \t  ● Asimov is running ({cluster})", fg="green")
-
+    
 @click.option("--dry-run", "-n", "dry_run", is_flag=True)
 @click.command()
 def stop(dry_run):
