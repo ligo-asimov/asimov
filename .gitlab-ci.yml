@@ -1,46 +1,45 @@
+# You can override the included template(s) by including variable overrides
+# SAST customization: https://docs.gitlab.com/ee/user/application_security/sast/#customizing-the-sast-settings
+# Secret Detection customization: https://docs.gitlab.com/ee/user/application_security/secret_detection/#customizing-settings
+# Dependency Scanning customization: https://docs.gitlab.com/ee/user/application_security/dependency_scanning/#customizing-the-dependency-scanning-settings
+# Container Scanning customization: https://docs.gitlab.com/ee/user/application_security/container_scanning/#customizing-the-container-scanning-settings
+# Note that environment variables can be set in several places
+# See https://docs.gitlab.com/ee/ci/variables/#cicd-variable-precedence
 image: python:3.7
-
 stages:
-  - test
-  - build
-  - deploy
-
+- test
+- build
+- deploy
 test-python-36:
   stage: test
   image: python:3.6
   script:
-    - git config --global user.email "you@example.com"
-    - git config --global user.name "Your Name"
-    - pip install -r requirements.txt
-    - pip install coverage
-    - python setup.py install
-    - python -m unittest discover tests/
-#    - coverage report -m
-
+  - git config --global user.email "you@example.com"
+  - git config --global user.name "Your Name"
+  - pip install -r requirements.txt
+  - pip install coverage
+  - python setup.py install
+  - python -m unittest discover tests/
 test-python-37:
   stage: test
   image: python:3.7
   script:
-    - git config --global user.email "you@example.com"
-    - git config --global user.name "Your Name"
-    - pip install -r requirements.txt
-    - pip install coverage
-    - python setup.py install
-    - python -m unittest discover tests/
-#    - coverage report -m
-
+  - git config --global user.email "you@example.com"
+  - git config --global user.name "Your Name"
+  - pip install -r requirements.txt
+  - pip install coverage
+  - python setup.py install
+  - python -m unittest discover tests/
 test-python-38:
   stage: test
   image: python:3.8
   script:
-    - git config --global user.email "you@example.com"
-    - git config --global user.name "Your Name"
-    - pip install -r requirements.txt
-    - pip install coverage
-    - python setup.py install
-    - python -m unittest discover tests/
-#    - coverage report -m
-
+  - git config --global user.email "you@example.com"
+  - git config --global user.name "Your Name"
+  - pip install -r requirements.txt
+  - pip install coverage
+  - python setup.py install
+  - python -m unittest discover tests/
 test-python-39:
   stage: test
   image: python:3.9
@@ -66,19 +65,6 @@ test-python-310:
 #    - coverage report -m
 
 
-# pages:
-#   stage: build
-#   script:
-#   - pip install -r docs-requirements.txt
-#   - pip install -r requirements.txt
-#   - pip install .
-#   - sphinx-build -b html docs/source public
-#   artifacts:
-#     paths:
-#     - public
-#   only:
-#   - master
-
 # Build docs for multiple code versions
 pages:
   stage: build
@@ -87,75 +73,57 @@ pages:
   - pip install -r requirements.txt
   - pip install .
   - sphinx-multiversion docs/source public
-  - echo "<!DOCTYPE html><html><head><title>Redirecting to master branch</title><meta charset=\"utf-8\"><meta http-equiv=\"refresh\" content=\"0; url=./master/index.html\">    <link rel=\"canonical\" href=\"https://asimov.docs.ligo.org/asimov/master/index.html\"></head></html>" > public/index.html 
+  - echo "<!DOCTYPE html><html><head><title>Redirecting to master branch</title><meta
+    charset=\"utf-8\"><meta http-equiv=\"refresh\" content=\"0; url=./master/index.html\">    <link
+    rel=\"canonical\" href=\"https://asimov.docs.ligo.org/asimov/master/index.html\"></head></html>"
+    > public/index.html
   artifacts:
     paths:
     - public
   only:
   - master
-
 wheel-36:
   image: python:3.6
   stage: build
   script:
-    - pip install wheel
-    # Build wheel
-    - python setup.py bdist_wheel --universal
+  - pip install wheel
+  - python setup.py bdist_wheel --universal
   dependencies: []
   artifacts:
     expire_in: 3h
     paths:
-      - dist
-
+    - dist
 wheel-37:
   image: python:3.7
   stage: build
   script:
-    - pip install wheel
-    # Build wheel
-    - python setup.py bdist_wheel --universal
+  - pip install wheel
+  - python setup.py bdist_wheel --universal
   dependencies: []
   artifacts:
     expire_in: 3h
     paths:
-      - dist
-
+    - dist
 wheel-38:
   image: python:3.8
   stage: build
   script:
-    - pip install wheel
-    - pip install twine
-    # Build wheel
-    - python setup.py bdist_wheel --universal
-    # Test wheel
-    - twine check dist/*
+  - pip install wheel
+  - pip install twine
+  - python setup.py bdist_wheel --universal
+  - twine check dist/*
   dependencies: []
   artifacts:
     expire_in: 3h
     paths:
-      - dist
-
-#gitlab-deploy:
-#  image: python:3.8
-#  stage: deploy
-#  script:
-#    - pip install twine
-#    - twine check dist/*
-#    - twine upload -u __token__ -p $GITLAB_PYPI --repository-url https://git.ligo.org/api/v4/projects/$CI_PROJECT_ID/packages/pypi
-      
-docker-olivaw:
-  image: docker
-  stage: build
-  variables:
-    IMAGE_TAG: $CI_REGISTRY_IMAGE:olivaw-$CI_COMMIT_REF_SLUG
-  script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build -t $IMAGE_TAG -f containers/olivaw/Dockerfile .
-    - docker push $IMAGE_TAG
+    - dist
 
 
-# Scan dependencies for security issues
+
+#   stage: test
+include:
+- template: Security/SAST.gitlab-ci.yml
+
 include:
   - template: Security/Dependency-Scanning.gitlab-ci.yml  
       
@@ -170,3 +138,4 @@ include:
 #   # except:
 #   #   - pushes
 #   #   - web
+
