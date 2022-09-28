@@ -178,7 +178,7 @@ def html(event, webdir):
     events = sorted(events, key = lambda a: a.name)
     cards = "<div class='container-fluid'><div class='row'><div class='col-12 col-md-3 col-xl-2  asimov-sidebar'>"
     
-    toc = """<nav><ul class="list-unstyled">"""
+    toc = """<nav><h6>Subjects</h6><ul class="list-unstyled">"""
     for event in events:
         toc += f"""<li><a href="#card-{event.name}">{event.name}</a></li>"""
         
