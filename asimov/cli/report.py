@@ -49,6 +49,26 @@ def html(event, webdir):
     )
     with report:
 
+        status_map = {"cancelled": "light",
+                      "finished": "success",
+                      "uploaded": "success",
+                      "processing": "primary",
+                      "running": "primary",
+                      "stuck": "warning",
+                      "restart": "secondary",
+                      "ready": "secondary",
+                      "wait": "light",
+                      "stop": "danger",
+                      "manual": "light",
+                      "stopped": "light"}
+
+        review_map = {"deprecated": "warning",
+                      "none": "default",
+                      "approved": "success",
+                      "rejected": "danger",
+                      "checked": "info"
+                      }
+
         style = """
 <style>
         body {
