@@ -3,6 +3,7 @@ Trigger handling code.
 """
 
 import glob
+from pprint import pformat
 
 import networkx as nx
 import yaml
@@ -20,6 +21,19 @@ from liquid import Liquid
 
 from ligo.gracedb.rest import GraceDb, HTTPError
 from copy import copy, deepcopy
+
+status_map = {"cancelled": "light",
+              "finished": "success",
+              "uploaded": "success",
+              "processing": "primary",
+              "running": "primary",
+              "stuck": "warning",
+              "restart": "secondary",
+              "ready": "secondary",
+              "wait": "light",
+              "stop": "danger",
+              "manual": "light",
+              "stopped": "light"}
 
 class DescriptionException(Exception):
     """Exception for event description problems."""
@@ -512,15 +526,13 @@ class Event:
 
     def html(self):
         card = f"""
-<div class="card event-data" id="card-{self.name}">
-<div class="card-body">
-<h3 class="card-title">{self.name}</h3>
-"""
+        <div class="card event-data" id="card-{self.name}">
+        <div class="card-body">
+        <h3 class="card-title">{self.name}</h3>
+        """
 
-
+        card += "<h4>Analyses</h4>"
         card += """<div class="list-group">"""
-
-
 
         for production in self.productions:
             card += production.html()
@@ -1047,28 +1059,35 @@ class Production:
 
         card = ""
 
-        card += "<div class='asimov-analysis'>"
-        card += f"<h4>{self.name}</h4>"
-        
+        card += f"<div class='asimov-analysis asimov-analysis-{self.status}'>"
+        card += f"<h4>{self.name}"
+
         if self.comment:
-            card += f"""<p class="asimov-comment">{self.comment}</p>"""
+            card += f"""  <small class="asimov-comment text-muted">{self.comment}</small>"""
+        card += "</h4>"
+        if self.status:
+            card += f"""<p class="asimov-status"><span class="badge badge-pill badge-{status_map[self.status]}">{self.status}</span></p>"""
+
+
         if self.pipeline:
+            card += f"""<p class="asimov-pipeline-name">{self.pipeline.name}</p>"""
+            
+        if self.pipeline:
+            # self.pipeline.collect_pages()
             card += self.pipeline.html()
 
-        if self.status:
-            card += f"""<p class="asimov-status">{self.status}</p>"""
-            
         if self.rundir:
             card += f"""<p class="asimov-rundir"><code>{production.rundir}</code></p>"""
         else:
             card += """&nbsp;"""
 
         if "approximant" in production.meta:
-            card += f"""<p class="asimov-approximant">{production.meta['approximant']}</p>"""
-        else:
-            card += """&nbsp;"""
-            card += f"""</div>"""
+            card += f"""<p class="asimov-attribute">Waveform approximant: <span class="asimov-approximant">{production.meta['approximant']}</span></p>"""
+            
 
+        card += """&nbsp;"""
+        card += f"""</div>"""
+            
         if len(self.review)>0:
             for review in self.review:
                 card += review.html()

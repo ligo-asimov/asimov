@@ -13,7 +13,7 @@ from ..storage import Store, AlreadyPresentException
 from asimov.utils import set_directory
 from asimov import logger
 from asimov import config
-from shutil import copyfile
+from shutil import copyfile, copytree
 import numpy as np
 
 from asimov import config
@@ -175,12 +175,8 @@ class BayesWave(Pipeline):
 
     def after_completion(self):
 
-        try:
-            self.collect_pages()
-        except FileNotFoundError as e:
-            self.logger.error("Failed to copy the megaplot outputs.")
-            self.logger.exception(e)
-
+        self.collect_pages()
+        
         try:
             self.collect_assets()
             self.store_assets()
@@ -197,6 +193,11 @@ class BayesWave(Pipeline):
                         self.production.meta["quality"]["supress"][ifo]["upper"],
                     )
         self.production.status = "uploaded"
+
+        
+        
+    def before_submit(self):
+        pass
 
 
     def submit_dag(self, dryrun=False):
@@ -407,57 +408,26 @@ class BayesWave(Pipeline):
             self.submit_dag()
             self.logger.info(f"Bayeswave job was resurrected for the {count} time.")
         else:
-            self.logger.error(
-                "Bayeswave resurrection not completed as there have already been 5 attempts"
-            )
+            self.logger.error("Bayeswave resurrection not completed as there have already been 5 attempts")
 
     def html(self):
         """Return the HTML representation of this pipeline."""
         pages_dir = os.path.join(self.production.event.name, self.production.name)
         out = ""
-
-        image_card = """<div class="card" style="width: 18rem;">
-<img class="card-img-top" src="{0}" alt="Card image cap">
-  <div class="card-body">
-    <p class="card-text">{1}</p>
-  </div>
-</div>
-        """
-
         if self.production.status in {"finished", "uploaded"}:
-            out += """<div class="asimov-pipeline bayeswave">"""
-            out += (
-                f"""<p><a href="{pages_dir}/index.html">Full Megaplot output</a></p>"""
-            )
-            out += image_card.format(
-                f"{pages_dir}/plots/clean_whitened_residual_histograms.png",
-                "Cleaned whitened residual histograms",
-            )
-
+            out += """<div class="asimov-pipeline">"""
+            out += f"""<p><a href="{pages_dir}/index.html">Full Megaplot output</a></p>"""
+            out += f"""<img height=200 src="{pages_dir}/plots/clean_whitened_residual_histograms.png"</src>"""
+            
             out += """</div>"""
-
+            
         return out
 
     def collect_pages(self):
         """Collect the HTML output of the pipeline."""
         results_dir = glob.glob(f"{self.production.rundir}/trigtime_*")[0]
-        pages_dir = os.path.join(
-            config.get("general", "webroot"),
-            self.production.event.name,
-            self.production.name,
-        )
+        pages_dir = os.path.join(config.get("general", "webroot"), self.production.event.name, self.production.name)
         os.makedirs(pages_dir, exist_ok=True)
-        copyfile(
-            os.path.join(results_dir, "index.html"),
-            os.path.join(pages_dir, "index.html"),
-        )
-        copytree(
-            os.path.join(results_dir, "html"),
-            os.path.join(pages_dir, "html"),
-            dirs_exist_ok=True,
-        )
-        copytree(
-            os.path.join(results_dir, "plots"),
-            os.path.join(pages_dir, "plots"),
-            dirs_exist_ok=True,
-        )
+        copyfile(os.path.join(results_dir, "index.html"), os.path.join(pages_dir, "index.html"))
+        copytree(os.path.join(results_dir, "html"), os.path.join(pages_dir, "html"), dirs_exist_ok=True)
+        copytree(os.path.join(results_dir, "plots"), os.path.join(pages_dir, "plots"), dirs_exist_ok=True)

@@ -390,42 +390,19 @@ class Bilby(Pipeline):
         """Return the HTML representation of this pipeline."""
         pages_dir = os.path.join(self.production.event.name, self.production.name)
         out = ""
-        out += """<div class="asimov-pipeline bilby">"""
-        out += """<ul>"""
-        out += f"""<li><a href="{pages_dir}/overview.html">Overview pages</a></li>"""
+        if self.production.status in {"stuck", "running"}:
+            out += """<div class="asimov-pipeline">"""
+            out += f"""<p><a href="{pages_dir}/index.html">Full Megaplot output</a></p>"""
+            out += f"""<img height=200 src="{pages_dir}/plots/clean_whitened_residual_histograms.png"</src>"""
+            out += """</div>"""
         if self.production.status in {"finished", "uploaded"}:
-            if self.production.status == "uploaded":
-                out += f"""<li><a href="{pages_dir}/pesummary/home.html">Summary pages</a></li>"""
-        out += """</ul>"""
-
-        image_card = """<div class="card" style="width: 18rem;">
-<img class="card-img-top" src="{0}" alt="Card image cap">
-  <div class="card-body">
-    <p class="card-text">{1}</p>
-  </div>
-</div>
-        """
-
-        plots = [
-            [
-                f"{pages_dir}/pesummary/plots/{self.production.name}_1d_posterior_luminosity_distance.png",
-                "luminosity distance",
-            ],
-            [
-                f"{pages_dir}/pesummary/plots/{self.production.name}_skymap.png",
-                "skymap",
-            ],
-        ]
-
-        out += """<div class="card-group">"""
-        for plot in plots:
-            if self.production.status in {"finished", "uploaded"}:
-                out += image_card.format(plot[0], plot[1])
-
-        out += """</div>"""  # Closes card-group
-        out += """</div>"""  # Closes the bilby div
+            out += """<div class="asimov-pipeline">"""
+            out += f"""<p><a href="{pages_dir}/index.html">Full Megaplot output</a></p>"""
+            out += f"""<img height=200 src="{pages_dir}/plots/clean_whitened_residual_histograms.png"</src>"""
+            out += """</div>"""
+            
         return out
-
+    
     def resurrect(self):
         """
         Attempt to ressurrect a failed job.
