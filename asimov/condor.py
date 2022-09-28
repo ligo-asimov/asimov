@@ -60,7 +60,30 @@ def collect_history(cluster_id):
             "RequestCpus",
         ]
         jobs = schedd.history(f"ClusterId == {cluster_id}", projection=HISTORY_CLASSADS)
-        return jobs
+        output = {}
+        for job in jobs:
+            end = float(job["CompletionDate"]) or float(job["EnteredCurrentStatus"])
+            output['end'] = datetime_from_epoch(end).strftime("%Y-%m-%d")
+            # get cpus and gpus
+            try:
+                cpus = float(job["CpusProvisioned"])
+            except (KeyError, ValueError):
+                cpus = float(job.get("RequestCpus", 1))
+            try:
+                gpus = float(job["GpusProvisioned"])
+            except (KeyError, ValueError):
+                gpus = float(job.get("RequestGpus", 1))
+            output['cpus'] = cpus
+            output['gpus'] = gpus
+            # get total job time (seconds)
+            runtime = (
+                float(job["RemoteWallClockTime"])
+                - float(job["CumulativeSuspensionTime"])
+            )
+            # if the job didn't get assigned a MATCH_GLIDEIN_Site,
+            # then it ran in the local pool
+            output['runtime'] = runtime
+        return output
     
 class CondorJob( yaml.YAMLObject):
     """
