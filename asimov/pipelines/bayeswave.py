@@ -403,7 +403,7 @@ class BayesWave(Pipeline):
         Attempt to ressurrect a failed job.
         """
         count = len(glob.glob(os.path.join(self.production.rundir, "*.dag.rescue*")))
-
+        
         if (count < 5) and (count > 0):
             self.submit_dag()
             self.logger.info(f"Bayeswave job was resurrected for the {count} time.")
