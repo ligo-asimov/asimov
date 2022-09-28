@@ -13,7 +13,7 @@ from ..storage import Store, AlreadyPresentException
 from asimov.utils import set_directory
 from asimov import logger
 from asimov import config
-from shutil import copyfile
+from shutil import copyfile, copytree
 import numpy as np
 
 class BayesWave(Pipeline):
@@ -165,6 +165,9 @@ class BayesWave(Pipeline):
             return False
             
     def after_completion(self):
+
+        self.collect_pages()
+        
         try:
             self.collect_assets()
         except Exception as e:
@@ -179,6 +182,8 @@ class BayesWave(Pipeline):
                                      self.production.meta['quality']['supress'][ifo]['lower'],
                                      self.production.meta['quality']['supress'][ifo]['upper'])
         self.production.status = "uploaded"
+
+        
         
     def before_submit(self):
         pass
@@ -353,3 +358,25 @@ class BayesWave(Pipeline):
             self.logger.info(f"Bayeswave job was resurrected for the {count} time.")
         else:
             self.logger.error("Bayeswave resurrection not completed as there have already been 5 attempts")
+
+    def html(self):
+        """Return the HTML representation of this pipeline."""
+        pages_dir = os.path.join(self.production.event.name, self.production.name)
+        out = ""
+        if self.production.status in {"finished", "uploaded"}:
+            out += """<div class="asimov-pipeline">"""
+            out += f"""<p><a href="{pages_dir}/index.html">Full Megaplot output</a></p>"""
+            out += f"""<img height=200 src="{pages_dir}/plots/clean_whitened_residual_histograms.png"</src>"""
+            
+            out += """</div>"""
+            
+        return out
+
+    def collect_pages(self):
+        """Collect the HTML output of the pipeline."""
+        results_dir = glob.glob(f"{self.production.rundir}/trigtime_*")[0]
+        pages_dir = os.path.join(config.get("general", "webroot"), self.production.event.name, self.production.name)
+        os.makedirs(pages_dir, exist_ok=True)
+        copyfile(os.path.join(results_dir, "index.html"), os.path.join(pages_dir, "index.html"))
+        copytree(os.path.join(results_dir, "html"), os.path.join(pages_dir, "html"), dirs_exist_ok=True)
+        copytree(os.path.join(results_dir, "plots"), os.path.join(pages_dir, "plots"), dirs_exist_ok=True)

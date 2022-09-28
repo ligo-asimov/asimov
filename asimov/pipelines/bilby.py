@@ -344,7 +344,24 @@ class Bilby(Pipeline):
         config_parser.read_string(file_content)
 
         return config_parser
-        
+
+    def html(self):
+        """Return the HTML representation of this pipeline."""
+        pages_dir = os.path.join(self.production.event.name, self.production.name)
+        out = ""
+        if self.production.status in {"stuck", "running"}:
+            out += """<div class="asimov-pipeline">"""
+            out += f"""<p><a href="{pages_dir}/index.html">Full Megaplot output</a></p>"""
+            out += f"""<img height=200 src="{pages_dir}/plots/clean_whitened_residual_histograms.png"</src>"""
+            out += """</div>"""
+        if self.production.status in {"finished", "uploaded"}:
+            out += """<div class="asimov-pipeline">"""
+            out += f"""<p><a href="{pages_dir}/index.html">Full Megaplot output</a></p>"""
+            out += f"""<img height=200 src="{pages_dir}/plots/clean_whitened_residual_histograms.png"</src>"""
+            out += """</div>"""
+            
+        return out
+    
     def resurrect(self):
         """
         Attempt to ressurrect a failed job.

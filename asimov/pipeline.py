@@ -319,3 +319,6 @@ class Pipeline():
         out += """</div>"""
         
         return out
+
+    def collect_pages(self):
+        pass
