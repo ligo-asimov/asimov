@@ -174,6 +174,7 @@ class BayesWave(Pipeline):
         
         try:
             self.collect_assets()
+            self.store_assets()
         except Exception as e:
             PipelineLogger(message=b"Failed to store PSDs.",
                            issue=self.production.event.issue_object,
