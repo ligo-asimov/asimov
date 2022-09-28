@@ -96,6 +96,10 @@ def html(event, webdir):
         border-radius: 0.5rem;
         }
 
+        .asimov-analysis-running, .asimov-analysis-processing {
+        background: #DEEEFF;
+        }
+        
         .asimov-analysis-finished, .asimov-analysis-uploaded {
         background: #E1EDE4;
         }
