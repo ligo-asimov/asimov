@@ -175,7 +175,11 @@ class BayesWave(Pipeline):
 
     def after_completion(self):
 
-        self.collect_pages()
+        try:
+            self.collect_pages()
+        except FileNotFoundError:
+            PipelineLogger(message=b"Failed to copy megaplot pages.",
+                           production=self.production.name)
         
         try:
             self.collect_assets()
