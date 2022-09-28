@@ -158,8 +158,13 @@ def monitor(ctx, event, update, dry_run, chain):
                     elif pipe.detect_completion() and production.status.lower() == "running":
                         # The job has been completed, collect its assets
                         if not "profiling" in production.meta: production.meta['profiling'] = {}
-                        production.meta['profiling'] = condor.collect_history(production.meta['job id'])
-                        production.meta['job id'] = None
+                        try:
+                            production.meta['profiling'] = condor.collect_history(production.meta['job id'])
+                            production.meta['job id'] = None
+                        except htcondor.HTCondorIOError:
+                            #self.logger.error("Could not collect condor profiling data.")
+                            pass
+
                         finish += 1
                         production.status = "finished"
                         pipe.after_completion()
