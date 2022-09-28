@@ -95,7 +95,7 @@ def html(event, webdir):
         border-radius: 0.5rem;
         }
 
-        .asimov-analysis-finished {
+        .asimov-analysis-finished, .asimov-analysis-uploaded {
         background: #E1EDE4;
         }
         .asimov-analysis-stuck {
