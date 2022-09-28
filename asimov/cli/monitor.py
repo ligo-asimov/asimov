@@ -109,7 +109,9 @@ def monitor(ctx, event, update, dry_run, chain):
                     raise ValueError # Pass to the exception handler
 
                 if not dry_run:
-                    if job.status.lower() == "running":
+                    if job.status.lower() == "running" and production.status == "processing":
+                        click.echo(f"  \t  " + click.style("●", "green") + f" Postprocessing for {production.name} is running (condor id: {production.meta['job id']})")
+                    elif job.status.lower() == "running":
                         click.echo(f"  \t  " + click.style("●", "green") + f" {production.name} is running (condor id: {production.meta['job id']})")
                         if not "profiling" in production.meta: production.meta['profiling'] = {}
                         #production.meta['profiling'] = job.get_data()['WallClockCheckpoint']
