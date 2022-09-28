@@ -1,7 +1,8 @@
 Asimov : The PE Automator and Manager
 =====================================
 
-`Asimov` is a python package to help with setting-up, automating, and monitoring parameter estimation workflows for gravitational wave signals.
+`Asimov` is a python package to help with setting-up, automating, and monitoring scientific data analysis.
+It is designed to make organising a scientific project, simplifying your workflow, and making your analysis easier to reproduce.
 
 Asimov makes setting-up and running parameter estimation jobs easier.
 It can generate configuration files for several parameter estimation pipelines, and handle submitting these to a cluster.
@@ -10,9 +11,10 @@ Whether you're setting-up a preliminary analysis for a single gravitational wave
 Features
 --------
 
-Job monitoring and management
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Scientific analysis management
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Asimov is able to interact with high throughput job management tools, and can submit jobs to clusters, monitor them for problems, and initiate post-processing tasks.
+Once your analysis is completed asimov can manage the data products and results, and prepare them for publication and distribution.
 
 Uniform pipeline interface
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -34,30 +36,24 @@ Quick installation
 ------------------
 
 Asimov is available on ``pypi`` and can be installed via ``pip install asimov``.
-You can find more details about installing ``asimov`` in the :ref:`installationguide`.
 
 
 
-Tutorials & Introductions
--------------------------
-
-Asimov is designed to be capable of running many different kinds of analyses, and to be flexible and extendable.
-However, it can be a little overwhelming to jump right in the deep end, so we've put together some tutorials which show how to use the core functionality of the package, including project management and analysis creation.
+Tutorials
+---------
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Tutorials
 
    starting-project
-   build-process
+   starting-analysis
 
 Users' guide
 ------------
 
-The full users' guide for asimov covers everything you might need in the day-to-day use of asimov, but doesn't cover details about adding new pipelines or dealing in detail with the various databases asimov uses to manage its analyses.
-
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Users' guide
 
    installation
@@ -68,41 +64,51 @@ The full users' guide for asimov covers everything you might need in the day-to-
    olivaw/reporting
    olivaw/review
 
+.. toctree::
+   :maxdepth: 2
+   :caption: The Ledger
+
+   ledger
+      
+   
+.. toctree::
+   :maxdepth: 1
+   :caption: Pipeline Guides
+
+   pipelines
+   pipelines/lalinference
+   pipelines/bilby
+   pipelines/rift
+   pipelines/bayeswave
+   
 Advanced topics
 ---------------
 
-These sections of the documentation cover the technical designs of various aspects of the software, including how various interfaces with external packkages work, and the specifications for data storage.
-
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Advanced topics
 	     
    configuration
    yamlformat
    gitlab-interface
    test-interface
-   templates
-   reports
+   clusters
 
 Developers' Guide
 -----------------
 
-We always welcome new contributions to the asimov package from both members of the gravitational wave community, and the general public.
-Please familiarise yourself with the contributors' guidelines for more information.
-
 .. toctree::
-   :maxdepth: 1
    :caption: Development Guide
 
-   Contributors' Guide <contributing>
-   Contributors' Code of Conduct <code-of-conduct>
-   building-docs
+   ../../CONTRIBUTING.rst
+   ../../CODE-OF-CONDUCT.rst
+
+   pipelines-dev
    
+   restful-api
    
 Module documentation
 --------------------
-
-This section of the guide contains the code-level documentation for asimov, and may be useful for developers, but you shouldn't normally need it as a normal user of asimov!
 
 .. toctree::
    :maxdepth: 1
@@ -120,3 +126,4 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+* :ref:`routingtable`
