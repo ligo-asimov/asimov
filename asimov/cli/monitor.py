@@ -155,7 +155,7 @@ def monitor(ctx, event, update, dry_run, chain):
                         try:
                             production.meta['profiling'] = condor.collect_history(production.meta['job id'])
                             production.meta['job id'] = None
-                        except htcondor.HTCondorIOError:
+                        except condor.htcondor.HTCondorIOError:
                             #self.logger.error("Could not collect condor profiling data.")
                             pass
 
