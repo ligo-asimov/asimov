@@ -246,7 +246,7 @@ class BayesWave(Pipeline):
                 if "submitted to cluster" in str(stdout):
                     cluster = re.search("submitted to cluster ([\d]+)", str(stdout)).groups()[0]
                     self.production.status = "running"
-                    self.production.job_id = cluster
+                    self.production.job_id = int(cluster)
                     return int(cluster), PipelineLogger(stdout)
                 else:
                     logger.info(stdout)
