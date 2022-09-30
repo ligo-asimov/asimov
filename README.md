@@ -233,6 +233,16 @@ $ asimov monitor
 If the job is finished `asimov` will start post-processing using `PESummary`, and if it's fallen over it will attempt to fix the problem and resubmit it to the cluster.
 If the post-processing has finished it will move the results to a read-only directory.
 
+You can also set the asimov monitor to automatically check the status of the job every 15 minutes by running 
+```
+$ asimov start
+```
+which will automatically start any post-processing, and start any jobs once their dependencies are met.
+You can stop this automatic monitoring process any time by running
+```
+$ asimov stop
+```
+
 For a full description of the workflow management process see the documentation.
 
 
