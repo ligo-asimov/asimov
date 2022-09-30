@@ -32,7 +32,7 @@ def apply_page(file, event, ledger=ledger):
         data
     )  # Load as a dictionary so we can identify the object type it contains
 
-    for document in quick_parse:
+    for document in quick_parse:e
 
         if document["kind"] == "event":
             logger.info("Found an event")
