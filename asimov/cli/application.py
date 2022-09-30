@@ -26,7 +26,7 @@ def apply_page(file, event, ledger=ledger):
 
     quick_parse = yaml.safe_load_all(data) # Load as a dictionary so we can identify the object type it contains
 
-    for document in quick_parse:
+    for document in quick_parse:e
 
         if document['kind'] == "event":
             document.pop("kind")
@@ -36,14 +36,16 @@ def apply_page(file, event, ledger=ledger):
 
         elif document['kind'] == "analysis":
             document.pop("kind")
-            if not event:
+            if event:
+                event_s = event
+            else:
                 if "event" in document:
-                    event = document['event']
+                    event_s = document['event']
                 else:
                     prompt = "Which event should these be applied to?"
-                    event = str(click.prompt(prompt))
+                    event_s = str(click.prompt(prompt))
             try:    
-                event_o = ledger.get_event(event)[0]
+                event_o = ledger.get_event(event_s)[0]
             except KeyError:
                 click.echo(click.style("●", fg="red") + f" Could not apply a production, couldn't find the event {event}")
                 continue
