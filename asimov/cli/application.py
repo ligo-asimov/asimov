@@ -37,10 +37,15 @@ def apply_page(file, event, ledger=ledger):
         elif document['kind'] == "analysis":
             document.pop("kind")
             if not event:
-                prompt = "Which event should these be applied to?"
-                event = str(click.prompt(prompt))
-
-            event_o = ledger.get_event(event)[0]
+                if "event" in document:
+                    event = document['event']
+                else:
+                    prompt = "Which event should these be applied to?"
+                    event = str(click.prompt(prompt))
+            try:    
+                event_o = ledger.get_event(event)[0]
+            except KeyError:
+                click.echo(click.style("●", fg="red") + f" Could not apply {production.name}, couldn't find the event {event}")
             production = asimov.event.Production.from_dict(document, event=event_o)
             try:
                 event_o.add_production(production)
