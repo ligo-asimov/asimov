@@ -46,6 +46,7 @@ def apply_page(file, event, ledger=ledger):
                 event_o = ledger.get_event(event)[0]
             except KeyError:
                 click.echo(click.style("●", fg="red") + f" Could not apply a production, couldn't find the event {event}")
+                continue
             production = asimov.event.Production.from_dict(document, event=event_o)
             try:
                 event_o.add_production(production)
