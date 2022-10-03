@@ -26,7 +26,7 @@ def apply_page(file, event, ledger=ledger):
 
     quick_parse = yaml.safe_load_all(data) # Load as a dictionary so we can identify the object type it contains
 
-    for document in quick_parse:e
+    for document in quick_parse:
 
         if document['kind'] == "event":
             document.pop("kind")
