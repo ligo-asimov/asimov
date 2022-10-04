@@ -1,3 +1,9 @@
+{% if priors.keys() contains "geocentric time" %}
+{% comment %}
+We need to add in a prior for geocentric time
+{% endcomment %}
+geocent_time = {{priors['geocentric time']['type']}}(name="geocent_time", minimum={{priors['geocentric time']['minimum']}},     					  maximum={{priors['geocentric time']['maximum']}},  boundary={{priors['geocentric time']['boundary'] | default: None}})
+{% endif %}
 # Chirp mass
 chirp_mass = {{priors['chirp mass']['type'] | default: "bilby.gw.prior.UniformInComponentsChirpMass" }}(name='chirp_mass', minimum={{priors['chirp mass']['minimum']}},    maximum={{priors['chirp mass']['maximum']}}, unit='$M_\{\{\odot\}\}$')
 # Mass ratio
