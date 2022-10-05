@@ -114,58 +114,10 @@ def html(event, webdir):
         """
         report + style
 
-        style = """
-<style>
-        body {
-        background-color: #f2f2f2;
-        }
-
-        .review-deprecated, .status-cancelled, .review-rejected {
-        display: none;
-        }
-
-        .event-data {
-        margin: 1rem;
-        margin-bottom: 2rem;
-        }
-
-        .asimov-sidebar {
-        position: sticky;
-        top: 4rem;
-        height: calc(100vh - 4rem);
-        overflow-y: auto;
-        }
-
-        .asimov-analysis {
-        padding: 1rem;
-        background: lavenderblush;
-        margin: 0.5rem;
-        border-radius: 0.5rem;
-        }
-
-        .asimov-analysis-running, .asimov-analysis-processing {
-        background: #DEEEFF;
-        }
-
-        .asimov-analysis-finished, .asimov-analysis-uploaded {
-        background: #E1EDE4;
-        }
-        .asimov-analysis-stuck {
-        background: #FFF5D9;
-        }
-
-        .asimov-status {
-        float: right;
-        clear: both;
-        }
-</style>
-        """
-        report + style
-
         script = """
 <script type="text/javascript">
     window.onload = setupRefresh;
-
+ 
     function setupRefresh() {
       setTimeout("refreshPage();", 1000*60*15); // milliseconds
     }
