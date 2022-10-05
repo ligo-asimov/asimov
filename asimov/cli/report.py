@@ -115,6 +115,19 @@ def html(event, webdir):
         """
         report + style
 
+        script = """
+<script type="text/javascript">
+    window.onload = setupRefresh;
+ 
+    function setupRefresh() {
+      setTimeout("refreshPage();", 1000*60*15); // milliseconds
+    }
+    function refreshPage() {
+       window.location = location.href;
+    }
+</script>
+        """
+        report + script
     with report:
         navbar = bt.Navbar(f"Asimov  |  {current_ledger.data['project']['name']}", background="navbar-dark bg-primary")
         report + navbar
