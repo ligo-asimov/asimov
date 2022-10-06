@@ -108,12 +108,6 @@ $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/events/gwtc-2-1/GW
 
 This downloads the settings which were used for analysing GW150914 for the GWTC-2.1 catalogue paper, and stores them in the ledger file in the project (`ledger.yml`).
 
-Alternatively, a new event with no configured settings can be added to your project by running
-
-```
-$ asimov event create --name GW150914_095045
-```
-
 Many analyses can be run on a single event (these are called "productions" in asimov parlence).
 We can add some pre-configured analyses by downloading some analysis configuration settings.
 
@@ -122,11 +116,6 @@ $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/analyses/productio
 ```
 Note that if you omit the `-e` argument asimov will ask which event the analyses should be applied to.
 
-Alternatively, you can add analyses at the command line, for example you can add a new bilby production to an event using
-
-```
-$ asimov production create GW150914_095045 bilby --approximant IMRPhenomPv2
-```
 
 You can now build and submit your jobs to the cluster.
 First use `asimov manage build` to create the configuration files for each analysis:
