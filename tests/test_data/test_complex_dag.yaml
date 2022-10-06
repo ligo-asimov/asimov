@@ -1,0 +1,45 @@
+---
+kind: analysis
+name: Prod0
+pipeline: bilby
+comment: PSD production
+status: finished
+---
+kind: analysis
+name: Prod1
+pipeline: bilby
+comment: PSD production
+status: wait
+needs:
+  - Prod0
+---
+kind: analysis
+name: Prod2
+pipeline: bilby
+comment: PSD production
+status: wait
+needs:
+  - Prod1
+---
+kind: analysis
+name: Prod3
+pipeline: lalinference
+comment: PSD production
+status: wait
+needs: 
+  - Prod0
+---
+kind: analysis
+name: Prod4
+pipeline: lalinference
+comment: PSD production
+status: wait
+needs: 
+  - Prod2
+  - Prod3
+---
+kind: analysis
+name: Prod5
+pipeline: lalinference
+comment: PSD production
+status: wait

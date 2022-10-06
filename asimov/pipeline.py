@@ -4,11 +4,18 @@ import subprocess
 import glob
 import re
 import time
+
+
+import warnings
+warnings.filterwarnings("ignore", module="htcondor")
+
+
 import htcondor
 
-from asimov import config
+from asimov import config, logger
 from .storage import Store
 from asimov import logging
+
 
 class PipelineException(Exception):
     """Exception for pipeline problems."""
@@ -78,32 +85,31 @@ class Pipeline():
     """
     Factory class for pipeline specification.
     """
-
+    name = "Asimov Pipeline"
+    
     def __init__(self, production, category=None):
         self.production = production
 
-        if not category:
-            if "Prod" in production.name:
-                self.category = "C01_offline"
-            else:
-                self.category = "online"
-        else:
-            self.category = category
-        self.logger = logger = logging.AsimovLogger(event=production.event)
+        self.category = production.category
+        self.logger = logger
         
-
+    def __repr__(self):
+        return self.name.lower()
+        
     def detect_completion(self):
         """
         Check to see if the job has in fact completed.
         """
         pass
 
-    def before_submit(self):
+    def before_submit(self, dryrun=False):
         """
         Define a hook to run before the DAG file is generated and submitted.
 
-        Note, this method should take no arguments, and should be over-written in the 
-        specific pipeline implementation if required.
+        Note, this method should be over-written in the specific pipeline implementation 
+        if required.
+        It allows the `dryrun` option to be specified in order to only print the commands
+        rather than run them.
         """
         pass
 
@@ -131,13 +137,13 @@ class Pipeline():
     def collect_logs(self):
         return {}
 
-    def run_pesummary(self):
+    def run_pesummary(self, dryrun=False):
         """
         Run PESummary on the results of this job.
         """
 
         psds = self.production.psds
-        calibration = [os.path.join(self.production.event.repository.directory, cal) for cal in self.production.meta['calibration'].values()]
+        calibration = [os.path.join(self.production.event.repository.directory, cal) for cal in self.production.meta['data']['calibration'].values()]
         configfile = self.production.event.repository.find_prods(self.production.name, self.category)[0]
         command = [
             "--webdir", os.path.join(config.get('general', 'webroot'), self.production.event.name, self.production.name,  "results"),
@@ -149,8 +155,8 @@ class Pipeline():
             "--evolve_spins", "True",
             "--multi_process", "4",
             "--approximant", self.production.meta['approximant'],
-            "--f_low", str(min(self.production.meta['quality']['lower-frequency'].values())),
-            "--f_ref", str(self.production.meta['quality']['reference-frequency']),
+            "--f_low", str(min(self.production.meta['quality']['minimum frequency'].values())),
+            "--f_ref", str(self.production.meta['likelihood']['reference frequency']),
             "--regenerate", "redshift mass_1_source mass_2_source chirp_mass_source total_mass_source final_mass_source final_mass_source_non_evolved radiated_energy",
             "--config", os.path.join(self.production.event.repository.directory, self.category, configfile)]
         # Samples
@@ -165,7 +171,10 @@ class Pipeline():
         
         self.logger.info(f"Submitted PE summary run. Command: {config.get('pesummary', 'executable')} {' '.join(command)}", production=self.production, channels=['file'])
 
-        hostname_job = htcondor.Submit({
+        if dryrun:
+            print(command)
+
+        submit_description = {
             "executable": config.get("pesummary", "executable"),  
             "arguments": " ".join(command),
             "accounting_group": config.get("pipelines", "accounting"),
@@ -174,17 +183,33 @@ class Pipeline():
             "log": f"{self.production.rundir}/pesummary.log",
             "request_cpus": "4",
             "getenv": "true",
-            "batch-name": f"PESummary/{self.production.event.name}/{self.production.name}",
+            "batch_name": f"PESummary/{self.production.event.name}/{self.production.name}",
             "request_memory": "8192MB",
             "request_disk": "8192MB",
-        })
+        }
 
-        schedulers = htcondor.Collector().locate(htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler"))
+        if dryrun:
+            print("SUBMIT DESCRIPTION")
+            print("------------------")
+            print(submit_description)
 
-        schedd = htcondor.Schedd(schedulers)
-        with schedd.transaction() as txn:   
-            cluster_id = hostname_job.queue(txn)
+        if not dryrun:
+            
+            hostname_job = htcondor.Submit(submit_description)
 
+            try:
+                # There should really be a specified submit node, and if there is, use it.
+                schedulers = htcondor.Collector().locate(htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler"))
+                schedd = htcondor.Schedd(schedulers)
+            except:
+                # If you can't find a specified scheduler, use the first one you find
+                schedd = htcondor.Schedd()
+            with schedd.transaction() as txn:   
+                cluster_id = hostname_job.queue(txn)
+
+        else:
+            cluster_id = 0
+                
         return cluster_id
 
     def store_results(self):
@@ -205,6 +230,17 @@ class Pipeline():
             store.add_file(self.production.event.name, self.production.name,
                            file=results)
 
+    def detect_completion_processing(self):
+        files = f"{self.production.name}_pesummary.dat"
+        results = os.path.join(config.get('general', 'webroot'),
+                                   self.production.event.name,
+                                   self.production.name,
+                                   "results", "samples", files)
+        if os.path.exists(results):
+            return True
+        else:
+            return False
+            
     def after_processing(self):
         """
         Run the after processing jobs.
@@ -270,4 +306,19 @@ class Pipeline():
         return config_parser
 
     def check_progress(self):
+        pass
+
+    def html(self):
+        """
+        Return an HTML representation of this pipeline object.
+        """
+
+        out = ""
+        out += """<div class="asimov-pipeline">"""
+        out += f"""<p class="asimov-pipeline-name">{self.name}</p>"""
+        out += """</div>"""
+        
+        return out
+
+    def collect_pages(self):
         pass

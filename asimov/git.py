@@ -10,22 +10,11 @@ import git
 
 from .ini import RunConfiguration
 from asimov import config
-# from asimov import logging
+from asimov import logger
+from asimov.utils import set_directory
 
 class AsimovFileNotFound(FileNotFoundError):
     pass
-
-class MetaRepository():
-
-    def __init__(self, directory):
-        self.directory = directory
-        os.chdir(directory)
-        repos_list = glob.glob("*")
-        self.repos = {event: os.path.join(directory, event) for event in repos_list}
-
-    def get_repo(self, event):
-        return EventRepo(self.repos[event])
-
 
 class EventRepo():
     """
@@ -51,7 +40,31 @@ class EventRepo():
 
     def __repr__(self):
         return self.directory
-        
+
+    @classmethod
+    def create(cls, location):
+        """
+        Create a new git repository to store configurations etc.
+
+        Parameters 
+        ----------
+        location : str 
+           The location of the directory to be used.
+        """
+
+        os.makedirs(location, exist_ok=True)
+        repo = git.Repo.init(location)
+        os.makedirs(os.path.join(location, "C01_offline"), exist_ok=True)
+        with open(os.path.join(location, "C01_offline", ".gitkeep"), "w") as f:
+            f.write(" ")
+        repo.git.add("./C01_offline/.gitkeep")
+        try:
+            repo.git.commit("-m", "Initial commit")
+        except git.exc.GitCommandError as e:
+            if "working tree clean" in e.stdout:
+                pass
+        return cls(directory=location, url=location)
+    
     @classmethod
     def from_url(cls, url, name, directory=None, update=False):
         """
@@ -75,8 +88,13 @@ class EventRepo():
         if not directory:
             tmp = config.get("general", "git_default")
             directory = f"{tmp}/{name}"
+
+            if os.path.exists(directory):
+                return cls(directory, url, update=update)
+            
             pathlib.Path(directory).mkdir(parents=True, exist_ok=True)
 
+            
         # Replace an https address with an ssh address
         if "https" in url:
             url = url.replace("https://", "git@")
@@ -125,10 +143,10 @@ class EventRepo():
         destination_dir = os.path.join(self.directory, destination_dir)
         pathlib.Path(destination_dir).mkdir(parents=True, exist_ok=True)
 
-        destination = os.path.join(self.directory, destination)
+        destination_d = os.path.join(self.directory, destination)
 
         try:
-            shutil.copyfile(source, destination)
+            shutil.copyfile(source, destination_d)
         except shutil.SameFileError:
             pass
 
@@ -152,18 +170,18 @@ class EventRepo():
         """
         Find the time file in this repository.
         """
-        os.chdir(os.path.join(self.directory, category))
-        try:
-            gps_file = glob.glob("*gps*.txt")[0]
-            return gps_file
-        except IndexError:
-            raise AsimovFileNotFound
+
+        with set_directory(os.path.join(self.directory, category)):
+            try:
+                gps_file = glob.glob("*gps*.txt")[0]
+                return gps_file
+            except IndexError:
+                raise AsimovFileNotFound
 
     def find_coincfile(self, category="C01_offline"):
         """
         Find the coinc file for this calibration category in this repository.
         """
-        #os.chdir(os.path.join(self.directory, category))
         coinc_file = glob.glob(os.path.join(self.directory, category, "*coinc*.xml"))
         
         if len(coinc_file)>0:
@@ -186,9 +204,8 @@ class EventRepo():
         """
 
         self.update()
-        #os.chdir(os.path.join(self.directory, category))
-        prods = glob.glob(f"{os.path.join(self.directory, category)}/{name}*.ini")
-        return prods
+        path = f"{os.path.join(os.getcwd(), self.directory, category)}/{name}.ini"
+        return [path]
 
     def upload_prod(self, production, rundir, preferred=False, category="C01_offline", rootdir="public_html/LVC/projects/O3/C01/", rename = False):
         """
@@ -258,32 +275,32 @@ class EventRepo():
             configs.append(str(os.path.join(event.data[f"{prod}_rundir"], "config.ini")))
 
 
-        os.chdir(os.path.join(self.directory, "Preferred", "PESummary_metafile"))
+        with set_directory(os.path.join(self.directory, "Preferred", "PESummary_metafile")):
 
-        command = ["summarycombine",
-                   "--webdir", f"/home/daniel.williams/public_html/LVC/projects/O3/preferred/{event.title}",
-                   "--samples", ]
-        command += samples
-        command += ["--labels"]
-        command += labels
-        command += ["--config"]
-        command += configs
-        command += ["--gw"]
+            command = ["summarycombine",
+                       "--webdir", f"/home/daniel.williams/public_html/LVC/projects/O3/preferred/{event.title}",
+                       "--samples", ]
+            command += samples
+            command += ["--labels"]
+            command += labels
+            command += ["--config"]
+            command += configs
+            command += ["--gw"]
 
-        dagman = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        out, err = dagman.communicate()
+            dagman = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            out, err = dagman.communicate()
 
-        print(out)
-        print(err)
+            print(out)
+            print(err)
 
-        copy(f"/home/daniel.williams/public_html/LVC/projects/O3/preferred/{event.title}/samples/posterior_samples.h5", os.path.join(self.directory, "Preferred", "PESummary_metafile"))
-        self.repo.git.add("Preferred/PESummary_metafile/posterior_samples.h5")
-        self.repo.git.commit("-m", "Updated the preferred sample metafile.")
-        self.repo.git.push()
-        time.sleep(15)
+            copy(f"/home/daniel.williams/public_html/LVC/projects/O3/preferred/{event.title}/samples/posterior_samples.h5", os.path.join(self.directory, "Preferred", "PESummary_metafile"))
+            self.repo.git.add("Preferred/PESummary_metafile/posterior_samples.h5")
+            self.repo.git.commit("-m", "Updated the preferred sample metafile.")
+            self.repo.git.push()
+            time.sleep(15)
 
-        event.labels += ["Preferred cleaned"]
-        event.issue_object.save()
+            event.labels += ["Preferred cleaned"]
+            event.issue_object.save()
 
         return True
 
@@ -313,5 +330,7 @@ class EventRepo():
                 pass
             elif "Either specify the URL from the command-line or configure a remote repository using" in str(e):
                 pass
+            elif "Temporary failure in name resolution" in str(e):
+                logger.warning(f"Unable to update the repository for {self.event}")
             else:
                 raise e

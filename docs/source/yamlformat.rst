@@ -8,6 +8,8 @@ These metadata are stored in the event's *production ledger*, which is specified
 
 A number of fields are required for `asimov` to correctly process an event, while a number of additional fields will allow it to perform more operations automatically, or over-ride defaults.
 
+Normally you shouldn't need to edit the ledger file directly, but if you're setting up new analyses or want to check the configuration of a pre-existing analysis then it can be helpful to have an understanding of the quantities contained in it.
+
 Required fields
 ~~~~~~~~~~~~~~~
 
@@ -23,6 +25,9 @@ For example:
    name: S200311bg
 
 
+Optional fields
+~~~~~~~~~~~~~~~
+
 ``repository``
 ++++++++++++++
 
@@ -33,6 +38,8 @@ For example:
    
    repository: https://git.ligo.org/pe/O3/S200311bg
 
+If you don't provide this asimov will create a new repository to store files in,  inside the `checkouts` folder of the 
+   
 ``working directory``
 +++++++++++++++++++++
 
@@ -43,9 +50,7 @@ For example
 .. code-block:: yaml
 
    working directory: /home/daniel.williams/events/O3/o3b/run_directories/S200224a
-   
-Optional fields
-~~~~~~~~~~~~~~~
+
 
 ``productions``
 +++++++++++++++
@@ -133,20 +138,26 @@ For example:
 
    interferometers: ['L1', 'H1', 'K1']
 
+``likelihood``
+++++++++++++++
+
+This section stores settings directly related to the likelihood function used in analyses.
+
++ ``sample-rate``: the sampling frequency, in hertz
++ ``padding``: the padding to be applied to the data
++ ``window-length``: the window length, in seconds
++ ``reference-frequency``: the reference frequency for the waveform.
++ ``start-frequency``: the lowest frequency at which the waveform should be generated.  
++ ``psd-length``: the length of the PSD in seconds.
+   
 ``quality``
 +++++++++++
 
 This section will store detector characterisation and data quality information which is relevant to this event.
 ``asimov`` will recognise a number of fields stored in this section.
 
-+ ``psd-length``: the length of the PSD in seconds.
 + ``segment-length``: the length of the analysis segment, in seconds.
 + ``lower-frequency``: the lower frequency integration cut-off (f_low), in hertz.
-+ ``sample-rate``: the sampling frequency, in hertz
-+ ``padding``: the padding to be applied to the data
-+ ``window-length``: the window length, in seconds
-+ ``reference-frequency``: the reference frequency for the waveform.
-+ ``start-frequency``: the lowest frequency at which the waveform should be generated.  
 
 For example:
 
@@ -202,70 +213,120 @@ The gracedb ID for the preferred event.
 
 The prior ranges for the event.
 
-Each parameter can have an upper and lower boundary defined; if no lower or upper bound is to be specified it should be explicitly stated as `None`.
+Each parameter can have a distribution and an upper and lower boundary defined; if no lower or upper bound is to be specified it should be explicitly stated as `None`.
 
-Currently-supported values here are the maximum amplitude order of the waveform (if supported) `amp order`, the chirp mass `chirp-mass`, the component mass `component`, the distance `distance`, and the mass ratio `q`.
+The following parameters are used by the main pipleines tested with asimov, but other pipelines may support more, and you should refer directly to their documentation for the full set of supported priors.
 
++ ``amplitude order``
++ ``luminosity distance``
++ ``chirp mass``
++ ``dec``
++ ``mass 1``
++ ``mass 2``
++ ``mass ratio``
++ ``phase``
++ ``phi 12``
++ ``phi jl``
++ ``psi``
++ ``ra``
++ ``spin 1``
++ ``spin 2``
++ ``theta jn``
++ ``tilt 1``
++ ``tilt 2``
+
+For example, the set of priors which might be set for a ``bilby`` analysis:
+  
 .. code-block:: yaml
 
-  priors:
-    amp order: 1
-    chirp-mass:
-    - 22.852486906183355
-    - 57.65416902042432
-    component:
-    - 1
-    - 1000
-    distance:
-    - None
-    - 10000
-    q:
-    - 0.05
-    - 1.0
-
-
-
-``calibration``
-+++++++++++++++
-
-This section should provide the location of the files which define the calibration envelopes for this event.
-These should be specified relative to the root of the event's git repository, as defined in the `repository` value.
-
-For example:
-
-.. code-block:: yaml
-	
-   calibration:
-     H1: C01_offline/calibration/H1.dat
-     L1: C01_offline/calibration/L1.dat
-     V1: C01_offline/calibration/V1.dat
-
-A calibration envelope should be specified for each interferometer which will be used in the analysis.
+priors:
+    amplitude order: 2
+    chirp mass:
+        maximum: 100
+        minimum: 0
+        type: bilby.gw.prior.UniformInComponentsChirpMass
+    dec:
+        type: Cosine
+    luminosity distance:
+        alpha: 2
+        maximum: 1000
+        minimum: 10
+        type: PowerLaw
+    mass 1:
+        maximum: 1000
+        minimum: 1
+        type: Constraint
+    mass 2:
+        maximum: 1000
+        minimum: 1
+        type: Constraint
+    mass ratio:
+        maximum: 1.0
+        minimum: 0.1
+        type: bilby.gw.prior.UniformInComponentsMassRatio
+    phase:
+        boundary: periodic
+        type: Uniform
+    phi 12:
+        type: Uniform
+    phi jl:
+        type: Uniform
+    psi:
+        type: Uniform
+    ra:
+        type: Uniform
+    spin 1:
+        maximum: 1
+        minimum: 0
+        type: Uniform
+    spin 2:
+        maximum: 1
+        minimum: 0
+        type: Uniform
+    theta jn:
+        type: Sine
+    tilt 1:
+        type: Sine
+    tilt 2:
+        type: Sine
 
 ``data``
 +++++++++
 
-This section should provide details of where the data for this event are located.
+This section should provide details of where the data for this event, and supporting data are located.
 
 This information will be used to generate production configurations.
 
-The two sections which ``asimov`` understands for this section are ``frame-types`` and ``channels``.
-
-+ ``frame-types`` should be a list of key:value pairs for each detector's frame type (see the example below)
++ ``data files`` should be a list of key:value pairs pointing to the frame file for each detector (see example below). This is optional, and if not present most pipelines will attempt to find the data on their own using ``gwdatafind``.
++ ``frame types`` should be a list of key:value pairs for each detector's frame type (see the example below)
 + ``channels`` should be a list of key:value pairs for each detector's data channel (see the example below)
++ ``calibration`` should be a list of key:value pairs for the calibration uncertainty envelopes relevant to this event. A calibration envelope should be specified for each interferometer which will be used in the analysis.
 
+.. note:: Frame files
+
+	  Support for frame files was introduced in asimov v0.4.0
+  
 .. code-block:: yaml
 
    data:
-      - frame-types:
-	- H1: 'H1_HOFT_CLEAN_SUB60HZ_C01'
-	- L1: 'L1_HOFT_CLEAN_SUB60HZ_C01'
-	- V1: 'V1Online'
-      - channels:
-	- H1: 'H1:DCS-CALIB_STRAIN_CLEAN_SUB60HZ_C01'
-	  L1: 'L1:DCS-CALIB_STRAIN_CLEAN_SUB60HZ_C01'
-	  V1: 'V1:Hrec_hoft_16384Hz'
-   
+     data files:
+       H1: H-H1_HOFT_C02-1126256640-4096.gwf
+       L1: L-L1_HOFT_C02-1126256640-4096.gwf
+       V1: V-V1Online-1126256640-4096.gwf
+     frame types:
+       H1: H1_HOFT_CLEAN_SUB60HZ_C01
+       L1: L1_HOFT_CLEAN_SUB60HZ_C01
+       V1: V1Online
+     channels:
+       H1: H1:DCS-CALIB_STRAIN_CLEAN_SUB60HZ_C01
+       L1: L1:DCS-CALIB_STRAIN_CLEAN_SUB60HZ_C01
+       V1: V1:Hrec_hoft_16384Hz
+     calibration:
+       H1: C01_offline/calibration/H1.dat
+       L1: C01_offline/calibration/L1.dat
+       V1: C01_offline/calibration/V1.dat
+
+	  
 ``psds``
 ++++++++
 
@@ -281,6 +342,3 @@ This value takes a nested structure, with the sampling frequency of the PSD used
        H1: /home/daniel.williams/events/O3/event_repos/S200224a/C01_offline/psds/1024/H1-psd.dat
        L1: /home/daniel.williams/events/O3/event_repos/S200224a/C01_offline/psds/1024/L1-psd.dat
        V1: /home/daniel.williams/events/O3/event_repos/S200224a/C01_offline/psds/1024/V1-psd.dat
-
-
-

@@ -5,12 +5,15 @@ import os
 
 import click
 
-from asimov.cli import connect_gitlab, known_pipelines
+from asimov.cli import known_pipelines
 from asimov import gitlab
 from asimov import config
+from asimov import current_ledger
 from asimov.review import ReviewMessage
 @click.group()
 def review():
+    """Add and view review information and sign-offs 
+    """
     pass
 
 @click.option("--message", "-m", "message", default=None)
@@ -22,16 +25,12 @@ def add(event, production, status, message):
     """
     Add a review signoff or rejection to an event.
     """
-    server, repository = connect_gitlab()
-    gitlab_events = gitlab.find_events(repository,
-                                      subset=[event],
-                                      update=False,
-                                      repo=False)
-    for event in gitlab_events:
+
+    for event in current_ledger.get_event(event):
         production = [production_o
                       for production_o in event.productions
                       if production_o.name == production][0]
-        click.secho(event.title, bold=True)
+        click.secho(event.name, bold=True)
         click.secho(production.name)
         message = ReviewMessage(message=message,
                                 status=status,
@@ -39,7 +38,7 @@ def add(event, production, status, message):
         production.review.add(message)
     
         if hasattr(event, "issue_object"):
-            production.event.issue_object.update_data()
+            production.event.update_data()
 
 @click.argument("production", default=None, required=False)
 @click.argument("event", default=None, required=False)

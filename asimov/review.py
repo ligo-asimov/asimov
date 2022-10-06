@@ -10,6 +10,12 @@ but rather to the review of events which it has been used to analyse.
 from datetime import datetime
 
 STATES = {"REJECTED", "APPROVED", "PREFERRED", "DEPRECATED"}
+review_map = {"deprecated": "warning",
+              "none": "default",
+              "approved": "success",
+              "rejected": "danger",
+              "checked": "info"
+}
 
 
 class Review:
@@ -124,3 +130,20 @@ class ReviewMessage:
                          status=default['status'],
                          timestamp=timestamp)
         return message_ob
+
+
+    def html(self):
+        """
+        Return an HTML representation of this review message.
+        """
+        review_row = ""
+        if self.status:
+            review_row += f"""<div class="asimov-review alert alert-{review_map[self.status.lower()]}" role="alert">
+            <strong>{self.status}</strong>  """
+            review_status = self.status
+        else:
+            review_row += f"""<div class="alert alert-light" role="alert">"""
+        if self.message:
+            review_row += f"{self.message}" 
+        review_row += "</div>"
+        return review_row

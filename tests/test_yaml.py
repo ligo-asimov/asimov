@@ -5,9 +5,15 @@ import os
 import shutil
 import git
 import asimov.event
+from asimov.cli.project import make_project
+from asimov.cli.application import apply_page
+from asimov.ledger import YAMLLedger
 
 TEST_YAML = """
 name: S000000xx
+data: 
+  channels:
+    L1: /this/is/fake
 working directory: {0}/tests/tmp/
 repository: {0}/tests/test_data/s000000xx/
 interferometers: 
@@ -57,15 +63,26 @@ class EventTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cwd = os.getcwd()
-        git.Repo.init(cls.cwd+"/tests/test_data/s000000xx/")
+        #git.Repo.init(cls.cwd+"/tests/test_data/s000000xx/")
+
+    @classmethod
+    def tearDownClass(cls):
+        """Destroy all the products of this test."""
+        pass
         
     def setUp(self):
-        self.event = asimov.event.Event.from_yaml(TEST_YAML.format(self.cwd))
+        os.makedirs(f"{self.cwd}/tests/tmp/project")
+        os.chdir(f"{self.cwd}/tests/tmp/project")
+        make_project(name="Test project", root=f"{self.cwd}/tests/tmp/project")
+        self.ledger = YAMLLedger(f"ledger.yml")
+        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
+        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/events/gwtc-2-1/GW150914_095045.yaml", event=None, ledger=self.ledger)
+
+        self.event = asimov.event.Event.from_yaml(TEST_YAML.format(self.cwd), ledger=self.ledger)
 
     def tearDown(self):
-        #shutil.rmtree(self.cwd+"/tests/tmp/")
-        # shutil.rmtree("/tmp/S000000xx")
-        pass
+        os.chdir(self.cwd)
+        shutil.rmtree(f"{self.cwd}/tests/tmp/")
         
     def test_name(self):
         """Check the name is loaded correctly."""
@@ -76,36 +93,35 @@ class EventTests(unittest.TestCase):
         with self.assertRaises(asimov.event.DescriptionException):
             asimov.event.Event.from_yaml(BAD_YAML.format(self.cwd))
 
-    # def test_no_repository_error(self):
-    #     """Check that an exception is raised if the event has no repository."""
-    #     with self.assertRaises(asimov.event.DescriptionException):
-    #         asimov.event.Event.from_yaml(BAD_YAML_2.format(self.cwd))
-
 class ProductionTests(unittest.TestCase):
     """Tests of the YAML Production format."""
+
     @classmethod
     def setUpClass(cls):
         cls.cwd = os.getcwd()
-        git.Repo.init(cls.cwd+"/tests/test_data/s000000xx/")
 
     @classmethod
     def tearDownClass(cls):
         """Destroy all the products of this test."""
-        shutil.rmtree(cls.cwd+"/tests/test_data/s000000xx/.git")
+        pass
             
     def setUp(self):
-        self.event = asimov.event.Event("S000000xx",
-                                        "{0}/tests/test_data/s000000xx/".format(self.cwd))
+        os.makedirs(f"{self.cwd}/tests/tmp/project")
+        os.chdir(f"{self.cwd}/tests/tmp/project")
+        make_project(name="Test project", root=f"{self.cwd}/tests/tmp/project")
+        self.ledger = YAMLLedger(f"ledger.yml")
+        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
+        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/events/gwtc-2-1/GW150914_095045.yaml", event=None, ledger=self.ledger)
+        self.event = asimov.event.Event("S000000xx", ledger=self.ledger)
 
     def tearDown(self):
-        #shutil.rmtree(self.cwd+"/tests/tmp/")
-        #shutil.rmtree("/tmp/S000000xx")
-        pass
+        shutil.rmtree(f"{self.cwd}/tests/tmp/")
+        os.chdir(self.cwd)
 
     def test_missing_name(self):
         """Check that an exception is raised if the production has no name."""
         production = dict(status="wait", pipeline="lalinference")
-        with self.assertRaises(asimov.event.DescriptionException):
+        with self.assertRaises(TypeError):
             asimov.event.Production.from_dict(production, event=self.event)
         
     def test_missing_pipeline(self):
@@ -126,6 +142,9 @@ class ProductionTests(unittest.TestCase):
             name: S200311bg
             interferometers: [L1]
             calibration: {{}}
+            data: 
+              channels:
+                L1: /this/is/fake
             working directory: {0}/tests/tmp/
             priors:
               q: [0, 1]
@@ -144,7 +163,8 @@ class ProductionTests(unittest.TestCase):
                   status: wait
             """
             event = asimov.event.Event.from_yaml(
-                YAML_WITH_PRODUCTION_PRIORS.format(self.cwd))
+                YAML_WITH_PRODUCTION_PRIORS.format(self.cwd),
+                ledger=self.ledger)
             prod0 = event.productions[0]
             prod1 = event.productions[1]
             self.assertEqual(prod0.priors['q'][1], 0.05)
@@ -158,6 +178,9 @@ class ProductionTests(unittest.TestCase):
         name: S200311bg
         interferometers: [L1]
         calibration: {{}}
+        data:
+          channels:
+            L1: /this/is/fake
         working directory: {0}/tests/tmp/
         priors:
           q: [0, 1]
@@ -176,10 +199,11 @@ class ProductionTests(unittest.TestCase):
               status: wait
         """
         event = asimov.event.Event.from_yaml(
-            YAML_WITH_PRODUCTION_PRIORS.format(self.cwd))
+            YAML_WITH_PRODUCTION_PRIORS.format(self.cwd),
+            ledger=self.ledger)
 
         event_YAML = event.to_yaml()
-        event2 = asimov.event.Event.from_yaml(event_YAML)
+        event2 = asimov.event.Event.from_yaml(event_YAML, ledger=self.ledger)
         prod0 = event.productions[0]
         prod1 = event.productions[1]
 

@@ -8,9 +8,9 @@ import glob
 import subprocess
 from ..pipeline import Pipeline, PipelineException, PipelineLogger
 from ..ini import RunConfiguration
-from asimov import config
-from asimov import logging
-
+from asimov import config, logger
+from asimov.utils import set_directory
+from ligo.gracedb.rest import HTTPError
 
 class Rift(Pipeline):
     """
@@ -24,12 +24,12 @@ class Rift(Pipeline):
         The category of the job.
         Defaults to "C01_offline".
     """
-
+    name = "RIFT"
     STATUS = {"wait", "stuck", "stopped", "running", "finished"}
 
     def __init__(self, production, category=None):
         super(Rift, self).__init__(production, category)
-        self.logger = logger = logging.AsimovLogger(event=production.event)
+        self.logger = logger
         if not production.pipeline.lower() == "rift":
             raise PipelineException
         
@@ -78,38 +78,35 @@ class Rift(Pipeline):
                                         production=self.production.name)
         
             
-    def before_submit(self):
+    def before_submit(self, dryrun=False):
         """
         Convert the text-based PSD to an XML psd if the xml doesn't exist already.
         """
         event = self.production.event
         category = config.get("general", "calibration_directory")
-        current = os.getcwd()        
-        if len(self.production.get_psds("xml"))==0:
+        if len(self.production.get_psds("xml"))==0 and "psds" in self.production.meta:
             for ifo in self.production.meta['interferometers']:
+                with set_directory(f"{event.work_dir}"):
+                    sample = self.production.meta['quality']['sample-rate']
+                    self._convert_psd(self.production.meta['psds'][sample][ifo], ifo, dryrun=dryrun)
+                    asset = f"{ifo.upper()}-psd.xml.gz"
+                    git_location = os.path.join(category, "psds")
+                    self.production.event.repository.add_file(
+                        asset,
+                        os.path.join(git_location, str(sample), f"psd_{ifo}.xml.gz"),
+                        commit_message = f"Added the xml format PSD for {ifo}.")
 
-                os.chdir(f"{event.repository.directory}/")
-                sample = self.production.meta['quality']['sample-rate']
-                self._convert_psd(self.production.meta['psds'][sample][ifo], ifo)
-                asset = f"{ifo.upper()}-psd.xml.gz"
-                git_location = os.path.join(category, "psds")
-                self.production.event.repository.add_file(
-                    asset,
-                    os.path.join(git_location, str(sample), f"psd_{ifo}.xml.gz"),
-                    commit_message = f"Added the xml format PSD for {ifo}.")
-        os.chdir(current)
-
-    def build_dag(self, user=None):
+    def build_dag(self, user=None, dryrun=False):
         """
         Construct a DAG file in order to submit a production to the
         condor scheduler using util_RIFT_pseudo_pipe.py
 
         Parameters
         ----------
-        production : str
-           The production name.
         user : str
            The user accounting tag which should be used to run the job.
+        dryrun: bool
+           If set to true the commands will not be run, but will be printed to standard output. Defaults to False.
 
         Raises
         ------
@@ -140,20 +137,27 @@ class Rift(Pipeline):
         
         """
         cwd = os.getcwd()
-        #os.chdir(self.production.event.meta['working directory'])
-        #os.chdir(os.path.join(self.production.event.repository.directory,
-        #                      self.category))
-
         if self.production.event.repository:
             gps_file = self.production.get_timefile()
-            coinc_file = self.production.get_coincfile()
-            coinc_file = os.path.join(self.production.event.repository.directory, "C01_offline",
-                                               coinc_file)
-            ini = self.production.get_configuration().ini_loc
-            ini = os.path.join(self.production.event.repository.directory, "C01_offline",  ini)
+            try:
+            
+                coinc_file = self.production.get_coincfile()
+                coinc_file = os.path.join(self.production.event.repository.directory, "C01_offline",
+                                          coinc_file)
+            except HTTPError:
+                print("Unable to download the coinc file because it was not possible to connect to GraceDB")
+                coinc_file = "COINC MISSING"
+
+            try:
+                
+                ini = self.production.get_configuration().ini_loc
+                ini = os.path.join(self.production.event.repository.directory, "C01_offline",  ini)
+            except ValueError:
+                print("Unable to find the configuration file. Have you run `$ asimov manage build` yet?")
+                ini = "INI MISSING"
         else:
             gps_file = "gpstime.txt"
-            ini = os.path.join(self.production.event.meta['working directory'], f"{self.production.name}.ini")
+            ini = "INI MISSING"
             coinc_file = os.path.join(cwd, "coinc.xml")
 
         if self.production.get_meta("user"):
@@ -172,7 +176,6 @@ class Rift(Pipeline):
 
         approximant = self.production.meta['approximant']
 
-        #ini.save()
 
         if self.production.rundir:
             rundir = os.path.relpath(self.production.rundir, os.getcwd())
@@ -185,14 +188,14 @@ class Rift(Pipeline):
         #lmax = self.production.meta['priors']['amp order']
 
         if "lmax" in self.production.meta:
-            lmax = self.production.meta['lmax']
+            lmax = self.production.meta['likelihood']['lmax']
         elif "HM" in self.production.meta['approximant']:
             lmax = 4
         else:
             lmax = 2
             
 
-        if "cip jobs" in self.production.meta:
+        if "cip jobs" in self.production.meta['sampler']:
             cip = self.production.meta['cip jobs']
         else:
             cip = 3
@@ -209,12 +212,10 @@ class Rift(Pipeline):
                    "--ile-force-gpu",
                    "--use-ini", ini
         ]
-        print(" ".join(command))
+
         # If a starting frequency is specified, add it
         if "start-frequency" in self.production.meta:
             command += ["--fmin-template", self.production.quality['start-frequency']]
-        
-        self.logger.info(" ".join(command), production = self.production)
 
         # Placeholder LI grid bootstrapping; conditional on it existing and location specification
         
@@ -231,43 +232,48 @@ class Rift(Pipeline):
 
             command += ["--manual-initial-grid", bootstrap_file]
 
-        self.logger.info(command, production = self.production)
-        os.chdir(self.production.event.meta['working directory'])
-        pipe = subprocess.Popen(command, 
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
-        out, err = pipe.communicate()
-        if err:
-            self.production.status = "stuck"
-            if hasattr(self.production.event, "issue_object"):
-                self.logger.info(out, production = self.production)
-                self.logger.error(err, production = self.production)
-                raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
-                                            issue=self.production.event.issue_object,
-                                            production=self.production.name)
-            else:
-                self.logger.info(out, production = self.production)
-                self.logger.error(err, production = self.production)
-                raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
-                                        production=self.production.name)
+        if dryrun:
+            print(" ".join(command))
+
         else:
-            if self.production.event.repository:
-                os.chdir(self.production.rundir)
-                for psdfile in self.production.get_psds("xml"):
-                    ifo = psdfile.split("/")[-1].split("_")[1].split(".")[0]
-                    os.system(f"cp {psdfile} {ifo}-psd.xml.gz")
+            self.logger.info(" ".join(command), production = self.production)
 
-                #os.system("cat *_local.cache > local.cache")
-
-                if hasattr(self.production.event, "issue_object"):
-                    return PipelineLogger(message=out,
-                                          issue=self.production.event.issue_object,
-                                          production=self.production.name)
+            with set_directory(self.production.event.work_dir):
+                pipe = subprocess.Popen(command, 
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT)
+                out, err = pipe.communicate()
+                if err:
+                    self.production.status = "stuck"
+                    if hasattr(self.production.event, "issue_object"):
+                        self.logger.info(out, production = self.production)
+                        self.logger.error(err, production = self.production)
+                        raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
+                                                    issue=self.production.event.issue_object,
+                                                    production=self.production.name)
+                    else:
+                        self.logger.info(out, production = self.production)
+                        self.logger.error(err, production = self.production)
+                        raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
+                                                production=self.production.name)
                 else:
-                    return PipelineLogger(message=out,
-                                          production=self.production.name)
+                    if self.production.event.repository:
+                        with set_directory(self.production.rundir):
+                            for psdfile in self.production.get_psds("xml"):
+                                ifo = psdfile.split("/")[-1].split("_")[1].split(".")[0]
+                                os.system(f"cp {psdfile} {ifo}-psd.xml.gz")
+
+                            #os.system("cat *_local.cache > local.cache")
+
+                            if hasattr(self.production.event, "issue_object"):
+                                return PipelineLogger(message=out,
+                                                      issue=self.production.event.issue_object,
+                                                      production=self.production.name)
+                            else:
+                                return PipelineLogger(message=out,
+                                                      production=self.production.name)
     
-    def submit_dag(self):
+    def submit_dag(self, dryrun=False):
         """
         Submit a DAG file to the condor cluster (using the RIFT dag name). This is an overwrite of the near identical parent function submit_dag()
 
@@ -291,40 +297,46 @@ class Rift(Pipeline):
         PipelineException
            This will be raised if the pipeline fails to submit the job.
         """
-        os.chdir(self.production.rundir)
-        os.system("cat *_local.cache > local.cache")
-
-        for psdfile in self.production.get_psds("xml"):
-            ifo = psdfile.split("/")[-1].split("_")[1].split(".")[0]
-            os.system(f"cp {psdfile} {ifo}-psd.xml.gz")
-
+        if not os.path.exists(self.production.rundir):
+            os.makedirs(self.production.rundir)
 
         self.before_submit()
-         
-        try:
+        with set_directory(self.production.rundir):
+            if not dryrun:
+                os.system("cat *_local.cache > local.cache")
+
+            for psdfile in self.production.get_psds("xml"):
+                ifo = psdfile.split("/")[-1].split("_")[1].split(".")[0]
+                os.system(f"cp {psdfile} {ifo}-psd.xml.gz")
+
             command = ["condor_submit_dag", 
                        "-batch-name", f"rift/{self.production.event.name}/{self.production.name}",
                        os.path.join(self.production.rundir, "marginalize_intrinsic_parameters_BasicIterationWorkflow.dag")]
-            dagman = subprocess.Popen(command,
-                                      stdout=subprocess.PIPE,
-                                      stderr=subprocess.STDOUT)
-            self.logger.info(command, production = self.production)
-        except FileNotFoundError as error:
-            raise PipelineException("It looks like condor isn't installed on this system.\n"
-                                    f"""I wanted to run {" ".join(command)}.""")
 
-        stdout, stderr = dagman.communicate()
+            if dryrun:
+                print(" ".join(command))
+            else:
+                try:                    
+                    dagman = subprocess.Popen(command,
+                                              stdout=subprocess.PIPE,
+                                              stderr=subprocess.STDOUT)
+                    self.logger.info(command, production = self.production)
+                except FileNotFoundError as error:
+                    raise PipelineException("It looks like condor isn't installed on this system.\n"
+                                            f"""I wanted to run {" ".join(command)}.""")
+
+                stdout, stderr = dagman.communicate()
 
 
-        if "submitted to cluster" in str(stdout):
-            cluster = re.search("submitted to cluster ([\d]+)", str(stdout)).groups()[0]
-            self.production.status = "running"
-            self.production.job_id = int(cluster)
-            return cluster, PipelineLogger(stdout)
-        else:
-            raise PipelineException(f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
-                                    issue=self.production.event.issue_object,
-                                    production=self.production.name)
+                if "submitted to cluster" in str(stdout):
+                    cluster = re.search("submitted to cluster ([\d]+)", str(stdout)).groups()[0]
+                    self.production.status = "running"
+                    self.production.job_id = int(cluster)
+                    return cluster, PipelineLogger(stdout)
+                else:
+                    raise PipelineException(f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
+                                            issue=self.production.event.issue_object,
+                                            production=self.production.name)
 
     def resurrect(self):
         """

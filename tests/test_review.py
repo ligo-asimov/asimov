@@ -3,11 +3,18 @@ import os
 import shutil
 import git
 import asimov.event
+from asimov.cli.project import make_project
+from asimov.cli.application import apply_page
+from asimov.ledger import YAMLLedger
+
 
 TEST_YAML = """
 name: S000000xx
 working directory: {0}/tests/tmp/
 repository: {0}/tests/test_data/s000000xx/
+data: 
+  channels:
+    L1: /this/is/fake
 interferometers: 
 - L1
 calibration: 
@@ -30,6 +37,9 @@ productions:
 """
 TEST_YAML_2 = """
 name: S000000xx
+data: 
+  channels:
+    L1: /this/is/fake
 working directory: {0}/tests/tmp/
 repository: {0}/tests/test_data/s000000xx/
 interferometers: 
@@ -51,14 +61,21 @@ class ReviewTests(unittest.TestCase):
         git.Repo.init(cls.cwd+"/tests/test_data/s000000xx/")
         
     def setUp(self):
-        self.event = asimov.event.Event.from_yaml(TEST_YAML.format(self.cwd))
-        self.event_no_review = asimov.event.Event.from_yaml(TEST_YAML_2.format(self.cwd))
+        os.makedirs(f"{self.cwd}/tests/tmp/project")
+        os.chdir(f"{self.cwd}/tests/tmp/project")
+        make_project(name="Test project", root=f"{self.cwd}/tests/tmp/project")
+        self.ledger = YAMLLedger(f"ledger.yml")
+        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
+        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/events/gwtc-2-1/GW150914_095045.yaml", event=None, ledger=self.ledger)
+
+        self.event = asimov.event.Event.from_yaml(TEST_YAML.format(self.cwd),
+                                                  ledger=self.ledger)
+        self.event_no_review = asimov.event.Event.from_yaml(TEST_YAML_2.format(self.cwd),
+                                                            ledger=self.ledger)
 
     def tearDown(self):
-        #shutil.rmtree(self.cwd+"/tests/tmp/")
-        # shutil.rmtree("/tmp/S000000xx")
-        pass
-
+        os.chdir(self.cwd)
+        shutil.rmtree(f"{self.cwd}/tests/tmp/")
     
     def test_review_parsing(self):
         """Check that review messages get parsed correctly."""

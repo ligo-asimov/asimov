@@ -4,9 +4,26 @@ Asimov is a workflow management and automation platform for scientific analyses.
 
 [Documentation](https://asimov.docs.ligo.org/asimov) · [Releases](https://git.ligo.org/asimov/asimov/-/releases) · [Issue Tracker](https://git.ligo.org/asimov/asimov/-/issues)
 
+[![Anaconda-Server Badge](https://anaconda.org/conda-forge/ligo-asimov/badges/version.svg)](https://anaconda.org/conda-forge/ligo-asimov) 
+[![Anaconda-Server Badge](https://anaconda.org/conda-forge/ligo-asimov/badges/installer/conda.svg)](https://conda.anaconda.org/conda-forge)
+
 Asimov was developed to manage and automate the parameter estimation analyses used by the LIGO, Virgo, and KAGRA collaborations to analyse gravitational wave signals, but it aims to provide tools which can be used for other workflows.
 
 Asimov has been used to organise and run the major catalogue analyses from the third observing run, O3, but it's designed to be flexible enough to allow new pipelines and analyses to be added to the framework.
+
+## Branch notes
+
+These notes relate to in-development features on this branch, and what's described here is only expected to be relevant during development.
+More generally useful documentation will move to the main documentation before moving to production.
+
+### Starting the logging server
+
+Run in ``asimov`` directory:
+
+```
+export FLASK_APP=server
+flask run
+```
 
 ## Features
 
@@ -44,37 +61,96 @@ It can be installed by running
 ```
 $ pip install asimov
 ```
-
 It is also available on conda, and can be installed by running
 ```
 $ conda install -c conda-forge ligo-asimov
 ```
 
+Asimov also requires that you have `git` installed on your machine, and that you've set it up by running:
+```
+  git config --global user.email "you@example.com"
+  git config --global user.name "Your Name"
+```
 
 ## Get started
 
-Asimov supports a variety of different ways of running, but the simplest way, running a workflow on a local machine, can be set up with a single command:
+Asimov supports a variety of different ways of running, but the simplest way, running a workflow on a local machine, can be set up with a single command.
 
+We start by setting up a project, which is a directory which keeps all of the analyses and the required metadata together.
+A project can include just a single event or a whole selection of events, for example if you're producing a catalogue.
+First create a directory to store your project:
 ```
-$ olivaw init "Test project"
+$ mkdir my-new-project
+$ cd my-new-project
+```
+and then get asimov to set things up
+```
+$ asimov init "Test project"
 ```
 where you can replace `"Test project"` with the name you want to give your project.
 A project will be set-up in your current working directory.
 
+In order to start setting up analyses we next need to download some default settings.
 
-``olivaw`` is asimov's built-in management interface.
+An analysis is a pipeline run, and asimov supports `bayeswave`, `bilby` in the default installation.
 
-A new event can be added to your project by running
+We'll download the default configurations for jobs which are going to be run on the LIGO data grid.
+We do this using the `asimov apply` command, which pulls-in data from a file either locally or online.
 
 ```
-$ olivaw event create GW150914
+
+$ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml
 ```
+and the load default priors the same way:
+```
+$ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml
+```
+
+Now you can add an existing event, by downloading the event data settings using the `asimov apply` function, for example, to add GW150914 to the project you can run
+
+```
+$ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/events/gwtc-2-1/GW150914_095045.yaml
+```
+
+This downloads the settings which were used for analysing GW150914 for the GWTC-2.1 catalogue paper, and stores them in the ledger file in the project (`ledger.yml`).
 
 Many analyses can be run on a single event (these are called "productions" in asimov parlence).
-You can add a new lalinference production to an event as such:
+We can add some pre-configured analyses by downloading some analysis configuration settings.
+
 ```
-$ olivaw production create GW150914 lalinference
+$ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/analyses/production-default.yaml -e GW150914_095045
 ```
+Note that if you omit the `-e` argument asimov will ask which event the analyses should be applied to.
+
+
+You can now build and submit your jobs to the cluster.
+First use `asimov manage build` to create the configuration files for each analysis:
+```
+$ asimov manage build
+```
+These will be added to the git repositories in the `checkouts` directory inside the project directory.
+You then submit the jobs to the cluster by running
+```
+$ asimov manage submit
+```
+
+It will normally take a long time for a parameter estimation job to finish, but you can get asimov to check up on it by running
+```
+$ asimov monitor
+```
+If the job is finished `asimov` will start post-processing using `PESummary`, and if it's fallen over it will attempt to fix the problem and resubmit it to the cluster.
+If the post-processing has finished it will move the results to a read-only directory.
+
+You can also set the asimov monitor to automatically check the status of the job every 15 minutes by running 
+```
+$ asimov start
+```
+which will automatically start any post-processing, and start any jobs once their dependencies are met.
+You can stop this automatic monitoring process any time by running
+```
+$ asimov stop
+```
+
 For a full description of the workflow management process see the documentation.
 
 

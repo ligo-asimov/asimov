@@ -1,7 +1,8 @@
 Asimov : The PE Automator and Manager
 =====================================
 
-`Asimov` is a python package to help with setting-up, automating, and monitoring parameter estimation workflows for gravitational wave signals.
+`Asimov` is a python package to help with setting-up, automating, and monitoring scientific data analysis.
+It is designed to make organising a scientific project, simplifying your workflow, and making your analysis easier to reproduce.
 
 Asimov makes setting-up and running parameter estimation jobs easier.
 It can generate configuration files for several parameter estimation pipelines, and handle submitting these to a cluster.
@@ -10,9 +11,10 @@ Whether you're setting-up a preliminary analysis for a single gravitational wave
 Features
 --------
 
-Job monitoring and management
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Scientific analysis management
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Asimov is able to interact with high throughput job management tools, and can submit jobs to clusters, monitor them for problems, and initiate post-processing tasks.
+Once your analysis is completed asimov can manage the data products and results, and prepare them for publication and distribution.
 
 Uniform pipeline interface
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -33,7 +35,7 @@ Asimov can provide both machine-readible and human-friendly reports of all jobs 
 Quick installation
 ------------------
 
-Asimov is available on ``pypi`` and can be installed via ``pip install ligo-asimov``.
+Asimov is available on ``pypi`` and can be installed via ``pip install asimov``.
 
 
 
@@ -63,10 +65,21 @@ Users' guide
    olivaw/review
 
 .. toctree::
+   :maxdepth: 2
+   :caption: The Ledger
+
+   ledger
+      
+   
+.. toctree::
    :maxdepth: 1
    :caption: Pipeline Guides
 
+   pipelines
    pipelines/lalinference
+   pipelines/bilby
+   pipelines/rift
+   pipelines/bayeswave
    
 Advanced topics
 ---------------
@@ -79,6 +92,7 @@ Advanced topics
    yamlformat
    gitlab-interface
    test-interface
+   clusters
 
 Developers' Guide
 -----------------
@@ -88,6 +102,10 @@ Developers' Guide
 
    ../../CONTRIBUTING.rst
    ../../CODE-OF-CONDUCT.rst
+
+   pipelines-dev
+   
+   restful-api
    
 Module documentation
 --------------------
@@ -108,3 +126,4 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+* :ref:`routingtable`
