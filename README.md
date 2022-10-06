@@ -111,7 +111,7 @@ This downloads the settings which were used for analysing GW150914 for the GWTC-
 Alternatively, a new event with no configured settings can be added to your project by running
 
 ```
-$ asimov event create GW150914_095045
+$ asimov event create --name GW150914_095045
 ```
 
 Many analyses can be run on a single event (these are called "productions" in asimov parlence).
