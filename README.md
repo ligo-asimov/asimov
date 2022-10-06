@@ -132,7 +132,7 @@ We do this using the `asimov apply` command, which pulls-in data from a file eit
 
 $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml
 ```
-$ asimov event create GW150914_095045
+$ asimov event create --name GW150914_095045
 ```
 $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml
 ```
