@@ -208,8 +208,8 @@ class BayesWave(Pipeline):
         for sub_file in sub_files:
             with open(sub_file, "r") as f_handle:
                 original = f_handle.read()
-            with open(subfile, "w") as f_handle:
-                f_handle.write(f"request_disk = {64000}")
+            with open(sub_file, "w") as f_handle:
+                f_handle.write(f"request_disk = {64000}" + original)
 
 
     def submit_dag(self, dryrun=False):
