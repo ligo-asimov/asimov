@@ -53,8 +53,6 @@ test-python-39:
     - coverage report | tee public/coverage.txt
     - coverage xml
   artifacts:
-    reports:
-      cobertura: 'coverage.xml'
     paths:
       - public/coverage.txt
   coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+%)/'
