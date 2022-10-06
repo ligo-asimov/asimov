@@ -50,7 +50,7 @@ test-python-39:
     - pip install coverage
     - python setup.py install
     - coverage run -m unittest discover tests/
-    - coverage report | tee public/coverage.txt
+    - coverage report
   artifacts:
     paths:
       - public/coverage.txt
