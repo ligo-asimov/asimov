@@ -40,8 +40,8 @@ def html(event, webdir):
 
     report = otter.Otter(f"{webdir}/index.html", 
                          author="Asimov", 
-                         title="Asimov project report", 
-                         #author_email=config.get("report", "report_email"),
+                         title="Asimov project report",
+                         theme_location=resource_filename(__name__, "theme/"),
                          config_file="asimov.conf"
     )
     with report:
