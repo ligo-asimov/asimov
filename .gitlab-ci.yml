@@ -49,7 +49,15 @@ test-python-39:
     - pip install -r requirements.txt
     - pip install coverage
     - python setup.py install
-    - python -m unittest discover tests/
+    - coverage run -m unittest discover tests/
+    - coverage report | tee public/coverage.txt
+    - coverage xml
+  artifacts:
+    reports:
+      cobertura: 'coverage.xml'
+    paths:
+      - public/coverage.txt
+  coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+%)/'
 #    - coverage report -m
 
 test-python-310:
