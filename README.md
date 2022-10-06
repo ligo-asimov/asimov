@@ -106,10 +106,6 @@ Now you can add an existing event, by downloading the event data settings using 
 $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/events/gwtc-2-1/GW150914_095045.yaml
 ```
 
-where you can replace `"Test project"` with the name you want to give your project.
-A project will be set-up in your current working directory.
-
-
 This downloads the settings which were used for analysing GW150914 for the GWTC-2.1 catalogue paper, and stores them in the ledger file in the project (`ledger.yml`).
 
 Alternatively, a new event with no configured settings can be added to your project by running
