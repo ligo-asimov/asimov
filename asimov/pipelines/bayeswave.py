@@ -89,6 +89,8 @@ class BayesWave(Pipeline):
                 f.write(str(gps_time))
                 gps_file = os.path.join("gpstime.txt")
 
+        
+
         if self.production.event.repository:
             ini = self.production.get_configuration()
             if not user:
