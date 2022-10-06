@@ -66,6 +66,12 @@ It is also available on conda, and can be installed by running
 $ conda install -c conda-forge ligo-asimov
 ```
 
+Asimov also requires that you have `git` installed on your machine, and that you've set it up by running:
+```
+  git config --global user.email "you@example.com"
+  git config --global user.name "Your Name"
+```
+
 ## Get started
 
 Asimov supports a variety of different ways of running, but the simplest way, running a workflow on a local machine, can be set up with a single command.
