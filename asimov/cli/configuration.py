@@ -19,17 +19,14 @@ def show(key):
         click.echo(config.get(section, key))
     else:
         for section, values in config._sections.items():
-            click.echo(click.style(section, fg="black", bg="white"))
+            click.echo(click.style(section, fg='black', bg='white'))
             for key, value in values.items():
                 click.secho(f"\t{key:30}\t{value}", bold=False)
 
-
-@configuration.command(
-    context_settings=dict(
-        ignore_unknown_options=True,
-    )
-)
-@click.argument("kwargs", nargs=-1, type=click.UNPROCESSED)
+@configuration.command(context_settings=dict(
+    ignore_unknown_options=True,
+))
+@click.argument('kwargs', nargs=-1, type=click.UNPROCESSED)
 def update(kwargs):
     """Update a configuration setting."""
     key, value = kwargs

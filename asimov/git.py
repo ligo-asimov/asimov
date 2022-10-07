@@ -52,13 +52,13 @@ class EventRepo():
         location : str 
            The location of the directory to be used.
         """
-
+        directory = config.get("general", "calibration_directory")
         os.makedirs(location, exist_ok=True)
         repo = git.Repo.init(location)
-        os.makedirs(os.path.join(location, "C01_offline"), exist_ok=True)
-        with open(os.path.join(location, "C01_offline", ".gitkeep"), "w") as f:
+        os.makedirs(os.path.join(location, directory), exist_ok=True)
+        with open(os.path.join(location, directory, ".gitkeep"), "w") as f:
             f.write(" ")
-        repo.git.add("./C01_offline/.gitkeep")
+        repo.git.add(os.path.join(".", directory, ".gitkeep"))
         try:
             repo.git.commit("-m", "Initial commit")
         except git.exc.GitCommandError as e:
@@ -169,18 +169,11 @@ class EventRepo():
                 pass
             else:
                 raise e
-
+    
     def find_timefile(self, category=config.get("general", "calibration_directory")):
         """
         Find the time file in this repository.
         """
-
-        with set_directory(os.path.join(self.directory, category)):
-            try:
-                gps_file = glob.glob("*gps*.txt")[0]
-                return gps_file
-            except IndexError:
-                raise AsimovFileNotFound
 
         with set_directory(os.path.join(self.directory, category)):
             try:
@@ -200,9 +193,7 @@ class EventRepo():
         else:
             raise AsimovFileNotFound
 
-    def find_prods(
-        self, name=None, category=config.get("general", "calibration_directory")
-    ):
+    def find_prods(self, name=None, category=config.get("general", "calibration_directory")):
         """
         Find all of the productions for a relevant category of runs
         in the event repository.
@@ -220,7 +211,7 @@ class EventRepo():
         path = f"{os.path.join(os.getcwd(), self.directory, category)}/{name}.ini"
         return [path]
 
-    def upload_prod(self, production, rundir, preferred=False, category="C01_offline", rootdir="public_html/LVC/projects/O3/C01/", rename = False):
+    def upload_prod(self, production, rundir, preferred=False, category=config.get("general", "calibration_directory"), rootdir="public_html/LVC/projects/O3/C01/", rename = False):
         """
         Upload the results of a PE job to the event repostory.
 
