@@ -22,7 +22,7 @@ productions:
 
 """
 
-
+@unittest.skip("Skipped while unmaintained.")
 class LALInferenceTests(unittest.TestCase):
     """Test lalinference interface"""
 
