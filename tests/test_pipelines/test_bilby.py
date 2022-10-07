@@ -5,18 +5,55 @@ import shutil
 import os
 import git
 
-from click.testing import CliRunner
 from asimov.pipelines.bilby import Bilby
 from asimov.event import Event
 from asimov.pipeline import PipelineException
+
+TEST_YAML = """
+name: S000000xx
+repository: {0}/tests/test_data/s000000xx
+working directory: {0}/tests/tmp/s000000xx/
+webdir: ''
+productions:
+- Prod3:
+    pipeline: bilby
+    comment: PSD production
+    status: wait
+quality:
+  high-frequency: 1792
+  lower-frequency:
+    H1: 20
+    L1: 20
+    V1: 20
+  psd-length: 16.0
+  reference-frequency: 20
+  sample-rate: 4096
+  segment-length: 16.0
+  start-frequency: 13.333333333333334
+  supress:
+    V1:
+      lower: 49.5
+      upper: 50.5
+  upper-frequency: 1792
+  window-length: 16.0
+priors:
+  amp order: 1
+  chirp-mass:
+  - 7.749135771186385
+  - 12.237756554005374
+  component:
+  - 1
+  - 1000
+  distance:
+  - 100
+  - 10000
+  q:
+  - 0.05
+  - 1.0
+
+"""
+
 from asimov import config
-from asimov.cli import project
-from asimov.cli import configuration
-from asimov.cli import manage
-from asimov.cli.application import apply_page
-from asimov.ledger import YAMLLedger
-import io
-import contextlib
 
 class BilbyTests(unittest.TestCase):
     """Test bilby interface"""
@@ -36,38 +73,26 @@ class BilbyTests(unittest.TestCase):
         self.ledger = YAMLLedger(f".asimov/ledger.yml")
 
     def tearDown(self):
+        os.chdir(self.cwd+"/tests/test_data/s000000xx/")
+        os.system("git rm -f C01_offline/Prod3.prior")
         os.chdir(self.cwd)
-        shutil.rmtree(f"{self.cwd}/tests/tmp/project/")
-
-    @unittest.skip("I need to get this to work properly.")
-    def test_build_cli(self):
-        """Check that a bilby config file can be built."""
-        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
-        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml", event=None, ledger=self.ledger)
-        event = "GW150914_095045"
-        pipeline = "bilby"
-        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
-        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{pipeline}.yaml", event=event, ledger=self.ledger)
-
-        runner = CliRunner()
-        result = runner.invoke(manage.build, "--dryrun")
-        self.assertTrue("bilby_pipe" in result.output)
-
-    def test_build_api(self):
-        """Check that a bilby config file can be built."""
-        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
-        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml", event=None, ledger=self.ledger)
-        event = "GW150914_095045"
-        pipeline = "bilby"
-        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
-        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{pipeline}.yaml", event=event, ledger=self.ledger)
-
-        f = io.StringIO()
-        with contextlib.redirect_stdout(f):
-            self.ledger.get_event(event)[0].productions[0].pipeline.build_dag(dryrun=True)
-            print(f.getvalue())
-            self.assertTrue("bilby_pipe" in f.getvalue())
+        pass
         
+    def setUp(self):
+        """Create a pipeline."""
+        self.event = Event.from_yaml(TEST_YAML.format(self.cwd))
+        self.pipeline = Bilby(self.event.productions[0])
+        out = self.pipeline.build_dag()
+
+    def test_dag(self):
+        """Check that a DAG is actually produced."""
+        outdir = "outdir_from_config"
+        label = "job_label_from_config"
+        dagfile = f"submit/dag_Prod3.submit"
+        
+        print(f"{self.cwd}/tests/tmp/s000000xx/C01_offline/Prod3/{dagfile}")
+        self.assertEqual(os.path.exists(f"{self.cwd}/tests/tmp/s000000xx/Prod3/{dagfile}"), 1)
+
     def test_read_ini(self):
         """Check that a bilby ini file can be read correctly."""
         pass
