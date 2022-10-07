@@ -135,7 +135,10 @@ include:
 
 include:
   - template: Security/Dependency-Scanning.gitlab-ci.yml  
-      
+
+include:
+  - template: Code-Quality.gitlab-ci.yml
+    
 # deploy:wheel:
 #   stage: deploy
 #   script:
