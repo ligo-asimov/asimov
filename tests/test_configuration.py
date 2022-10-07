@@ -30,7 +30,8 @@ class TestCategories(unittest.TestCase):
         assert result.output == '● New project created successfully!\n'
 
     def tearDown(self):
-        shutil.rmtree(f"{self.cwd}/tests/tmp/")
+        os.chdir(self.cwd)
+        shutil.rmtree(f"{self.cwd}/tests/tmp/project/")
 
     def testCategoryUpdate(self):
         """Check that the category is updated in the config file."""
