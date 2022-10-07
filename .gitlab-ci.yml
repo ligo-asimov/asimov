@@ -17,7 +17,6 @@ test-python-36:
   - git config --global user.email "you@example.com"
   - git config --global user.name "Your Name"
   - pip install -r requirements.txt
-  - pip install coverage
   - python setup.py install
   - python -m unittest discover tests/
 test-python-37:
@@ -27,7 +26,6 @@ test-python-37:
   - git config --global user.email "you@example.com"
   - git config --global user.name "Your Name"
   - pip install -r requirements.txt
-  - pip install coverage
   - python setup.py install
   - python -m unittest discover tests/
 test-python-38:
@@ -37,7 +35,6 @@ test-python-38:
   - git config --global user.email "you@example.com"
   - git config --global user.name "Your Name"
   - pip install -r requirements.txt
-  - pip install coverage
   - python setup.py install
   - python -m unittest discover tests/
 test-python-39:
@@ -48,8 +45,21 @@ test-python-39:
     - git config --global user.name "Your Name"
     - pip install -r requirements.txt
     - pip install coverage
+    - pip install unittest-xml-reporting
     - python setup.py install
-    - python -m unittest discover tests/
+    - coverage run -m xmlrunner discover tests/ -o junit-reports
+    - coverage report
+    - coverage xml
+  artifacts:
+    when: always
+    paths:
+      - public/coverage.txt
+    reports:
+      junit: junit-reports/*
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+  coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+%)/'
 #    - coverage report -m
 
 test-python-310:
@@ -62,7 +72,6 @@ test-python-310:
     - pip install coverage
     - python setup.py install
     - python -m unittest discover tests/
-#    - coverage report -m
 
 
 # Build docs for multiple code versions
@@ -126,7 +135,13 @@ include:
 
 include:
   - template: Security/Dependency-Scanning.gitlab-ci.yml  
-      
+
+include:
+  - template: Code-Quality.gitlab-ci.yml
+
+code_quality:
+  artifacts:
+    paths: [gl-code-quality-report.json]    
 # deploy:wheel:
 #   stage: deploy
 #   script:

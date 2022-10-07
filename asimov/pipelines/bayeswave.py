@@ -38,7 +38,7 @@ class BayesWave(Pipeline):
             raise PipelineException
 
         try:
-            self.category = config.get("general", "category")
+            self.category = config.get("general", "calibration_directory")
         except:
             self.category = "C01_offline"
             self.logger.info("Assuming C01_offline calibration.")
@@ -208,11 +208,9 @@ class BayesWave(Pipeline):
 
         Parameters
         ----------
-        category : str, optional
-           The category of the job.
-           Defaults to "C01_offline".
-        production : str
-           The production name.
+        dryrun: bool
+           If True then the DAG will not be submitted but all of the
+           commands will be printed to stdout.
 
         Returns
         -------

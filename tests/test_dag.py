@@ -35,7 +35,7 @@ class DAGTests(unittest.TestCase):
         apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/events/gwtc-2-1/GW150914_095045.yaml", event=None, ledger=self.ledger)
         
     def tearDown(self):
-        shutil.rmtree(f"{self.cwd}/tests/tmp/")
+        shutil.rmtree(f"{self.cwd}/tests/tmp/project")
     
     def test_simple_dag(self):
         """Check that all jobs are run when there are no dependencies specified."""

@@ -51,13 +51,13 @@ class EventRepo():
         location : str 
            The location of the directory to be used.
         """
-
+        directory = config.get("general", "calibration_directory")
         os.makedirs(location, exist_ok=True)
         repo = git.Repo.init(location)
-        os.makedirs(os.path.join(location, "C01_offline"), exist_ok=True)
-        with open(os.path.join(location, "C01_offline", ".gitkeep"), "w") as f:
+        os.makedirs(os.path.join(location, directory), exist_ok=True)
+        with open(os.path.join(location, directory, ".gitkeep"), "w") as f:
             f.write(" ")
-        repo.git.add("./C01_offline/.gitkeep")
+        repo.git.add(os.path.join(".", directory, ".gitkeep"))
         try:
             repo.git.commit("-m", "Initial commit")
         except git.exc.GitCommandError as e:
@@ -166,7 +166,7 @@ class EventRepo():
             else:
                 raise e
     
-    def find_timefile(self, category="C01_offline"):
+    def find_timefile(self, category=config.get("general", "calibration_directory")):
         """
         Find the time file in this repository.
         """
@@ -178,7 +178,7 @@ class EventRepo():
             except IndexError:
                 raise AsimovFileNotFound
 
-    def find_coincfile(self, category="C01_offline"):
+    def find_coincfile(self, category=config.get("general", "calibration_directory")):
         """
         Find the coinc file for this calibration category in this repository.
         """
@@ -189,7 +189,7 @@ class EventRepo():
         else:
             raise AsimovFileNotFound
 
-    def find_prods(self, name=None, category="C01_offline"):
+    def find_prods(self, name=None, category=config.get("general", "calibration_directory")):
         """
         Find all of the productions for a relevant category of runs
         in the event repository.
@@ -200,14 +200,14 @@ class EventRepo():
            The name of the production. 
            If omitted then all production ini files are returned.
         category : str, optional
-           The category of run. Defaults to "C01_offline".
+           The category of run. Defaults to "general/calibration_directory" from the config file.
         """
 
         self.update()
         path = f"{os.path.join(os.getcwd(), self.directory, category)}/{name}.ini"
         return [path]
 
-    def upload_prod(self, production, rundir, preferred=False, category="C01_offline", rootdir="public_html/LVC/projects/O3/C01/", rename = False):
+    def upload_prod(self, production, rundir, preferred=False, category=config.get("general", "calibration_directory"), rootdir="public_html/LVC/projects/O3/C01/", rename = False):
         """
         Upload the results of a PE job to the event repostory.
 
