@@ -47,7 +47,7 @@ class BayesWave(Pipeline):
 
         try:
             self.category = config.get("general", "calibration_directory")
-        except configparser.NoOptionError:
+        except:
             self.category = "C01_offline"
             self.logger.info("Assuming C01_offline calibration.")
 

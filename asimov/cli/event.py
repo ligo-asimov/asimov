@@ -258,13 +258,14 @@ def calibration(event, calibration):
         print(calibrations)
         for ifo, envelope in calibrations.items():
             description = f"Added calibration {envelope} for {ifo}."
+            calibration = config.get("general", "calibration_directory")
             try:
-                event.repository.add_file(envelope, f"C01_offline/calibration/{ifo}.dat", 
+                event.repository.add_file(envelope, os.path.join(f"{calibration}", "calibration", f"{ifo}.dat"), 
                                                        commit_message=description)
             except GitCommandError as e:
                 if "nothing to commit," in e.stderr:
                     pass
-            calibrations[ifo] = f"C01_offline/calibration/{ifo}.dat"
+            calibrations[ifo] = os.path.join(f"{calibration}", "calibration", f"{ifo}.dat")
         event.meta['calibration'] = calibrations
         ledger.update_event(event)
 
