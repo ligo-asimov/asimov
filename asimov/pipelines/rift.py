@@ -150,7 +150,8 @@ class Rift(Pipeline):
             try:
             
                 coinc_file = self.production.get_coincfile()
-                coinc_file = os.path.join(self.production.event.repository.directory, "C01_offline",
+                calibration = config.get("general", "calibration_directory")
+                coinc_file = os.path.join(self.production.event.repository.directory, calibration,
                                           coinc_file)
             except HTTPError:
                 print("Unable to download the coinc file because it was not possible to connect to GraceDB")
@@ -159,7 +160,8 @@ class Rift(Pipeline):
             try:
                 
                 ini = self.production.get_configuration().ini_loc
-                ini = os.path.join(self.production.event.repository.directory, "C01_offline",  ini)
+                calibration = config.get("general", "calibration_directory")
+                ini = os.path.join(self.production.event.repository.directory, calibration,  ini)
             except ValueError:
                 print("Unable to find the configuration file. Have you run `$ asimov manage build` yet?")
                 ini = "INI MISSING"
