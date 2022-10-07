@@ -172,8 +172,7 @@ class BayeswaveTests(unittest.TestCase):
                 production.make_config(f"{production.name}.ini")
             production.pipeline.build_dag(dryrun=True)
             self.assertTrue("bayeswave_pipe" in f.getvalue())
-        # We need to make the workdir as this ought to be done by bayeswave_pipe
-        os.makedirs(os.path.join("working", event, production.name))
+        os.makedirs(os.path.join(config.get("general", "rundir_default"), event, production.name))
         with set_directory(os.path.join(config.get("general", "rundir_default"), event, production.name)):
             with open("bayeswave_post.sub", "w") as submit_file:
                 submit_file.write("This is some test text and is just garbage")
