@@ -191,7 +191,15 @@ class BayesWave(Pipeline):
         
         
     def before_submit(self):
-        pass
+        """
+        Horribly hack the sub files to add `request_disk`
+        """
+        sub_files = glob.glob(f"{self.production.rundir}/*.sub")
+        for sub_file in sub_files:
+            with open(sub_file, "r") as f_handle:
+                original = f_handle.read()
+            with open(sub_file, "w") as f_handle:
+                f_handle.write(f"request_disk = {64000}" + original)
 
 
     def submit_dag(self, dryrun=False):
