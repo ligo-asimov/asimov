@@ -5,6 +5,21 @@ import shutil
 import os
 import git
 
+import io
+import contextlib
+
+
+from click.testing import CliRunner
+
+from asimov.utils import set_directory
+from asimov import config
+
+from asimov.cli import project, manage
+from asimov.cli import configuration
+from asimov.cli.application import apply_page
+from asimov.ledger import YAMLLedger
+from asimov.event import Event
+from asimov.pipeline import PipelineException
 from asimov.pipelines.bayeswave import BayesWave
 from asimov.event import Event
 from asimov.pipeline import PipelineException
@@ -23,7 +38,6 @@ productions:
 
 """
 
-@unittest.skip("Skipped until Bayeswave is added to the testing environment correctly.")
 class BayeswaveTests(unittest.TestCase):
     """Test bayeswave interface.
 
@@ -37,10 +51,6 @@ class BayeswaveTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cwd = os.getcwd()
-        repo = git.Repo.init(cls.cwd+"/tests/test_data/s000000xx/")
-        os.chdir(cls.cwd+"/tests/test_data/s000000xx/")
-        os.system("git add C01_offline/Prod1_test.ini C01_offline/s000000xx_gpsTime.txt")
-        os.system("git commit -m 'test'")
 
     def setUp(self):
         os.makedirs(f"{self.cwd}/tests/tmp/project")
@@ -183,15 +193,106 @@ class BayeswaveTests(unittest.TestCase):
             pass
 
     def tearDown(self):
-        os.system(f"{self.cwd}/tests/tmp/-rf")
-        
-    def setUp(self):
-        """Create a pipeline."""
-        self.event = Event.from_yaml(TEST_YAML.format(self.cwd))
-        self.pipeline = LALInference(self.event.productions[0])
-        out = self.pipeline.build_dag()
+        os.chdir(self.cwd)
+        shutil.rmtree(f"{self.cwd}/tests/tmp/project/")
 
-    def test_dag(self):
-        """Check that a DAG is actually produced."""
-        print(f"{self.cwd}/tests/tmp/s000000xx/C01_offline/Prod1/lalinference_1248617392-1248617397.dag")
-        self.assertEqual(os.path.exists(f"{self.cwd}/tests/tmp/s000000xx/C01_offline/Prod1/lalinference_1248617392-1248617397.dag"), 1)
+    @unittest.skip("Skipped temporarily while RIFT is updated")
+    def test_build_cli(self):
+        """Check that a RIFT config file can be built."""
+        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
+        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml", event=None, ledger=self.ledger)
+        event = "GW150914_095045"
+        pipeline = "bayeswave"
+        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
+        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{pipeline}.yaml", event=event, ledger=self.ledger)
+
+        runner = CliRunner()
+        result = runner.invoke(manage.build, "--dryrun")
+        self.assertTrue("util_RIFT_pseudo_pipe.py" in result.output)
+
+    def test_make_ini(self):
+        """Check that a bayeswave config file can be built."""
+        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
+        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml", event=None, ledger=self.ledger)
+        event = "GW150914_095045"
+        pipeline = "bayeswave"
+        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
+        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{pipeline}.yaml", event=event, ledger=self.ledger)
+
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):
+            production = self.ledger.get_event(event)[0].productions[0]
+            with set_directory(os.path.join("checkouts", event, config.get("general", "calibration_directory"))):
+                production.make_config(f"{production.name}.ini")
+            self.assertTrue(os.path.exists(os.path.join(config.get("project", "root"),
+                                                        "checkouts",
+                                                        event,
+                                                        config.get("general", "calibration_directory"),
+                                                        f"{production.name}.ini")))
+
+        
+    def test_build_api(self):
+        """Check that a bayeswave DAG can be built."""
+        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
+        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml", event=None, ledger=self.ledger)
+        event = "GW150914_095045"
+        pipeline = "bayeswave"
+        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
+        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{pipeline}.yaml", event=event, ledger=self.ledger)
+
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):
+            production = self.ledger.get_event(event)[0].productions[0]
+            with set_directory(os.path.join("checkouts", event, config.get("general", "calibration_directory"))):
+                production.make_config(f"{production.name}.ini")
+            production.pipeline.build_dag(dryrun=True)
+            self.assertTrue("bayeswave_pipe" in f.getvalue())
+
+    @unittest.skipIf(not os.path.exists(os.path.join(config.get("pipelines", "environment"), "bin", "bayeswave_pipe")),
+                     "Bayeswave Pipe isnt installed on the test system")
+    def test_submit_api(self):
+        """Check that a RIFT config file can be built."""
+        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
+        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml", event=None, ledger=self.ledger)
+        event = "GW150914_095045"
+        pipeline = "bayeswave"
+        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
+        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{pipeline}.yaml", event=event, ledger=self.ledger)
+
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):
+            production = self.ledger.get_event(event)[0].productions[0]
+            with set_directory(os.path.join("checkouts", event, config.get("general", "calibration_directory"))):
+                production.make_config(f"{production.name}.ini")
+            production.pipeline.build_dag(dryrun=False)
+
+        with contextlib.redirect_stdout(f):
+            production.pipeline.submit_dag(dryrun=True)
+            self.assertTrue("bayeswave_pipe" in f.getvalue())
+
+    def test_presubmit_mocked(self):
+        """Check that a bayeswave submit file should be altered"""
+        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
+        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml", event=None, ledger=self.ledger)
+        event = "GW150914_095045"
+        pipeline = "bayeswave"
+        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
+        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{pipeline}.yaml", event=event, ledger=self.ledger)
+
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):
+            production = self.ledger.get_event(event)[0].productions[0]
+            with set_directory(os.path.join("checkouts", event, config.get("general", "calibration_directory"))):
+                production.make_config(f"{production.name}.ini")
+            production.pipeline.build_dag(dryrun=True)
+            self.assertTrue("bayeswave_pipe" in f.getvalue())
+        os.makedirs(os.path.join(config.get("general", "rundir_default"), event, production.name))
+        with set_directory(os.path.join(config.get("general", "rundir_default"), event, production.name)):
+            with open("bayeswave_post.sub", "w") as submit_file:
+                submit_file.write("This is some test text and is just garbage")
+
+        production.pipeline.before_submit()
+
+        with set_directory(os.path.join(config.get("general", "rundir_default"), event, production.name)):
+            with open("bayeswave_post.sub", "r") as submit_file:
+                self.assertTrue("request_disk" in submit_file.read())
