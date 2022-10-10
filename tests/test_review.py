@@ -75,7 +75,7 @@ class ReviewTests(unittest.TestCase):
 
     def tearDown(self):
         os.chdir(self.cwd)
-        shutil.rmtree(f"{self.cwd}/tests/tmp/")
+        shutil.rmtree(f"{self.cwd}/tests/tmp/project")
     
     def test_review_parsing(self):
         """Check that review messages get parsed correctly."""

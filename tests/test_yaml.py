@@ -82,7 +82,7 @@ class EventTests(unittest.TestCase):
 
     def tearDown(self):
         os.chdir(self.cwd)
-        shutil.rmtree(f"{self.cwd}/tests/tmp/")
+        shutil.rmtree(f"{self.cwd}/tests/tmp/project")
         
     def test_name(self):
         """Check the name is loaded correctly."""
@@ -115,7 +115,7 @@ class ProductionTests(unittest.TestCase):
         self.event = asimov.event.Event("S000000xx", ledger=self.ledger)
 
     def tearDown(self):
-        shutil.rmtree(f"{self.cwd}/tests/tmp/")
+        shutil.rmtree(f"{self.cwd}/tests/tmp/project")
         os.chdir(self.cwd)
 
     def test_missing_name(self):
