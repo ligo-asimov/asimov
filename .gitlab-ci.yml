@@ -7,9 +7,30 @@
 # See https://docs.gitlab.com/ee/ci/variables/#cicd-variable-precedence
 image: python:3.7
 stages:
+- analysis
 - test
 - build
 - deploy
+
+flake8:
+  stage: analysis
+  script:
+  - pip install flake8 flake8_formatter_junit_xml
+  - flake8 --max-line-length=120 -format junit-xml --verbose asimov > report.xml
+  allow_failure: true
+  reports:
+      junit: report.xml
+
+pylint:
+  stage: analysis
+  allow_failure: True
+  script:
+  - pip install pylint pylint-gitlab
+  - pylint --exit-zero --load-plugins=pylint_gitlab --output-format=gitlab-codeclimate asimov > codeclimate.json
+  artifacts:
+    reports:
+      codequality: codeclimate.json
+    when: always
 
 test-python-36:
   stage: test
