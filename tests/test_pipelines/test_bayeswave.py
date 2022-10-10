@@ -1,6 +1,8 @@
 """Tests for the LALInference interface."""
 
 import unittest
+from unittest.mock import Mock, patch
+
 import shutil
 import os
 import git
@@ -166,3 +168,24 @@ class BayeswaveTests(unittest.TestCase):
         with set_directory(os.path.join(config.get("general", "rundir_default"), event, production.name)):
             with open("bayeswave_post.sub", "r") as submit_file:
                 self.assertTrue("request_disk" in submit_file.read())
+
+    @patch('subprocess.Popen.communicate')
+    @patch('subprocess.Popen')
+    def test_bad_dag_build(self, mock_popen, mock_pcomm):
+        """Check that things behave as expected if the DAG file can't be build."""
+        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
+        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml", event=None, ledger=self.ledger)
+        event = "GW150914_095045"
+        pipeline = "bayeswave"
+        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
+        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{pipeline}.yaml", event=event, ledger=self.ledger)
+
+        mock_popen.returncode=1 #"Could not build the DAG file"
+        mock_popen.return_value.communicate.return_value=(b"Could not be created", b"Lots of stuff on stderr")
+        
+        production = self.ledger.get_event(event)[0].productions[0]
+        with set_directory(os.path.join("checkouts", event, config.get("general", "calibration_directory"))):
+            production.make_config(f"{production.name}.ini")
+        
+        with self.assertRaises(PipelineException):
+            production.pipeline.build_dag(dryrun=False)
