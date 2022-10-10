@@ -12,6 +12,13 @@ stages:
 - build
 - deploy
 
+documentation-coverage:
+  stage: analysis
+  script:
+   - pip install docstr-coverage
+   - docstr-coverage asimov
+  coverage: '/Total coverage: (\d+\.\d+%)/'
+   
 flake8:
   stage: analysis
   script:
