@@ -3,6 +3,7 @@
 import configparser
 import glob
 import os
+import pathlib
 import re
 import subprocess
 from shutil import copyfile, copytree

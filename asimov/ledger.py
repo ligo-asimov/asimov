@@ -1,8 +1,9 @@
 """
 Code for the project ledger.
 """
-from functools import reduce
 from copy import deepcopy
+from functools import reduce
+
 import yaml
 
 import os
