@@ -7,7 +7,7 @@ import unittest
 import os
 
 import asimov.event
-from asimov.cli import known_pipelines
+from asimov.pipelines import known_pipelines
 
 
 

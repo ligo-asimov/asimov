@@ -18,25 +18,27 @@ root = /path/to/the/storage/root
 
 """
 
+import hashlib
 import os
-import stat
 import pathlib
+import stat
 import uuid
 from shutil import copyfile
 
-import hashlib
 import yaml
 
-from asimov import config
 
 class NotAStoreError(Exception):
     pass
 
+
 class AlreadyPresentException(Exception):
     pass
 
+
 class HashError(Exception):
     pass
+
 
 class Manifest:
     """
@@ -50,6 +52,7 @@ class Manifest:
     store : `asimov.storage.Store`
        The results store which this should be the manifest of.
     """
+
     uuid_hash = None
 
     def __init__(self, store):
@@ -65,30 +68,32 @@ class Manifest:
     @property
     def hash_dict(self):
         data = {}
-        for event in self.data['events'].values():
+        for event in self.data["events"].values():
             for production in event.values():
                 for resource in production.values():
-                    data[resource['hash']] = resource
+                    data[resource["hash"]] = resource
         return data
 
     @property
     def uuid_dict(self):
         data = {}
-        for e_name, event in self.data['events'].items():
+        for e_name, event in self.data["events"].items():
             for p_name, production in event.items():
                 for r_name, resource in production.items():
-                    data[resource['uuid']] = os.path.join(self.root, e_name, p_name, resource['uuid'])
+                    data[resource["uuid"]] = os.path.join(
+                        self.root, e_name, p_name, resource["uuid"]
+                    )
         return data
 
     def get_hash(self, uuid):
         if not self.uuid_hash:
             self.uuid_hash = {}
-            for e_name, event in self.data['events'].items():
+            for e_name, event in self.data["events"].items():
                 for p_name, production in event.items():
                     for r_name, resource in production.items():
-                        self.uuid_hash[resource['uuid']] = resource['hash']
+                        self.uuid_hash[resource["uuid"]] = resource["hash"]
         return self.uuid_hash[uuid]
-    
+
     def _open(self):
         """
         Open the manifest file.
@@ -113,10 +118,10 @@ class Manifest:
 
     def get_uuid(self, event, production, filename):
         try:
-            return self.data["events"][event][production][filename]['uuid']
+            return self.data["events"][event][production][filename]["uuid"]
         except KeyError:
             raise FileNotFoundError
-        
+
     @classmethod
     def create(cls, store):
         """
@@ -124,9 +129,9 @@ class Manifest:
         This should only be run on a new store, and will fail if a `.manifest` directory exists
         in the Store already.
         """
-        contents = {"name": store['name'], "events":{}}
-        manifest = os.path.join(store['root'], ".manifest", "manifest.yaml")
-        
+        contents = {"name": store["name"], "events": {}}
+        manifest = os.path.join(store["root"], ".manifest", "manifest.yaml")
+
         if not os.path.isfile(manifest):
             with open(manifest, "w") as f:
                 f.write(yaml.dump(contents))
@@ -148,7 +153,7 @@ class Manifest:
         """
         List all of the resources available for a production.
         """
-        return self.data['events'][event][production]
+        return self.data["events"][event][production]
 
     def add_record(self, event, production, resource, hash, resource_uuid):
         """
@@ -170,20 +175,20 @@ class Manifest:
         """
         # This function should store the name, location, event, production of the file
         # then calculate the hash and uuid for the file, and store them in the manifest
-        
-        if not event in self.data['events']:
-            self.data['events'][event] = {}
-        if not production in self.data['events'][event]:
-            self.data['events'][event][production] = {}
 
-        if resource in self.data['events'][event][production]:
+        if event not in self.data["events"]:
+            self.data["events"][event] = {}
+        if production not in self.data["events"][event]:
+            self.data["events"][event][production] = {}
+
+        if resource in self.data["events"][event][production]:
             raise FileExistsError
-            
-        self.data['events'][event][production][resource] = {
+
+        self.data["events"][event][production][resource] = {
             "uuid": resource_uuid.hex,
-            "hash": hash
+            "hash": hash,
         }
-        
+
 
 class Store:
     """
@@ -220,9 +225,9 @@ class Store:
         manifest_dir = os.path.join(root, ".manifest")
         pathlib.Path(manifest_dir).mkdir(parents=False, exist_ok=False)
         store = {}
-        store['name'] = name
-        store['root'] = root
-        manifest = Manifest.create(store)
+        store["name"] = name
+        store["root"] = root
+        _ = Manifest.create(store)
 
     def _check(self):
         """
@@ -244,13 +249,13 @@ class Store:
         ----------
         path : str
            The filepath of the file to be hashed.
-        """ 
+        """
         hasher = hashlib.md5()
-        with open(path, 'rb') as afile:
+        with open(path, "rb") as afile:
             buf = afile.read()
             hasher.update(buf)
         return hasher.hexdigest()
-    
+
     def add_file(self, event, production, file):
         """
         Add a file to the store.
@@ -264,7 +269,7 @@ class Store:
            Can be either a production object or the name of the production.
         file : str
            The path to the origin file to be stored.
-        
+
         Returns
         -------
         hash : str
@@ -273,17 +278,19 @@ class Store:
         hash = self._hash(file)
         if hash in self.manifest.hash_dict:
             raise AlreadyPresentException
-        
-        pathlib.Path(os.path.join(self.root, event, production)).mkdir(parents=True, exist_ok=True)
 
-        
-        
+        pathlib.Path(os.path.join(self.root, event, production)).mkdir(
+            parents=True, exist_ok=True
+        )
+
         this_uuid = uuid.uuid4()
 
-        self.manifest.add_record(event, production, os.path.basename(file), hash, this_uuid)
+        self.manifest.add_record(
+            event, production, os.path.basename(file), hash, this_uuid
+        )
 
         destination = os.path.join(self.root, event, production, this_uuid.hex)
-        
+
         copyfile(file, destination)
 
         os.chmod(destination, stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
@@ -308,7 +315,7 @@ class Store:
         hash : str, optional
            The expected MD5 hash of the file.
            If this is not provided the file will be verified against the store's manifest
-           before being returned, but if a hash is provided it will be checked against 
+           before being returned, but if a hash is provided it will be checked against
            the provided value.
 
         Returns
@@ -320,16 +327,17 @@ class Store:
         resource = self.fetch_uuid(this_uuid)
         stored_hash = self.manifest.get_hash(this_uuid)
         file_hash = self._hash(resource)
-        
+
         if file_hash != stored_hash:
-            raise HashError("The file in the file store's hash does not match the manifest.")
-        
+            raise HashError(
+                "The file in the file store's hash does not match the manifest."
+            )
+
         if hash:
             if hash != stored_hash:
                 raise HashError("The manifest hash does not match the check hash.")
-        
+
         return resource
-        
 
     def fetch_uuid(self, uuid):
         """
@@ -339,7 +347,7 @@ class Store:
         ----------
         uuid : str
            The uuid of the requested resource.
-        
+
         Returns
         -------
         file : str
