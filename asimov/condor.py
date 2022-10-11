@@ -38,6 +38,27 @@ def datetime_from_epoch(dt, tzinfo=UTC):
     """
     return datetime.datetime.utcfromtimestamp(dt).replace(tzinfo=tzinfo)
 
+UTC = tz.tzutc()
+
+
+def datetime_from_epoch(dt, tzinfo=UTC):
+    """Returns the `datetime.datetime` for a given Unix epoch
+
+    Parameters
+    ----------
+    dt : `float`
+        a Unix timestamp
+
+    tzinfo : `datetime.tzinfo`, optional
+        the desired timezone for the output `datetime.datetime`
+
+    Returns
+    -------
+    datetime.datetime
+        the datetime that represents the given Unix epoch
+    """
+    return datetime.datetime.utcfromtimestamp(dt).replace(tzinfo=tzinfo)
+
 
 UTC = tz.tzutc()
 
