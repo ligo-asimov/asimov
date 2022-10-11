@@ -25,7 +25,8 @@ flake8:
   - pip install flake8 flake8_formatter_junit_xml
   - flake8 --max-line-length=120 -format junit-xml --verbose asimov > report.xml
   allow_failure: true
-  reports:
+  artifacts:  
+    reports:
       junit: report.xml
 
 pylint:
@@ -168,9 +169,10 @@ include:
 include:
   - template: Code-Quality.gitlab-ci.yml
 
-code_quality:
-  artifacts:
-    paths: [gl-code-quality-report.json]    
+
+include:
+- template: Security/Secret-Detection.gitlab-ci.yml
+
 # deploy:wheel:
 #   stage: deploy
 #   script:
