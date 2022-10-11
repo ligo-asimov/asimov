@@ -1,39 +1,30 @@
 import os
 import sys
-import collections
-import json
 
 # Ignore warnings from the condor module
 import warnings
 
 import click
 
-# Ignore warnings from the condor module
-import warnings
-warnings.filterwarnings("ignore", module="htcondor")
-
-from asimov import logging
-from asimov import current_ledger as ledger
-from asimov import condor
-import asimov.pipelines
+warnings.filterwarnings("ignore", module="htcondor")  # NoQA
 
 # Replace this with a better logfile handling module please
-#from glob import glob
-import asimov
-
-from git.exc import GitCommandError
+# from glob import glob
+import asimov  # NoQA
+import asimov.pipelines  # NoQA
 
 # Import CLI bits from elsewhere
-from asimov import cli
-from asimov.cli import configuration
-from asimov.cli import report
-from asimov.cli import monitor
-from asimov.cli import review
-from asimov.cli import manage
-from asimov.cli import event
-from asimov.cli import project
-from asimov.cli import production
-from asimov.cli import application
+from asimov.cli import (  # NoQA
+    application,
+    configuration,
+    event,
+    manage,
+    monitor,
+    production,
+    project,
+    report,
+    review,
+)  # NoQA
 
 
 @click.version_option(asimov.__version__)

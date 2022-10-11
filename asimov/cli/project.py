@@ -9,17 +9,16 @@ except ImportError:
 
 import os
 import shutil
-import yaml
 
 import click
 
-from asimov import config
-from asimov import storage
+from asimov import config, storage
 from asimov.ledger import Ledger
-from asimov import gitlab
 
 
-def make_project(name, root, working="working", checkouts="checkouts", results="results"):
+def make_project(
+    name, root, working="working", checkouts="checkouts", results="results"
+):
     """
     Create a new project called NAME.
 
@@ -71,10 +70,8 @@ def make_project(name, root, working="working", checkouts="checkouts", results="
     # Set the default environment
     python_loc = shutil.which("python").split("/")[:-2]
     config.set("pipelines", "environment", os.path.join("/", *python_loc))
-    
-    Ledger.create(engine="yamlfile",
-                  name=project_name,
-                  location="ledger.yml")
+
+    Ledger.create(engine="yamlfile", name=project_name, location="ledger.yml")
 
     with open("asimov.conf", "w") as config_file:
         config.write(config_file)
@@ -82,20 +79,34 @@ def make_project(name, root, working="working", checkouts="checkouts", results="
 
 @click.command()
 @click.argument("name")
-@click.option("--root", default=os.getcwd(),
-              help="Location to create the project, default is the current directory.")
-@click.option("--working", default="working",
-              help="The location to store working directories, default is a directory called 'working' inside the current directory.")
-@click.option("--checkouts", default="checkouts",
-              help="The location to store cloned git repositories.")
-@click.option("--results", default="results",
-              help="The location where the results store should be created.")
+@click.option(
+    "--root",
+    default=os.getcwd(),
+    help="Location to create the project, default is the current directory.",
+)
+@click.option(
+    "--working",
+    default="working",
+    help="""The location to store working directories,
+ default is a directory called 'working' inside the current directory.""",
+)
+@click.option(
+    "--checkouts",
+    default="checkouts",
+    help="The location to store cloned git repositories.",
+)
+@click.option(
+    "--results",
+    default="results",
+    help="The location where the results store should be created.",
+)
 def init(name, root, working="working", checkouts="checkouts", results="results"):
     """
     Roll-out a new project.
     """
     make_project(name, root, working=working, checkouts=checkouts, results=results)
-    click.echo(click.style("●", fg="green") + f" New project created successfully!")
+    click.echo(click.style("●", fg="green") + " New project created successfully!")
+
 
 @click.command()
 @click.argument("name")
@@ -152,7 +163,7 @@ def clone(location):
         os.getcwd(), config.get("project", "name").lower().replace(" ", "-")
     )
     pathlib.Path(root).mkdir(parents=True, exist_ok=True)
-    #os.chdir(root)
+    # os.chdir(root)
     config.set("project", "root", root)
     # Make the virtual environment
     # builder = venv.EnvBuilder(system_site_packages=False,
@@ -187,9 +198,7 @@ def clone(location):
             os.path.join(location, config.get("ledger", "location")), "ledger.yml"
         )
     elif config.get("ledger", "engine") == "gitlab":
-        raise NotImplementedError(
-            "The gitlab interface has been removed from this version of asimov."
-        )
+        raise NotImplementedError("The gitlab interface has been removed from this version of asimov.")
 
     config.set("ledger", "engine", "yamlfile")
     config.set("ledger", "location", "ledger.yml")

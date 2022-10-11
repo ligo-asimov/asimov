@@ -28,7 +28,7 @@ class Mattermost(object):
         """
         self.submit_payload(message, channel)
 
-    def submit_payload(self, message, attachments=None, props=None, channel=None):
+    def submit_payload(self, message, channel=None):
         """
         Send a payload (normally a message) to a chat channel.
 

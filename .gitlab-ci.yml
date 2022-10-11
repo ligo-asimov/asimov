@@ -17,14 +17,14 @@ documentation-coverage:
   allow_failure: true
   script:
    - pip install docstr-coverage
-   - docstr-coverage asimov
+   - docstr-coverage -F 60.0 asimov
   coverage: '/Total coverage: (\d+\.\d+%)/'
    
 flake8:
   stage: analysis
   script:
   - pip install flake8 flake8_formatter_junit_xml
-  - flake8 --max-line-length=120 -format junit-xml --verbose asimov > report.xml
+  - flake8 --max-line-length=120 --format junit-xml --verbose asimov > report.xml
   allow_failure: true
   artifacts:  
     reports:

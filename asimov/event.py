@@ -3,37 +3,38 @@ Trigger handling code.
 """
 
 import glob
-from pprint import pformat
+import os
+from copy import deepcopy
 
 import networkx as nx
 import yaml
 from ligo.gracedb.rest import GraceDb, HTTPError
 from liquid import Liquid
 
-from .ini import RunConfiguration
-from .git import EventRepo
-from .review import Review
 from asimov import config, logger
-from asimov.storage import Store
 from asimov.pipelines import known_pipelines
+from asimov.storage import Store
 from asimov.utils import update
-from liquid import Liquid
 
-from ligo.gracedb.rest import GraceDb, HTTPError
-from copy import copy, deepcopy
+from .git import EventRepo
+from .ini import RunConfiguration
+from .review import Review
 
-status_map = {"cancelled": "light",
-              "finished": "success",
-              "uploaded": "success",
-              "processing": "primary",
-              "running": "primary",
-              "stuck": "warning",
-              "restart": "secondary",
-              "ready": "secondary",
-              "wait": "light",
-              "stop": "danger",
-              "manual": "light",
-              "stopped": "light"}
+status_map = {
+    "cancelled": "light",
+    "finished": "success",
+    "uploaded": "success",
+    "processing": "primary",
+    "running": "primary",
+    "stuck": "warning",
+    "restart": "secondary",
+    "ready": "secondary",
+    "wait": "light",
+    "stop": "danger",
+    "manual": "light",
+    "stopped": "light",
+}
+
 
 class DescriptionException(Exception):
     """Exception for event description problems."""
@@ -113,22 +114,13 @@ class Event:
             if kwargs["ledger"]:
                 self.ledger = kwargs["ledger"]
         else:
-            self.work_dir = os.path.join(config.get("general", "rundir_default"), self.name)
-        if not os.path.exists(self.work_dir):
-            os.makedirs(self.work_dir)
-
-        if "ledger" in kwargs:
-            if kwargs['ledger']:
-                self.ledger = kwargs['ledger']
-        else:
             self.ledger = None
-            
+
         if repository:
             if "git@" in repository or "https://" in repository:
-                self.repository = EventRepo.from_url(repository,
-                                                     self.name,
-                                                     directory=None,
-                                                     update=update)
+                self.repository = EventRepo.from_url(
+                    repository, self.name, directory=None, update=update
+                )
             else:
                 self.repository = EventRepo(repository)
         elif not repository:
@@ -136,7 +128,7 @@ class Event:
             location = config.get("general", "git_default")
             location = os.path.join(location, self.name)
             self.repository = EventRepo.create(location)
-            
+
         else:
             self.repository = repository
 
@@ -205,11 +197,6 @@ class Event:
             self.ledger.update_event(self)
         pass
 
-    def update_data(self):
-        if self.ledger:
-            self.ledger.events[self.name] = self.to_dict()
-        pass
-            
     def _check_required(self):
         """
         Find all of the required metadata is provided.
@@ -220,16 +207,16 @@ class Event:
         """
         Find the calibration envelope locations.
         """
-        if ("calibration" in self.meta["data"]) and (
+        if ("calibration" in self.meta) and (
             set(self.meta["interferometers"]).issubset(
-                set(self.meta["data"]["calibration"].keys())
+                set(self.meta["calibration"].keys())
             )
         ):
             pass
         else:
             raise DescriptionException(
-                f"""Some of the required calibration envelopes are missing from this event."""
-                f"""{set(self.meta['interferometers']) - set(self.meta['data']['calibration'].keys())}"""
+                f"""Some of the required calibration envelopes are missing from this issue."""
+                f"""{set(self.meta['interferometers']) - set(self.meta['calibration'].keys())}"""
             )
 
     def _check_psds(self):
@@ -262,8 +249,10 @@ class Event:
         """
 
         if production.name in [production_o.name for production_o in self.productions]:
-            raise ValueError(f"A production with this name already exists for {self.name}. New productions must have unique names.")
-        
+            raise ValueError(
+                f"A production with this name already exists for {self.name}. New productions must have unique names."
+            )
+
         self.productions.append(production)
         self.graph.add_node(production)
 
@@ -289,7 +278,7 @@ class Event:
         if ledger:
             ledger.add_event(event)
         return event
-    
+
     @classmethod
     def from_yaml(cls, data, issue=None, update=False, repo=True, ledger=None):
         """
@@ -315,40 +304,48 @@ class Event:
         data = yaml.safe_load(data)
         if "kind" in data:
             data.pop("kind")
-        if not {"name",} <= data.keys():
-            raise DescriptionException(f"Some of the required parameters are missing from this issue.")
+        if (
+            not {
+                "name",
+            }
+            <= data.keys()
+        ):
+            raise DescriptionException(
+                "Some of the required parameters are missing from this issue."
+            )
 
         try:
-            calibration = data['data']["calibration"]
+            calibration = data["data"]["calibration"]
         except KeyError:
             calibration = {}
 
         if "productions" in data:
-            if isinstance(data['productions'], type(None)):
-                data['productions'] = []
+            if isinstance(data["productions"], type(None)):
+                data["productions"] = []
         else:
-            data['productions'] = []
+            data["productions"] = []
 
-            
         if "interferometers" in data and "event time" in data:
-            
-            if calibration.keys() != data['interferometers']:
+
+            if calibration.keys() != data["interferometers"]:
                 # We need to fetch the calibration data
                 from asimov.utils import find_calibrations
+
                 try:
-                    data['data']["calibration"] = find_calibrations(data['event time'])
+                    data["data"]["calibration"] = find_calibrations(data["event time"])
                 except ValueError:
-                    data['data']["calibration"] = {}
+                    data["data"]["calibration"] = {}
                     logger.warning("Could not find calibration files for data['name']")
 
-        if not "working directory" in data:
-            data['working directory'] = os.path.join(config.get("general", "rundir_default"),
-                                                     data['name'])
-                
+        if "working directory" not in data:
+            data["working directory"] = os.path.join(
+                config.get("general", "rundir_default"), data["name"]
+            )
+
         if not repo and "repository" in data:
             data.pop("repository")
         event = cls.from_dict(data, issue=issue, update=update, ledger=ledger)
-        
+
         if issue:
             event.issue_object = issue
             event.from_notes()
@@ -402,8 +399,6 @@ class Event:
 
         gid = self.meta["gid"]
 
-        gid = self.meta['gid']
-
         try:
             client = GraceDb(service_url=config.get("gracedb", "url"))
             file_obj = client.files(gid, gfile)
@@ -411,50 +406,56 @@ class Event:
             with open("download.file", "w") as dest_file:
                 dest_file.write(file_obj.read().decode())
 
-            self.repository.add_file("download.file", destination,
-                                     commit_message = f"Downloaded {gfile} from GraceDB")
+            self.repository.add_file(
+                "download.file",
+                destination,
+                commit_message=f"Downloaded {gfile} from GraceDB",
+            )
         except HTTPError as e:
-            logger.error(f"Unable to connect to GraceDB when attempting to download {gfile}. {e}")
+            logger.error(
+                f"Unable to connect to GraceDB when attempting to download {gfile}. {e}"
+            )
             raise HTTPError(e)
 
     def to_dict(self, productions=True):
         data = {}
-        data['name'] = self.name
-        
+        data["name"] = self.name
+
         if self.repository.url:
-            data['repository'] = self.repository.url
+            data["repository"] = self.repository.url
         else:
-            data['repository'] = self.repository.directory
-            
+            data["repository"] = self.repository.directory
+
         for key, value in self.meta.items():
             data[key] = value
-        #try:
+        # try:
         #    data['repository'] = self.repository.url
-        #except AttributeError:
+        # except AttributeError:
         #    pass
         if productions:
-            data['productions'] = []
+            data["productions"] = []
             for production in self.productions:
                 # Remove duplicate data
                 prod_dict = production.to_dict()[production.name]
                 dupes = []
                 prod_names = []
                 for key, value in prod_dict.items():
-                    if production.name in prod_names: continue
+                    if production.name in prod_names:
+                        continue
                     if key in data:
                         if data[key] == value:
                             dupes.append(key)
                 for dupe in dupes:
                     prod_dict.pop(dupe)
                 prod_names.append(production.name)
-                data['productions'].append({production.name: prod_dict})
-        data['working directory'] = self.work_dir
+                data["productions"].append({production.name: prod_dict})
+        data["working directory"] = self.work_dir
         if "issue" in data:
             data.pop("issue")
         if "ledger" in data:
             data.pop("ledger")
         if "pipelines" in data:
-            dictionary.pop("pipelines")
+            data.pop("pipelines")
         return data
 
     def to_yaml(self):
@@ -497,10 +498,6 @@ class Event:
         ]
         return set(ends)  # only want to return one version of each production!
 
-    def build_report(self):
-        for production in self.productions:
-            production.build_report()
-
     def html(self):
         card = f"""
         <div class="card event-data" id="card-{self.name}">
@@ -524,29 +521,6 @@ class Event:
         return card
 
 
-    def html(self):
-        card = f"""
-        <div class="card event-data" id="card-{self.name}">
-        <div class="card-body">
-        <h3 class="card-title">{self.name}</h3>
-        """
-
-        card += "<h4>Analyses</h4>"
-        card += """<div class="list-group">"""
-
-        for production in self.productions:
-            card += production.html()
-            
-        card += """</div>"""
-
-        card += """
-        </div>
-        </div>
-        """
-        
-        return card
-    
-    
 class Production:
     """
     A specific production run.
@@ -570,7 +544,7 @@ class Production:
         self.name = name
 
         self.category = config.get("general", "calibration_directory")
-        
+
         if status:
             self.status_str = status.lower()
         else:
@@ -579,8 +553,8 @@ class Production:
 
         # Start by adding pipeline defaults
         if "pipelines" in self.event.ledger.data:
-            if pipeline in self.event.ledger.data['pipelines']:
-                self.meta = deepcopy(self.event.ledger.data['pipelines'][pipeline])
+            if pipeline in self.event.ledger.data["pipelines"]:
+                self.meta = deepcopy(self.event.ledger.data["pipelines"][pipeline])
             else:
                 self.meta = {}
         else:
@@ -592,30 +566,30 @@ class Production:
 
         self.meta = update(self.meta, kwargs)
 
-        if not "sampler" in self.meta:
-            self.meta['sampler'] = {}
+        if "sampler" not in self.meta:
+            self.meta["sampler"] = {}
         if "cip jobs" in self.meta:
             # TODO: Should probably raise a deprecation warning
-            self.meta['sampler']['cip jobs'] = self.meta['cip jobs']
+            self.meta["sampler"]["cip jobs"] = self.meta["cip jobs"]
 
-        if not "scheduler" in self.meta:
-            self.meta['scheduler'] = {}
-            
-        if not "likelihood" in self.meta:
-            self.meta['likelihood'] = {}
-        if not "marginalization" in self.meta['likelihood']:
-            self.meta['likelihood']['marginalization'] = {}
+        if "scheduler" not in self.meta:
+            self.meta["scheduler"] = {}
 
-        if not "data files" in self.meta['data']:
-            self.meta['data']['data files'] = {}
-            
+        if "likelihood" not in self.meta:
+            self.meta["likelihood"] = {}
+        if "marginalization" not in self.meta["likelihood"]:
+            self.meta["likelihood"]["marginalization"] = {}
+
+        if "data files" not in self.meta["data"]:
+            self.meta["data"]["data files"] = {}
+
         if "lmax" in self.meta:
             # TODO: Should probably raise a deprecation warning
-            self.meta['sampler']['lmax'] = self.meta['lmax']
-        
+            self.meta["sampler"]["lmax"] = self.meta["lmax"]
+
         self.pipeline = pipeline
         self.pipeline = known_pipelines[pipeline.lower()](self)
-        
+
         if "review" in self.meta:
             self.review = Review.from_dict(self.meta["review"], production=self)
             self.meta.pop("review")
@@ -624,11 +598,15 @@ class Production:
 
         # Check that the upper frequency is included, otherwise calculate it
         if "quality" in self.meta:
-            if ("maximum frequency" not in self.meta['quality']) and ("sample rate" in self.meta['likelihood']):
-                self.meta['quality']['maximum frequency'] = {}
+            if ("maximum frequency" not in self.meta["quality"]) and (
+                "sample rate" in self.meta["likelihood"]
+            ):
+                self.meta["quality"]["maximum frequency"] = {}
                 # Account for the PSD roll-off with the 0.875 factor
-                for ifo in self.meta['interferometers']:
-                    self.meta['quality']['maximum frequency'][ifo] = int(0.875 * self.meta['likelihood']['sample rate']/2)
+                for ifo in self.meta["interferometers"]:
+                    self.meta["quality"]["maximum frequency"][ifo] = int(
+                        0.875 * self.meta["likelihood"]["sample rate"] / 2
+                    )
 
         # Get the data quality recommendations
         if "quality" in self.event.meta:
@@ -636,29 +614,31 @@ class Production:
         else:
             self.quality = {}
 
-        if ('quality' in self.meta):
-            if ('quality' in kwargs):
-               self.meta['quality'].update(kwargs['quality'])
-            self.quality = self.meta['quality']
-            
-        if ('quality' in self.meta) and ("event time" in self.meta):
-            if "segment start" not in self.meta['quality']:
-                self.meta['likelihood']['segment start'] = self.meta['event time'] - self.meta['data']['segment length'] + 2
-                #self.event.meta['likelihood']['segment start'] = self.meta['data']['segment start']
+        if "quality" in self.meta:
+            if "quality" in kwargs:
+                self.meta["quality"].update(kwargs["quality"])
+            self.quality = self.meta["quality"]
+
+        if ("quality" in self.meta) and ("event time" in self.meta):
+            if "segment start" not in self.meta["quality"]:
+                self.meta["likelihood"]["segment start"] = (
+                    self.meta["event time"] - self.meta["data"]["segment length"] + 2
+                )
+                # self.event.meta['likelihood']['segment start'] = self.meta['data']['segment start']
 
         # Gather the PSDs for the job
         self.psds = self._collect_psds()
-            
+
         # Gather the appropriate prior data for this production
         if "priors" in self.meta:
             self.priors = self.meta["priors"]
 
     def __hash__(self):
         return int(f"{hash(self.name)}{abs(hash(self.event.name))}")
-            
+
     def __eq__(self, other):
         return (self.name == other.name) & (self.event == other.event)
-            
+
     def _process_dependencies(self, needs):
         """
         Process the dependencies list for this production.
@@ -668,10 +648,10 @@ class Production:
     @property
     def dependencies(self):
         if "needs" in self.meta:
-            return self._process_dependencies(self.meta['needs'])
+            return self._process_dependencies(self.meta["needs"])
         else:
             return None
-    
+
     def results(self, filename=None, handle=False, hash=None):
         store = Store(root=config.get("storage", "results_store"))
         if not filename:
@@ -756,7 +736,7 @@ class Production:
         self.meta["job id"] = value
         if self.event.issue_object:
             self.event.issue_object.update_data()
-        
+
     def to_dict(self, event=True):
         """
         Return this production as a dictionary.
@@ -769,29 +749,31 @@ class Production:
         """
         dictionary = {}
         if not event:
-            dictionary['event'] = self.event.name
-            dictionary['name'] = self.name
-        
-        dictionary['status'] = self.status
-        dictionary['pipeline'] = self.pipeline.name.lower()
-        dictionary['comment'] = self.comment
+            dictionary["event"] = self.event.name
+            dictionary["name"] = self.name
+
+        dictionary["status"] = self.status
+        dictionary["pipeline"] = self.pipeline.name.lower()
+        dictionary["comment"] = self.comment
+
+        dictionary["review"] = self.review.to_dicts()
 
         if "quality" in self.meta:
-            dictionary['quality'] = self.meta['quality']
+            dictionary["quality"] = self.meta["quality"]
         if "priors" in self.meta:
-            dictionary['priors'] = self.meta['priors']
+            dictionary["priors"] = self.meta["priors"]
         for key, value in self.meta.items():
             if key == "operations":
                 continue
             output[self.name][key] = value
         if "repository" in self.meta:
-            dictionary['repository'] = self.repository.url
+            dictionary["repository"] = self.repository.url
 
         if "ledger" in dictionary:
             dictionary.pop("ledger")
         if "pipelines" in dictionary:
             dictionary.pop("pipelines")
-            
+
         if not event:
             output = dictionary
         else:
@@ -804,12 +786,14 @@ class Production:
         Return the run directory for this event.
         """
         if "rundir" in self.meta:
-            return os.path.abspath(self.meta["rundir"])
+            return self.meta["rundir"]
         elif "working directory" in self.event.meta:
 
-            value = os.path.join(self.event.meta['working directory'], self.name)
+            value = os.path.join(self.event.meta["working directory"], self.name)
             self.meta["rundir"] = value
-            return os.path.abspath(value)
+            if self.event.issue_object is not None:
+                self.event.issue_object.update_data()
+            return value
         else:
             return None
 
@@ -845,8 +829,11 @@ class Production:
         """
         if sample_rate is None:
             try:
-                if "likelihood" in self.meta and "sample rate" in self.meta['likelihood']:
-                    sample_rate = self.meta['likelihood']['sample rate']
+                if (
+                    "likelihood" in self.meta
+                    and "sample rate" in self.meta["likelihood"]
+                ):
+                    sample_rate = self.meta["likelihood"]["sample rate"]
                 else:
                     raise DescriptionException(
                         "The sample rate for this event cannot be found.",
@@ -862,9 +849,11 @@ class Production:
 
         if (len(self.psds) > 0) and (format == "ascii"):
             return self.psds
-        elif (format=="xml"):
+        elif format == "xml":
             # TODO: This is a hack, and we need a better way to sort this.
-            files = glob.glob(f"{self.event.repository.directory}/{self.category}/psds/{sample_rate}/*.xml.gz")
+            files = glob.glob(
+                f"{self.event.repository.directory}/{self.category}/psds/{sample_rate}/*.xml.gz"
+            )
             return files
 
     def get_timefile(self):
@@ -882,9 +871,13 @@ class Production:
             new_file = os.path.join("gps.txt")
             with open(new_file, "w") as f:
                 f.write(f"{self.event.meta['event time']}")
-            self.event.repository.add_file(new_file, os.path.join(self.category, new_file), "Added a new GPS timefile.")
+            self.event.repository.add_file(
+                new_file,
+                os.path.join(self.category, new_file),
+                "Added a new GPS timefile.",
+            )
             return new_file
-            
+
     def get_coincfile(self):
         """
         Find this event's coinc.xml file.
@@ -898,7 +891,6 @@ class Production:
             coinc = self.event.repository.find_coincfile(self.category)
             return coinc
         except FileNotFoundError:
-            self.logger.info("Could not find a coinc.xml file")
             self.event.get_gracedb(
                 "coinc.xml",
                 os.path.join(
@@ -918,8 +910,7 @@ class Production:
             # We'll need to search the repository for it.
             print(self.name, self.category, self.event.repository.directory)
             try:
-                ini_loc = self.event.repository.find_prods(self.name,
-                                                       self.category)[0]
+                ini_loc = self.event.repository.find_prods(self.name, self.category)[0]
                 if not os.path.exists(ini_loc):
                     raise ValueError("Could not open the ini file.")
             except IndexError:
@@ -932,7 +923,7 @@ class Production:
             raise ValueError("This isn't a valid ini file")
 
         return ini
-    
+
     @classmethod
     def from_dict(cls, parameters, event, issue=None):
         name, pars = list(parameters.items())[0]
@@ -941,20 +932,22 @@ class Production:
             if "event" in parameters:
                 parameters.pop("event")
 
-            if not "status" in parameters:
-                parameters['status'] = "ready"
-                
-            return cls(event=event,  **parameters)
-        
+            if "status" not in parameters:
+                parameters["status"] = "ready"
+
+            return cls(event=event, **parameters)
+
         # Check all of the required parameters are included
         if not {"status", "pipeline"} <= pars.keys():
             print(pars.keys())
-            raise DescriptionException(f"Some of the required parameters are missing from {name}", issue, name)
-        if not "comment" in pars:
-            pars['comment'] = None
+            raise DescriptionException(
+                f"Some of the required parameters are missing from {name}", issue, name
+            )
+        if "comment" not in pars:
+            pars["comment"] = None
         if "event" in pars:
             pars.pop(event)
-            
+
         return cls(event, name, **pars)
 
     def __repr__(self):
@@ -965,12 +958,12 @@ class Production:
         Collect the required psds for this production.
         """
         psds = {}
-        # If the PSDs are specifically provided in the ledger, 
+        # If the PSDs are specifically provided in the ledger,
         # use those.
-        if 'psds' in self.meta:
-            if self.meta['likelihood']['sample rate'] in self.meta['psds']:
-                psds = self.meta['psds'][self.meta['likelihood']['sample rate']]
-        
+        if "psds" in self.meta:
+            if self.meta["likelihood"]["sample rate"] in self.meta["psds"]:
+                psds = self.meta["psds"][self.meta["likelihood"]["sample rate"]]
+
         # First look through the list of the job's dependencies
         # to see if they're provided by a job there.
         elif self.dependencies:
@@ -983,10 +976,12 @@ class Production:
                     # Check if the job provides PSDs as an asset and were produced with compatible settings
                     if "psds" in productions[previous_job].pipeline.collect_assets():
                         if self._check_compatible(productions[previous_job]):
-                            psds = productions[previous_job].pipeline.collect_assets()['psds']
+                            psds = productions[previous_job].pipeline.collect_assets()[
+                                "psds"
+                            ]
                     else:
-                        psds = {}    
-                except Exception as e:
+                        psds = {}
+                except Exception:
                     psds = {}
         # Otherwise return no PSDs
         else:
@@ -1001,8 +996,8 @@ class Production:
         """
         compatible = True
 
-        comaptible = (self.meta['likelihood'] == other_production.meta['likelihood'])
-        compatible = (self.meta['data'] == other_production.meta['data'])
+        compatible = self.meta["likelihood"] == other_production.meta["likelihood"]
+        compatible = self.meta["data"] == other_production.meta["data"]
         return compatible
 
     def make_config(self, filename, template_directory=None, dryrun=False):
@@ -1034,17 +1029,18 @@ class Production:
                 template_file = os.path.join(f"{template_directory}", template)
                 if not os.path.exists(template_file):
                     raise Exception
-            except:
+            except Exception:
                 from pkg_resources import resource_filename
-                template_file = resource_filename("asimov", f'configs/{template}')
-        
-        config_dict = {s: dict(config.items(s)) for s in config.sections()}
+
+                template_file = resource_filename("asimov", f"configs/{template}")
 
         liq = Liquid(template_file)
         rendered = liq.render(production=self, config=config)
 
-        logger.info(f"[{self.event.name}/{self.name}] configuration created using {template_file} as a template")
-        
+        logger.info(
+            f"[{self.event.name}/{self.name}] configuration created using {template_file} as a template"
+        )
+
         if not dryrun:
             with open(filename, "w") as output_file:
                 output_file.write(rendered)
@@ -1063,15 +1059,18 @@ class Production:
         card += f"<h4>{self.name}"
 
         if self.comment:
-            card += f"""  <small class="asimov-comment text-muted">{self.comment}</small>"""
+            card += (
+                f"""  <small class="asimov-comment text-muted">{self.comment}</small>"""
+            )
         card += "</h4>"
         if self.status:
-            card += f"""<p class="asimov-status"><span class="badge badge-pill badge-{status_map[self.status]}">{self.status}</span></p>"""
-
+            card += f"""<p class="asimov-status">
+  <span class="badge badge-pill badge-{status_map[self.status]}">{self.status}</span>
+</p>"""
 
         if self.pipeline:
             card += f"""<p class="asimov-pipeline-name">{self.pipeline.name}</p>"""
-            
+
         if self.pipeline:
             # self.pipeline.collect_pages()
             card += self.pipeline.html()
@@ -1082,16 +1081,15 @@ class Production:
             card += """&nbsp;"""
 
         if "approximant" in production.meta:
-            card += f"""<p class="asimov-attribute">Waveform approximant: <span class="asimov-approximant">{production.meta['approximant']}</span></p>"""
-            
+            card += f"""<p class="asimov-attribute">Waveform approximant:
+   <span class="asimov-approximant">{production.meta['approximant']}</span>
+</p>"""
 
         card += """&nbsp;"""
-        card += f"""</div>"""
-            
-        if len(self.review)>0:
+        card += """</div>"""
+
+        if len(self.review) > 0:
             for review in self.review:
                 card += review.html()
 
-
-            
         return card

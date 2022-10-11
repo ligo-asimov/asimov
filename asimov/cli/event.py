@@ -7,15 +7,16 @@ import click
 import gwpy
 import gwpy.timeseries
 import numpy as np
+from git import GitCommandError
 from glue.lal import Cache
 from gwdatafind import find_urls
 
 from asimov import config
 from asimov import current_ledger as ledger
-from asimov.event import Production, Event,  DescriptionException
-from asimov import gitlab
 from asimov.cli import find_calibrations
+from asimov.event import DescriptionException, Event
 from asimov.utils import update
+
 
 @click.group()
 def event():
@@ -24,11 +25,26 @@ def event():
     """
     pass
 
+
 @click.option("--search", "-s", "search", default=None, help="Search criteria.")
-@click.option("--old", "oldname", default=None, help="The old superevent ID for this event.")
-@click.option("--gid", "gid", default=None, help="The GraceDB GID for the event (for legacy events)")
-@click.option("--superevent", "superevent", default=None, help="The superevent for the event.")
-@click.option("--repository", "repo", default=None, help="The location of the repository for this event.")
+@click.option(
+    "--old", "oldname", default=None, help="The old superevent ID for this event."
+)
+@click.option(
+    "--gid",
+    "gid",
+    default=None,
+    help="The GraceDB GID for the event (for legacy events)",
+)
+@click.option(
+    "--superevent", "superevent", default=None, help="The superevent for the event."
+)
+@click.option(
+    "--repository",
+    "repo",
+    default=None,
+    help="The location of the repository for this event.",
+)
 @click.option("--name", "-n", "name", default=None, help="The name for the event.")
 @event.command()
 def create(name=None, oldname=None, gid=None, superevent=None, repo=None, search=None):
@@ -49,42 +65,42 @@ def create(name=None, oldname=None, gid=None, superevent=None, repo=None, search
         A string of search criteria
     """
     import pathlib
-    
+
     if gid or superevent or search:
-        from ligo.gracedb.rest import GraceDb, HTTPError 
+        from ligo.gracedb.rest import GraceDb
+
         client = GraceDb(service_url=config.get("gracedb", "url"))
-        r = client.ping()
 
     if search:
         event_iterator = client.events(search)
 
         for event in event_iterator:
 
-            event = Event(name=name,
-                          repository=repo,
-                          calibration = {},
-                          interferometers=interferometers,
+            event = Event(
+                name=name,
+                repository=repo,
+                calibration={},
             )
-            working_dir = os.path.join(config.get('general', 'rundir_default'), name)
+            working_dir = os.path.join(config.get("general", "rundir_default"), name)
 
-            event.meta['working directory'] = working_dir
+            event.meta["working directory"] = working_dir
             pathlib.Path(working_dir).mkdir(parents=True, exist_ok=True)
             ledger.update_event(event)
-        
+
     if superevent:
         data = client.superevent(superevent).json()
         try:
-            event_data = client.event(data['preferred_event']).json()
+            event_data = client.event(data["preferred_event"]).json()
         except KeyError:
-            event_data = data['preferred_event_data']
-        
-        gid = data['preferred_event_data']['graceid']
-        interferometers = event_data['instruments'].split(",")
+            event_data = data["preferred_event_data"]
+
+        gid = data["preferred_event_data"]["graceid"]
+        interferometers = event_data["instruments"].split(",")
         if not name:
             name = superevent
     elif gid:
         event_data = client.event(gid).json()
-        interferometers = event_data['instruments'].split(",")
+        interferometers = event_data["instruments"].split(",")
         if not name:
             name = gid
     else:
@@ -94,11 +110,11 @@ def create(name=None, oldname=None, gid=None, superevent=None, repo=None, search
     if not repo:
         repo = None
 
-
-    event = Event(name=name,
-                  repository=repo,
-                  calibration = {},
-                  interferometers=interferometers,
+    event = Event(
+        name=name,
+        repository=repo,
+        calibration={},
+        interferometers=interferometers,
     )
 
     if oldname:
@@ -113,6 +129,7 @@ def create(name=None, oldname=None, gid=None, superevent=None, repo=None, search
     pathlib.Path(working_dir).mkdir(parents=True, exist_ok=True)
     ledger.update_event(event)
 
+
 @click.argument("delete")
 @event.command()
 def delete(event):
@@ -120,7 +137,8 @@ def delete(event):
     Delete an event from the ledger.
     """
     ledger.delete_event(event_name=event)
-    
+
+
 # @click.argument("event")
 # @click.option("--yaml", "yaml", default=None)
 # @click.option("--ini", "ini", default=None)
@@ -145,6 +163,7 @@ def delete(event):
 #     if yaml:
 #         add_data(event.name, yaml)
 
+
 @click.argument("event", default=None)
 @click.option("--json", "json_data", default=None)
 @event.command()
@@ -159,11 +178,13 @@ def configurator(event, json_data=None):
     new_data["quality"]["sample-rate"] = int(data["srate"])
     new_data["quality"]["lower-frequency"] = {}
     # Factor 0.875 to account for PSD roll off
-    new_data["likelihood"]["upper-frequency"] = {ifo: int(0.875 * data["srate"]/2) for ifo in event.meta['interferometers']}
-    new_data["quality"]["start-frequency"] = data['f_start']
-    new_data["quality"]["segment-length"] = int(data['seglen'])
-    new_data["quality"]["window-length"] = int(data['seglen'])
-    new_data["quality"]["psd-length"] = int(data['seglen'])
+    new_data["likelihood"]["upper-frequency"] = {
+        ifo: int(0.875 * data["srate"] / 2) for ifo in event.meta["interferometers"]
+    }
+    new_data["quality"]["start-frequency"] = data["f_start"]
+    new_data["quality"]["segment-length"] = int(data["seglen"])
+    new_data["quality"]["window-length"] = int(data["seglen"])
+    new_data["quality"]["psd-length"] = int(data["seglen"])
 
     def decide_fref(freq):
         if (freq >= 5) and (freq < 10):
@@ -175,7 +196,6 @@ def configurator(event, json_data=None):
 
     new_data["priors"]["amp order"] = data["amp_order"]
     new_data["priors"]["chirp-mass"] = [data["chirpmass_min"], data["chirpmass_max"]]
-
 
     update(event.meta, new_data)
     ledger.update_event(event)
@@ -189,28 +209,36 @@ def checkifo(event):
     event = ledger.get_event(event)
     if "event time" not in event.event_object.meta:
         print(f"Time not found {event.event_object.name}")
-    time = event.event_object.meta['event time']
-    gpsstart=time-600
-    gpsend=time+600
-    bits = ['Bit 0', 'Bit 1', 'Bit 2']
+    time = event.event_object.meta["event time"]
+    gpsstart = time - 600
+    gpsend = time + 600
+    bits = ["Bit 0", "Bit 1", "Bit 2"]
 
     active_ifo = []
     for ifo in ["L1", "H1", "V1"]:
-        frametypes = event.event_object.meta['data']['frame-types']
-        urls = find_urls(site=f"{ifo[0]}", frametype=frametypes[ifo], gpsstart=gpsstart, gpsend=gpsend)
+        frametypes = event.event_object.meta["data"]["frame-types"]
+        urls = find_urls(
+            site=f"{ifo[0]}",
+            frametype=frametypes[ifo],
+            gpsstart=gpsstart,
+            gpsend=gpsend,
+        )
         datacache = Cache.from_urls(urls)
         if len(datacache) == 0:
             print(f"No {ifo} data found.")
             continue
 
         if "state vector" in event.meta:
-            state_vector_channel = event.meta['state vector']
-        else:                
+            state_vector_channel = event.meta["state vector"]
+        else:
             state_vector_channel = ast.literal_eval(config.get("data", "state-vector"))
 
         state = gwpy.timeseries.StateVector.read(
-            datacache, state_vector_channel[ifo], start=gpsstart, end=gpsend,
-            pad=0  # padding data so that errors are not raised even if found data are not continuous.
+            datacache,
+            state_vector_channel[ifo],
+            start=gpsstart,
+            end=gpsend,
+            pad=0,  # padding data so that errors are not raised even if found data are not continuous.
         )
         if not np.issubdtype(state.dtype, np.unsignedinteger):
             # if data are not unsigned integers, cast to them now so that
@@ -227,19 +255,24 @@ def checkifo(event):
         for bit in bits:
             segments -= ~flags[bit].active
 
-        if len(segments)>0: active_ifo += [ifo]
+        if len(segments) > 0:
+            active_ifo += [ifo]
     click.echo(event.name)
-    if event.meta['interferometers'] != active_ifo:
+    if event.meta["interferometers"] != active_ifo:
         print(f"Gitlab data\t{event.meta['interferometers']}")
         print(f"Recommended IFOS\t{active_ifo}")
 
-    event.meta['interferometers'] = active_ifo
+    event.meta["interferometers"] = active_ifo
     ledger.update_event(event)
 
 
-
-@click.option("--calibration", "calibration", multiple=True, default=[None], 
-              help="The location of the calibration files.")
+@click.option(
+    "--calibration",
+    "calibration",
+    multiple=True,
+    default=[None],
+    help="The location of the calibration files.",
+)
 @click.argument("event")
 @event.command()
 def calibration(event, calibration):
@@ -248,7 +281,7 @@ def calibration(event, calibration):
         event._check_calibration()
     except DescriptionException:
         print(event.title)
-        time = event.meta['event time'] 
+        time = event.meta["event time"]
         if not calibration[0]:
             calibrations = find_calibrations(time)
         else:
@@ -260,13 +293,18 @@ def calibration(event, calibration):
             description = f"Added calibration {envelope} for {ifo}."
             calibration = config.get("general", "calibration_directory")
             try:
-                event.repository.add_file(envelope, os.path.join(f"{calibration}", "calibration", f"{ifo}.dat"), 
-                                                       commit_message=description)
+                event.repository.add_file(
+                    envelope,
+                    os.path.join(f"{calibration}", "calibration", f"{ifo}.dat"),
+                    commit_message=description,
+                )
             except GitCommandError as e:
                 if "nothing to commit," in e.stderr:
                     pass
-            calibrations[ifo] = os.path.join(f"{calibration}", "calibration", f"{ifo}.dat")
-        event.meta['calibration'] = calibrations
+            calibrations[ifo] = os.path.join(
+                f"{calibration}", "calibration", f"{ifo}.dat"
+            )
+        event.meta["calibration"] = calibrations
         ledger.update_event(event)
 
 
@@ -278,7 +316,7 @@ def calibration(event, calibration):
 
 #     with open(data, "r") as datafile:
 #         data = yaml.safe_load(datafile.read())
-        
+
 #         event.meta = update(event.meta, data)
 
 #     ledger.update_event(event)

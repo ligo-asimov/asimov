@@ -7,15 +7,19 @@ import time
 
 import git
 
-from .ini import RunConfiguration
-from asimov import config
-from asimov import logger
-from asimov.utils import set_directory
+from copy import copy
 
 from asimov import config, logger
 from asimov.utils import set_directory
 
-class EventRepo():
+from .ini import RunConfiguration
+
+
+class AsimovFileNotFound(FileNotFoundError):
+    pass
+
+
+class EventRepo:
     """
     Read a git repository containing event PE information.
 
@@ -47,9 +51,9 @@ class EventRepo():
         """
         Create a new git repository to store configurations etc.
 
-        Parameters 
+        Parameters
         ----------
-        location : str 
+        location : str
            The location of the directory to be used.
         """
         directory = config.get("general", "calibration_directory")
@@ -65,7 +69,7 @@ class EventRepo():
             if "working tree clean" in e.stdout:
                 pass
         return cls(directory=location, url=location)
-    
+
     @classmethod
     def from_url(cls, url, name, directory=None, update=False):
         """
@@ -92,10 +96,9 @@ class EventRepo():
 
             if os.path.exists(directory):
                 return cls(directory, url, update=update)
-            
+
             pathlib.Path(directory).mkdir(parents=True, exist_ok=True)
 
-            
         # Replace an https address with an ssh address
         if "https" in url:
             url = url.replace("https://", "git@")
@@ -169,7 +172,7 @@ class EventRepo():
                 pass
             else:
                 raise e
-    
+
     def find_timefile(self, category=config.get("general", "calibration_directory")):
         """
         Find the time file in this repository.
@@ -193,7 +196,9 @@ class EventRepo():
         else:
             raise AsimovFileNotFound
 
-    def find_prods(self, name=None, category=config.get("general", "calibration_directory")):
+    def find_prods(
+        self, name=None, category=config.get("general", "calibration_directory")
+    ):
         """
         Find all of the productions for a relevant category of runs
         in the event repository.
@@ -211,7 +216,15 @@ class EventRepo():
         path = f"{os.path.join(os.getcwd(), self.directory, category)}/{name}.ini"
         return [path]
 
-    def upload_prod(self, production, rundir, preferred=False, category=config.get("general", "calibration_directory"), rootdir="public_html/LVC/projects/O3/C01/", rename = False):
+    def upload_prod(
+        self,
+        production,
+        rundir,
+        preferred=False,
+        category=config.get("general", "calibration_directory"),
+        rootdir="public_html/LVC/projects/O3/C01/",
+        rename=False,
+    ):
         """
         Upload the results of a PE job to the event repostory.
 
@@ -290,14 +303,20 @@ class EventRepo():
             actual_config = RunConfiguration(run_ini)
             engine_data = actual_config.get_engine()
             labels.append(f"C01:{engine_data['approx']}")
-            configs.append(str(os.path.join(event.data[f"{prod}_rundir"], "config.ini")))
+            configs.append(
+                str(os.path.join(event.data[f"{prod}_rundir"], "config.ini"))
+            )
 
+        with set_directory(
+            os.path.join(self.directory, "Preferred", "PESummary_metafile")
+        ):
 
-        with set_directory(os.path.join(self.directory, "Preferred", "PESummary_metafile")):
-
-            command = ["summarycombine",
-                       "--webdir", f"/home/daniel.williams/public_html/LVC/projects/O3/preferred/{event.title}",
-                       "--samples", ]
+            command = [
+                "summarycombine",
+                "--webdir",
+                f"/home/daniel.williams/public_html/LVC/projects/O3/preferred/{event.title}",
+                "--samples",
+            ]
             command += samples
             command += ["--labels"]
             command += labels
@@ -305,13 +324,19 @@ class EventRepo():
             command += configs
             command += ["--gw"]
 
-            dagman = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            dagman = subprocess.Popen(
+                command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
             out, err = dagman.communicate()
 
             print(out)
             print(err)
 
-            copy(f"/home/daniel.williams/public_html/LVC/projects/O3/preferred/{event.title}/samples/posterior_samples.h5", os.path.join(self.directory, "Preferred", "PESummary_metafile"))
+            copy(
+                "/home/daniel.williams/public_html/LVC/projects/O3/"
+                + f"preferred/{event.title}/samples/posterior_samples.h5",
+                os.path.join(self.directory, "Preferred", "PESummary_metafile"),
+            )
             self.repo.git.add("Preferred/PESummary_metafile/posterior_samples.h5")
             self.repo.git.commit("-m", "Updated the preferred sample metafile.")
             self.repo.git.push()
