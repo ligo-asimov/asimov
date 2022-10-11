@@ -3,6 +3,7 @@
 import configparser
 import glob
 import os
+import pathlib
 import re
 import subprocess
 from shutil import copyfile, copytree
@@ -88,8 +89,6 @@ class BayesWave(Pipeline):
             with open("gpstime.txt", "w") as f:
                 f.write(str(gps_time))
                 gps_file = os.path.join("gpstime.txt")
-
-        
 
         if self.production.event.repository:
             ini = self.production.get_configuration()
@@ -393,19 +392,24 @@ class BayesWave(Pipeline):
         """
         Add the assets to the store.
         """
-        
-        sample_rate = self.production.meta['quality']['sample-rate']
-        for detector, asset in self.collect_assets()['psds']:
+
+        sample_rate = self.production.meta["quality"]["sample-rate"]
+        for detector, asset in self.collect_assets()["psds"]:
             store = Store(root=config.get("storage", "directory"))
             try:
-                store.add_file(self.production.event.name, self.production.name,
-                               file = f"{det}-{sample_rate}-psd.dat")
+                store.add_file(
+                    self.production.event.name,
+                    self.production.name,
+                    file=f"{detector}-{sample_rate}-psd.dat",
+                )
             except Exception as e:
-                error = PipelineLogger(f"There was a problem committing the PSD for {det} to the store.\n\n{e}",
-                                       issue=self.production.event.issue_object,
-                                       production=self.production.name)
+                error = PipelineLogger(
+                    f"There was a problem committing the PSD for {detector} to the store.\n\n{e}",
+                    issue=self.production.event.issue_object,
+                    production=self.production.name,
+                )
                 error.submit_comment()
-                
+
     def collect_logs(self):
         """
         Collect all of the log files which have been produced by this production and

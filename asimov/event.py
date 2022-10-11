@@ -137,7 +137,7 @@ class Event:
             self.ledger = kwargs['ledger']
         else:
             self.ledger = None
-            
+
         if repository:
             if "git@" in repository or "https://" in repository:
                 self.repository = EventRepo.from_url(
@@ -383,28 +383,29 @@ class Event:
             if isinstance(data['productions'], type(None)):
                 data['productions'] = []
         else:
-            data['productions'] = []
+            data["productions"] = []
 
-            
         if "interferometers" in data and "event time" in data:
-            
-            if calibration.keys() != data['interferometers']:
+
+            if calibration.keys() != data["interferometers"]:
                 # We need to fetch the calibration data
                 from asimov.utils import find_calibrations
+
                 try:
-                    data['data']["calibration"] = find_calibrations(data['event time'])
+                    data["data"]["calibration"] = find_calibrations(data["event time"])
                 except ValueError:
-                    data['data']["calibration"] = {}
+                    data["data"]["calibration"] = {}
                     logger.warning("Could not find calibration files for data['name']")
 
-        if not "working directory" in data:
-            data['working directory'] = os.path.join(config.get("general", "rundir_default"),
-                                                     data['name'])
-                
+        if "working directory" not in data:
+            data["working directory"] = os.path.join(
+                config.get("general", "rundir_default"), data["name"]
+            )
+
         if not repo and "repository" in data:
             data.pop("repository")
         event = cls.from_dict(data, issue=issue, update=update, ledger=ledger)
-        
+
         if issue:
             event.issue_object = issue
             event.from_notes()
@@ -758,10 +759,10 @@ class Production:
 
     def __hash__(self):
         return int(f"{hash(self.name)}{abs(hash(self.event.name))}")
-            
+
     def __eq__(self, other):
         return (self.name == other.name) & (self.event == other.event)
-            
+
     def _process_dependencies(self, needs):
         """
         Process the dependencies list for this production.
@@ -908,7 +909,7 @@ class Production:
             dictionary.pop("ledger")
         if "pipelines" in dictionary:
             dictionary.pop("pipelines")
-            
+
         if not event:
             output = dictionary
         else:
@@ -1064,7 +1065,7 @@ class Production:
             raise ValueError("This isn't a valid ini file")
 
         return ini
-    
+
     @classmethod
     def from_dict(cls, parameters, event, issue=None):
         name, pars = list(parameters.items())[0]
@@ -1191,8 +1192,10 @@ class Production:
         liq = Liquid(template_file)
         rendered = liq.render(production=self, config=config)
 
-        logger.info(f"[{self.event.name}/{self.name}] configuration created using {template_file} as a template")
-        
+        logger.info(
+            f"[{self.event.name}/{self.name}] configuration created using {template_file} as a template"
+        )
+
         if not dryrun:
             with open(filename, "w") as output_file:
                 output_file.write(rendered)
