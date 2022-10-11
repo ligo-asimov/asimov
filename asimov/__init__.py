@@ -13,6 +13,8 @@ import logging
 
 from pkg_resources import DistributionNotFound, get_distribution, resource_string
 
+from pkg_resources import DistributionNotFound, get_distribution, resource_string
+
 try:
     __version__ = get_distribution(__name__).version
 except DistributionNotFound:

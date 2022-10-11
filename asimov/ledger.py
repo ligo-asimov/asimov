@@ -1,8 +1,9 @@
 """
 Code for the project ledger.
 """
-from functools import reduce
 from copy import deepcopy
+from functools import reduce
+
 import yaml
 
 import os
@@ -110,11 +111,13 @@ class YAMLLedger(Ledger):
            The name of the event to remove from the ledger.
         """
         event = self.events.pop(event_name)
-        if "trash" not in self.data: self.data['trash'] = {}
-        if "events" not in self.data['trash']: self.data['trash']['events'] = {}
-        self.data['trash']['events'][event_name] = event
+        if "trash" not in self.data:
+            self.data["trash"] = {}
+        if "events" not in self.data["trash"]:
+            self.data["trash"]["events"] = {}
+        self.data["trash"]["events"][event_name] = event
         self.save()
-        
+
     def save(self):
         """
         Update the ledger YAML file with the data from the various events.
