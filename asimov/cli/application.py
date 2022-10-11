@@ -66,7 +66,7 @@ def apply_page(file, event, ledger=ledger):
 
 @click.command()
 @click.option("--file", "-f", 
-              help="Location of the file containing the ledger items.")
+              help="Location of the file containing the ledger items.") 
 @click.option("--event", "-e",
               help="The event which the ledger items should be applied to (e.g. for analyses)",
               default=None)
