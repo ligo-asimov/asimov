@@ -120,27 +120,41 @@ class BayeswaveTests(unittest.TestCase):
             production.pipeline.build_dag(dryrun=True)
             self.assertTrue("bayeswave_pipe" in f.getvalue())
 
-    @unittest.skipIf(not os.path.exists(os.path.join(config.get("pipelines", "environment"), "bin", "bayeswave_pipe")),
-                     "Bayeswave Pipe isnt installed on the test system")
-    def test_submit_api(self):
-        """Check that a RIFT config file can be built."""
+#    @unittest.skipIf(not os.path.exists(os.path.join(config.get("pipelines", "environment"), "bin", "bayeswave_pipe")),
+#                    "Bayeswave Pipe isnt installed on the test system")
+    @patch('subprocess.Popen')
+    def test_submit_api(self, mock_popen):
+        """Check that a bayeswave config file can be submitted."""
         apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
         apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml", event=None, ledger=self.ledger)
         event = "GW150914_095045"
         pipeline = "bayeswave"
         apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
         apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{pipeline}.yaml", event=event, ledger=self.ledger)
-
+        
         f = io.StringIO()
         with contextlib.redirect_stdout(f):
             production = self.ledger.get_event(event)[0].productions[0]
             with set_directory(os.path.join("checkouts", event, config.get("general", "calibration_directory"))):
                 production.make_config(f"{production.name}.ini")
+
+            mock_popen.returncode=0
+            mock_popen.return_value.communicate.return_value=(b"Blah blah blah To submit: just run this", b"Lots of stuff on stderr")
+
             production.pipeline.build_dag(dryrun=False)
+            os.makedirs(f"working/{production.event.name}/{production.name}")
 
         with contextlib.redirect_stdout(f):
-            production.pipeline.submit_dag(dryrun=True)
-            self.assertTrue("bayeswave_pipe" in f.getvalue())
+
+            mock_popen.returncode=0
+            mock_popen.return_value.communicate.return_value=(b"submitted to cluster 999", b"Lots of stuff on stderr")
+
+            
+            production.pipeline.submit_dag(dryrun=False)
+            self.ledger.update_event(production.event)
+        
+        self.assertEqual(production.job_id, 999)
+        self.assertEqual(self.ledger.get_event(event)[0].productions[0].job_id, 999)
 
     def test_presubmit_mocked(self):
         """Check that a bayeswave submit file should be altered"""
