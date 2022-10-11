@@ -1,24 +1,23 @@
 """Defines the interface with generic analysis pipelines."""
+import configparser
 import os
 import subprocess
-import glob
-import re
 import time
-
-
 import warnings
+
 warnings.filterwarnings("ignore", module="htcondor")
 
 
-import htcondor
+import htcondor  # NoQA
 
-from asimov import config, logger
-from .storage import Store
-from asimov import logging
+from asimov import config, logger, logging  # NoQA
+
+from .storage import Store  # NoQA
 
 
 class PipelineException(Exception):
     """Exception for pipeline problems."""
+
     def __init__(self, message, issue=None, production=None):
         super(PipelineException, self).__init__(message)
         self.message = message
@@ -51,10 +50,11 @@ Please fix the error and then remove the `pipeline-error` label from this issue.
             self.issue.add_note(self.__repr__())
 
 
-class PipelineLogger():
+class PipelineLogger:
     """Log things for pipelines."""
+
     def __init__(self, message, issue=None, production=None):
-        self.message = message#.decode()
+        self.message = message  # .decode()
         self.issue = issue
         self.production = production
 
@@ -81,21 +81,22 @@ It is copied below.
             self.issue.add_note(self.__repr__())
 
 
-class Pipeline():
+class Pipeline:
     """
     Factory class for pipeline specification.
     """
+
     name = "Asimov Pipeline"
-    
+
     def __init__(self, production, category=None):
         self.production = production
 
         self.category = production.category
         self.logger = logger
-        
+
     def __repr__(self):
         return self.name.lower()
-        
+
     def detect_completion(self):
         """
         Check to see if the job has in fact completed.
@@ -106,7 +107,7 @@ class Pipeline():
         """
         Define a hook to run before the DAG file is generated and submitted.
 
-        Note, this method should be over-written in the specific pipeline implementation 
+        Note, this method should be over-written in the specific pipeline implementation
         if required.
         It allows the `dryrun` option to be specified in order to only print the commands
         rather than run them.
@@ -117,18 +118,16 @@ class Pipeline():
         """
         Define a hook to run after the DAG has completed execution successfully.
 
-        Note, this method should take no arguments, and should be over-written in the 
+        Note, this method should take no arguments, and should be over-written in the
         specific pipeline implementation if required.
         """
         self.production.status = "finished"
-        self.production.meta.pop('job id')
+        self.production.meta.pop("job id")
 
     def collect_assets(self):
         """
         Add the various analysis assets from the run directory to the git repository.
         """
-
-        assets = self.assets
         repo = self.production.event.repository
 
         for asset in self.assets:
@@ -143,22 +142,48 @@ class Pipeline():
         """
 
         psds = self.production.psds
-        calibration = [os.path.join(self.production.event.repository.directory, cal) for cal in self.production.meta['data']['calibration'].values()]
-        configfile = self.production.event.repository.find_prods(self.production.name, self.category)[0]
+        calibration = [
+            os.path.join(self.production.event.repository.directory, cal)
+            for cal in self.production.meta["data"]["calibration"].values()
+        ]
+        configfile = self.production.event.repository.find_prods(
+            self.production.name, self.category
+        )[0]
         command = [
-            "--webdir", os.path.join(config.get('general', 'webroot'), self.production.event.name, self.production.name,  "results"),
-            "--labels", self.production.name,
+            "--webdir",
+            os.path.join(
+                config.get("general", "webroot"),
+                self.production.event.name,
+                self.production.name,
+                "results",
+            ),
+            "--labels",
+            self.production.name,
             "--gw",
-            "--cosmology", config.get('pesummary', 'cosmology'),
-            "--redshift_method", config.get('pesummary', 'redshift'),
-            "--nsamples_for_skymap", config.get('pesummary', 'skymap_samples'),
-            "--evolve_spins", "True",
-            "--multi_process", "4",
-            "--approximant", self.production.meta['approximant'],
-            "--f_low", str(min(self.production.meta['quality']['minimum frequency'].values())),
-            "--f_ref", str(self.production.meta['likelihood']['reference frequency']),
-            "--regenerate", "redshift mass_1_source mass_2_source chirp_mass_source total_mass_source final_mass_source final_mass_source_non_evolved radiated_energy",
-            "--config", os.path.join(self.production.event.repository.directory, self.category, configfile)]
+            "--cosmology",
+            config.get("pesummary", "cosmology"),
+            "--redshift_method",
+            config.get("pesummary", "redshift"),
+            "--nsamples_for_skymap",
+            config.get("pesummary", "skymap_samples"),
+            "--evolve_spins",
+            "True",
+            "--multi_process",
+            "4",
+            "--approximant",
+            self.production.meta["approximant"],
+            "--f_low",
+            str(min(self.production.meta["quality"]["minimum frequency"].values())),
+            "--f_ref",
+            str(self.production.meta["likelihood"]["reference frequency"]),
+            "--regenerate",
+            "redshift mass_1_source mass_2_source chirp_mass_source"
+            " total_mass_source final_mass_source final_mass_source_non_evolved radiated_energy",
+            "--config",
+            os.path.join(
+                self.production.event.repository.directory, self.category, configfile
+            ),
+        ]
         # Samples
         command += ["--samples"]
         command += self.samples()
@@ -168,14 +193,18 @@ class Pipeline():
         # PSDs
         command += ["--psd"]
         command += psds.values()
-        
-        self.logger.info(f"Submitted PE summary run. Command: {config.get('pesummary', 'executable')} {' '.join(command)}", production=self.production, channels=['file'])
+
+        self.logger.info(
+            f"Submitted PE summary run. Command: {config.get('pesummary', 'executable')} {' '.join(command)}",
+            production=self.production,
+            channels=["file"],
+        )
 
         if dryrun:
             print(command)
 
         submit_description = {
-            "executable": config.get("pesummary", "executable"),  
+            "executable": config.get("pesummary", "executable"),
             "arguments": " ".join(command),
             "accounting_group": config.get("pipelines", "accounting"),
             "output": f"{self.production.rundir}/pesummary.out",
@@ -194,22 +223,24 @@ class Pipeline():
             print(submit_description)
 
         if not dryrun:
-            
+
             hostname_job = htcondor.Submit(submit_description)
 
             try:
                 # There should really be a specified submit node, and if there is, use it.
-                schedulers = htcondor.Collector().locate(htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler"))
+                schedulers = htcondor.Collector().locate(
+                    htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler")
+                )
                 schedd = htcondor.Schedd(schedulers)
-            except:
+            except:  # NoQA
                 # If you can't find a specified scheduler, use the first one you find
                 schedd = htcondor.Schedd()
-            with schedd.transaction() as txn:   
+            with schedd.transaction() as txn:
                 cluster_id = hostname_job.queue(txn)
 
         else:
             cluster_id = 0
-                
+
         return cluster_id
 
     def store_results(self):
@@ -217,30 +248,41 @@ class Pipeline():
         Store the PE Summary results
         """
 
-        files = [f"{self.production.name}_pesummary.dat",
-                 "posterior_samples.h5",
-                 f"{self.production.name}_skymap.fits"]
+        files = [
+            f"{self.production.name}_pesummary.dat",
+            "posterior_samples.h5",
+            f"{self.production.name}_skymap.fits",
+        ]
 
         for filename in files:
-            results = os.path.join(config.get('general', 'webroot'),
-                                   self.production.event.name,
-                                   self.production.name,
-                                   "results", "samples", filename)
+            results = os.path.join(
+                config.get("general", "webroot"),
+                self.production.event.name,
+                self.production.name,
+                "results",
+                "samples",
+                filename,
+            )
             store = Store(root=config.get("storage", "directory"))
-            store.add_file(self.production.event.name, self.production.name,
-                           file=results)
+            store.add_file(
+                self.production.event.name, self.production.name, file=results
+            )
 
     def detect_completion_processing(self):
         files = f"{self.production.name}_pesummary.dat"
-        results = os.path.join(config.get('general', 'webroot'),
-                                   self.production.event.name,
-                                   self.production.name,
-                                   "results", "samples", files)
+        results = os.path.join(
+            config.get("general", "webroot"),
+            self.production.event.name,
+            self.production.name,
+            "results",
+            "samples",
+            files,
+        )
         if os.path.exists(results):
             return True
         else:
             return False
-            
+
     def after_processing(self):
         """
         Run the after processing jobs.
@@ -257,16 +299,20 @@ class Pipeline():
         """
         command = ["condor_rm", f"{self.production.meta['job id']}"]
         try:
-            dagman = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        
+            dagman = subprocess.Popen(
+                command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
+
         except FileNotFoundError as error:
-            raise PipelineException("It looks like condor isn't installed on this system.\n"
-                                    f"""I wanted to run {" ".join(command)}.""")
+            raise PipelineException(
+                "It looks like condor isn't installed on this system.\n"
+                f"""I wanted to run {" ".join(command)}."""
+            ) from error
 
         stdout, stderr = dagman.communicate()
         if not stderr:
             time.sleep(20)
-            self.production.meta.pop('job id')
+            self.production.meta.pop("job id")
 
     def clean(self):
         """
@@ -279,16 +325,13 @@ class Pipeline():
         Submit the DAG for this pipeline.
         """
         raise NotImplementedError
-        
-    def resurrect(self):
-        pass
 
-    def clean(self):
+    def resurrect(self):
         pass
 
     @classmethod
     def read_ini(cls, filepath):
-        """ 
+        """
         Read and parse a pipeline configuration file.
 
         Parameters
@@ -300,7 +343,7 @@ class Pipeline():
         with open(filepath, "r") as f:
             file_content = f.read()
 
-        config_parser = ConfigParser.RawConfigParser()
+        config_parser = configparser.RawConfigParser()
         config_parser.read_string(file_content)
 
         return config_parser
@@ -317,7 +360,7 @@ class Pipeline():
         out += """<div class="asimov-pipeline">"""
         out += f"""<p class="asimov-pipeline-name">{self.name}</p>"""
         out += """</div>"""
-        
+
         return out
 
     def collect_pages(self):

@@ -7,46 +7,77 @@ In order to improve performance the code caches results from the query to the sc
 
 """
 import os
-import yaml
+import datetime
+from dateutil import tz
 import htcondor
+import yaml
 
 from asimov import config
+
+UTC = tz.tzutc()
+
+
+def datetime_from_epoch(dt, tzinfo=UTC):
+    """Returns the `datetime.datetime` for a given Unix epoch
+
+    Parameters
+    ----------
+    dt : `float`
+        a Unix timestamp
+
+    tzinfo : `datetime.tzinfo`, optional
+        the desired timezone for the output `datetime.datetime`
+
+    Returns
+    -------
+    datetime.datetime
+        the datetime that represents the given Unix epoch
+    """
+    return datetime.datetime.utcfromtimestamp(dt).replace(tzinfo=tzinfo)
 
 
 def submit_job(submit_description):
     """
     Submit a new job to the condor scheduller
     """
-    
+
     hostname_job = htcondor.Submit(submit_description)
 
     try:
         # There should really be a specified submit node, and if there is, use it.
-        schedulers = htcondor.Collector().locate(htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler"))
+        schedulers = htcondor.Collector().locate(
+            htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler")
+        )
         schedd = htcondor.Schedd(schedulers)
-    except:
+    except:  # NoQA
         # If you can't find a specified scheduler, use the first one you find
         schedd = htcondor.Schedd()
-    with schedd.transaction() as txn:   
+    with schedd.transaction() as txn:
         cluster_id = hostname_job.queue(txn)
     return cluster_id
+
 
 def delete_job(cluster_id):
     try:
         # There should really be a specified submit node, and if there is, use it.
-        schedulers = htcondor.Collector().locate(htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler"))
+        schedulers = htcondor.Collector().locate(
+            htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler")
+        )
         schedd = htcondor.Schedd(schedulers)
-    except:
+    except:  # NoQA
         # If you can't find a specified scheduler, use the first one you find
         schedd = htcondor.Schedd()
     schedd.act(htcondor.JobAction.Remove, f"ClusterId == {cluster_id}")
 
+
 def collect_history(cluster_id):
     try:
         # There should really be a specified submit node, and if there is, use it.
-        schedulers = htcondor.Collector().locate(htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler"))
+        schedulers = htcondor.Collector().locate(
+            htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler")
+        )
         schedd = htcondor.Schedd(schedulers)
-    except:
+    except:  # NoQA
         # If you can't find a specified scheduler, use the first one you find
         schedd = htcondor.Schedd()
         HISTORY_CLASSADS = [
@@ -63,7 +94,7 @@ def collect_history(cluster_id):
         output = {}
         for job in jobs:
             end = float(job["CompletionDate"]) or float(job["EnteredCurrentStatus"])
-            output['end'] = datetime_from_epoch(end).strftime("%Y-%m-%d")
+            output["end"] = datetime_from_epoch(end).strftime("%Y-%m-%d")
             # get cpus and gpus
             try:
                 cpus = float(job["CpusProvisioned"])
@@ -73,25 +104,26 @@ def collect_history(cluster_id):
                 gpus = float(job["GpusProvisioned"])
             except (KeyError, ValueError):
                 gpus = float(job.get("RequestGpus", 1))
-            output['cpus'] = cpus
-            output['gpus'] = gpus
+            output["cpus"] = cpus
+            output["gpus"] = gpus
             # get total job time (seconds)
-            runtime = (
-                float(job["RemoteWallClockTime"])
-                - float(job["CumulativeSuspensionTime"])
+            runtime = float(job["RemoteWallClockTime"]) - float(
+                job["CumulativeSuspensionTime"]
             )
             # if the job didn't get assigned a MATCH_GLIDEIN_Site,
             # then it ran in the local pool
-            output['runtime'] = runtime
+            output["runtime"] = runtime
         return output
-    
-class CondorJob( yaml.YAMLObject):
+
+
+class CondorJob(yaml.YAMLObject):
     """
     Represent a specific condor Job.
     """
+
     yaml_loader = yaml.SafeLoader
-    yaml_tag = u'!CondorJob'
-    
+    yaml_tag = "!CondorJob"
+
     def __init__(self, idno, command, hosts, status, **kwargs):
         """
         A representation of a condor job on a scheduler.
@@ -119,9 +151,11 @@ class CondorJob( yaml.YAMLObject):
 
         for key, value in kwargs.items():
             setattr(self, key, value)
-        
+
     def __repr__(self):
-        return f"<htcondor job | {self.idno} | {self.status} | {self.hosts} | {self.name} | {len(self.subjobs)} subjobs >"
+        out = f"<htcondor job | {self.idno} | {self.status} "
+        out += f"| {self.hosts} | {self.name} | {len(self.subjobs)} subjobs >"
+        return out
 
     def __str__(self):
         return repr(self)
@@ -132,17 +166,17 @@ class CondorJob( yaml.YAMLObject):
         """
         output = {}
 
-        output['name'] = self.name
-        output['id'] = self.idno
-        output['hosts'] = self.hosts
-        output['status'] = self._status
-        output['command'] = self.command
+        output["name"] = self.name
+        output["id"] = self.idno
+        output["hosts"] = self.hosts
+        output["status"] = self._status
+        output["command"] = self.command
 
         if self.dag:
-            output['dag id'] = self.dag
-        
+            output["dag id"] = self.dag
+
         return output
-        
+
     @classmethod
     def from_dict(cls, dictionary):
         """
@@ -158,16 +192,18 @@ class CondorJob( yaml.YAMLObject):
         `CondorJob`
            A condor job object.
         """
-        cls = cls(idno=dictionary['id'],
-                  command=dictionary['command'],
-                  hosts=dictionary['hosts'],
-                  status=dictionary['status'])
+        cls = cls(
+            idno=dictionary["id"],
+            command=dictionary["command"],
+            hosts=dictionary["hosts"],
+            status=dictionary["status"],
+        )
         if "name" in dictionary:
-            cls.name = dictionary['name']
+            cls.name = dictionary["name"]
         else:
             cls.name = "asimov job"
         if "dag id" in dictionary:
-            cls.dag = dictionary['dag id']
+            cls.dag = dictionary["dag id"]
         else:
             cls.dag = None
         cls.subjobs = []
@@ -184,7 +220,7 @@ class CondorJob( yaml.YAMLObject):
            The job which is a subjob.
         """
         self.subjobs.append(job)
-        
+
     @property
     def status(self):
         """
@@ -195,13 +231,15 @@ class CondorJob( yaml.YAMLObject):
         str
           A description of the status of the job.
         """
-        statuses = {0: "Unexplained",
-                    1: "Idle",
-                    2: "Running",
-                    3: "Removed",
-                    4: "Completed",
-                    5: "Held",
-                    6: "Submission error"}
+        statuses = {
+            0: "Unexplained",
+            1: "Idle",
+            2: "Running",
+            3: "Removed",
+            4: "Completed",
+            5: "Held",
+            6: "Submission error",
+        }
         return statuses[self._status]
 
 
@@ -212,6 +250,7 @@ class CondorJobList:
     The list is automatically pulled from the condor scheduller if it is
     more than 15 minutes old (by default)
     """
+
     def __init__(self):
         self.jobs = {}
         cache = "_cache_jobs.yaml"
@@ -233,29 +272,38 @@ class CondorJobList:
         for schedd_ad in htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd):
             try:
                 schedd = htcondor.Schedd(schedd_ad)
-                jobs = schedd.query(opts=htcondor.htcondor.QueryOpts.DefaultMyJobsOnly,
-                                    projection=["ClusterId", "Cmd", "CurrentHosts",
-                                                "HoldReason", "JobStatus", "DAG_Status",
-                                                "JobBatchName", "DAGManJobId"],
+                jobs = schedd.query(
+                    opts=htcondor.htcondor.QueryOpts.DefaultMyJobsOnly,
+                    projection=[
+                        "ClusterId",
+                        "Cmd",
+                        "CurrentHosts",
+                        "HoldReason",
+                        "JobStatus",
+                        "DAG_Status",
+                        "JobBatchName",
+                        "DAGManJobId",
+                    ],
                 )
                 data += jobs
-            except:
+            except:  # NoQA
                 pass
-            
+
             retdat = []
             for datum in data:
                 if "ClusterId" in datum:
-                    job = dict(id=int(float(datum['ClusterId'])),
-                               command=datum['Cmd'],
-                               hosts=datum["CurrentHosts"],
-                               status=datum["JobStatus"]
-                           )
+                    job = dict(
+                        id=int(float(datum["ClusterId"])),
+                        command=datum["Cmd"],
+                        hosts=datum["CurrentHosts"],
+                        status=datum["JobStatus"],
+                    )
                     if "HoldReason" in datum:
-                        job["hold"] =  datum["HoldReason"]
+                        job["hold"] = datum["HoldReason"]
                     if "JobBatchName" in datum:
-                        job["name"] =  datum["JobBatchName"]
-                    if not "DAG_Status" in datum and "DAGManJobID" in datum:
-                        job["dag id"] = int(float(datum['DAGManJobId']))
+                        job["name"] = datum["JobBatchName"]
+                    if "DAG_Status" not in datum and "DAGManJobID" in datum:
+                        job["dag id"] = int(float(datum["DAGManJobId"]))
 
                 retdat.append(CondorJob.from_dict(job))
 

@@ -10,11 +10,12 @@ but rather to the review of events which it has been used to analyse.
 from datetime import datetime
 
 STATES = {"REJECTED", "APPROVED", "PREFERRED", "DEPRECATED"}
-review_map = {"deprecated": "warning",
-              "none": "default",
-              "approved": "success",
-              "rejected": "danger",
-              "checked": "info"
+review_map = {
+    "deprecated": "warning",
+    "none": "default",
+    "approved": "success",
+    "rejected": "danger",
+    "checked": "info",
 }
 
 
@@ -22,6 +23,7 @@ class Review:
     """
     A class to record the review status of a given production.
     """
+
     def __init__(self):
         self.messages = []
 
@@ -51,23 +53,26 @@ class Review:
         for message in self.messages:
             output.append(message.to_dict())
         return output
-    
+
     @classmethod
     def from_dict(cls, messages_list, production):
         """parse a dictionary into review"""
         messages = []
         for message in messages_list:
-            messages.append(ReviewMessage.from_dict(dictionary=message,
-                                                    production=production))
+            messages.append(
+                ReviewMessage.from_dict(dictionary=message, production=production)
+            )
         review_ob = cls()
         messages = sorted(messages, key=lambda k: k.timestamp)
         review_ob.messages = messages
         return review_ob
 
+
 class ReviewMessage:
     """
     A review message.
     """
+
     def __init__(self, message, production, status=None, timestamp=None):
         """
         Review messages are individual messages related to the review of a production.
@@ -98,7 +103,9 @@ class ReviewMessage:
             self.status = None
 
         if timestamp:
-            self.timestamp = timestamp #datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+            self.timestamp = (
+                timestamp  # datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+            )
         else:
             self.timestamp = datetime.now()
 
@@ -107,9 +114,9 @@ class ReviewMessage:
         Serialise this object as a dictionary
         """
         out = {}
-        out['message'] = self.message
-        out['timestamp'] = str(self.timestamp)
-        out['status'] = self.status
+        out["message"] = self.message
+        out["timestamp"] = str(self.timestamp)
+        out["status"] = self.status
         return out
 
     @classmethod
@@ -117,20 +124,19 @@ class ReviewMessage:
         """
         Create a review message from a dictionary.
         """
-        default = {"status": None,
-                   "message": None,
-                   "timestamp": None}
+        default = {"status": None, "message": None, "timestamp": None}
         default.update(dictionary)
-        if isinstance(default['timestamp'], str):
-            timestamp = datetime.strptime(default['timestamp'], '%Y-%m-%d %H:%M:%S.%f')
+        if isinstance(default["timestamp"], str):
+            timestamp = datetime.strptime(default["timestamp"], "%Y-%m-%d %H:%M:%S.%f")
         else:
-            timestamp = default['timestamp']
-        message_ob = cls(message=default['message'],
-                         production=production,
-                         status=default['status'],
-                         timestamp=timestamp)
+            timestamp = default["timestamp"]
+        message_ob = cls(
+            message=default["message"],
+            production=production,
+            status=default["status"],
+            timestamp=timestamp,
+        )
         return message_ob
-
 
     def html(self):
         """
@@ -140,10 +146,9 @@ class ReviewMessage:
         if self.status:
             review_row += f"""<div class="asimov-review alert alert-{review_map[self.status.lower()]}" role="alert">
             <strong>{self.status}</strong>  """
-            review_status = self.status
         else:
-            review_row += f"""<div class="alert alert-light" role="alert">"""
+            review_row += """<div class="alert alert-light" role="alert">"""
         if self.message:
-            review_row += f"{self.message}" 
+            review_row += f"{self.message}"
         review_row += "</div>"
         return review_row

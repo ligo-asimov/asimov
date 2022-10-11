@@ -1,19 +1,19 @@
 """Bilby Pipeline specification."""
 
-import os
 import glob
+import os
+import re
 import subprocess
+import configparser
+import git.exc
+
+from liquid import Liquid
 
 from asimov.utils import update
 
-from ..pipeline import Pipeline, PipelineException, PipelineLogger
-from ..ini import RunConfiguration
 from .. import config, logger
-import re
-import numpy as np
+from ..pipeline import Pipeline, PipelineException, PipelineLogger
 
-from liquid import Liquid
-import htcondor
 
 class Bilby(Pipeline):
     """
@@ -27,6 +27,7 @@ class Bilby(Pipeline):
         The category of the job.
         Defaults to "C01_offline".
     """
+
     name = "Bilby"
     STATUS = {"wait", "stuck", "stopped", "running", "finished"}
 
@@ -41,14 +42,13 @@ class Bilby(Pipeline):
         Check for the production of the posterior file to signal that the job has completed.
         """
         results_dir = glob.glob(f"{self.production.rundir}/result")
-        if len(results_dir)>0: # dynesty_merge_result.json
-            if len(glob.glob(os.path.join(results_dir[0], f"*merge*_result.*"))) > 0:
+        if len(results_dir) > 0:  # dynesty_merge_result.json
+            if len(glob.glob(os.path.join(results_dir[0], "*merge*_result.*"))) > 0:
                 return True
             else:
                 return False
         else:
             return False
-
 
     def _determine_prior(self):
         """
@@ -56,19 +56,15 @@ class Bilby(Pipeline):
         """
 
         if "prior file" in self.production.meta:
-            return self.production.meta['prior file']
+            return self.production.meta["prior file"]
         else:
-            duration = int(self.production.meta['data']['segment length'])
-            scale_factor = 1 # Check this
             template = None
 
-            prior_parameters = {}
-            
             if "event type" in self.production.meta:
-                event_type = self.production.meta['event type'].lower()
+                event_type = self.production.meta["event type"].lower()
             else:
                 event_type = "bbh"
-                self.production.meta['event type'] = event_type
+                self.production.meta["event type"] = event_type
 
                 if self.production.event.issue_object:
                     self.production.event.issue_object.update_data()
@@ -76,37 +72,50 @@ class Bilby(Pipeline):
             if template is None:
                 template_filename = f"{event_type}.prior.template"
                 try:
-                    template = os.path.join(config.get("bilby", "priors"), template_filename)
-                except:
+                    template = os.path.join(
+                        config.get("bilby", "priors"), template_filename
+                    )
+                except configparser.NoOptionError:
                     from pkg_resources import resource_filename
-                    template = resource_filename("asimov", f'priors/{template_filename}')
 
-            #with open(template, "r") as old_prior:
+                    template = resource_filename(
+                        "asimov", f"priors/{template_filename}"
+                    )
+
+            # with open(template, "r") as old_prior:
             #    prior_string = old_prior.read().format(**prior_parameters)
 
             priors = {}
-            priors = update(priors, self.production.event.ledger.data['priors'])
-            priors = update(priors, self.production.event.meta['priors'])
-            priors = update(priors, self.production.meta['priors'])
-            
+            priors = update(priors, self.production.event.ledger.data["priors"])
+            priors = update(priors, self.production.event.meta["priors"])
+            priors = update(priors, self.production.meta["priors"])
+
             liq = Liquid(template)
             rendered = liq.render(priors=priors, config=config)
-            
+
             prior_name = f"{self.production.name}.prior"
             prior_file = os.path.join(os.getcwd(), prior_name)
             with open(prior_file, "w") as new_prior:
                 new_prior.write(rendered)
-                
+
             repo = self.production.event.repository
             try:
-                
-                repo.add_file(prior_file, os.path.join(config.get("general", "calibration_directory"), prior_name))
-                os.remove(prior_file)
-            except:
-                pass
-            return os.path.join(self.production.event.repository.directory, config.get("general", "calibration_directory"), prior_name)
 
-        
+                repo.add_file(
+                    prior_file,
+                    os.path.join(
+                        config.get("general", "calibration_directory"), prior_name
+                    ),
+                )
+                os.remove(prior_file)
+            except git.exc.GitCommandError:
+                pass
+            return os.path.join(
+                self.production.event.repository.directory,
+                config.get("general", "calibration_directory"),
+                prior_name,
+            )
+
     def build_dag(self, psds=None, user=None, clobber_psd=False, dryrun=False):
         """
         Construct a DAG file in order to submit a production to the
@@ -137,65 +146,71 @@ class Bilby(Pipeline):
 
         if self.production.event.repository:
             ini = self.production.event.repository.find_prods(
-                self.production.name,
-                self.category)[0]
+                self.production.name, self.category
+            )[0]
             ini = os.path.join(cwd, ini)
-            gps_file = self.production.get_timefile()
         else:
-            gps_file = "gpstime.txt"
             ini = f"{self.production.name}.ini"
-            
+
         if self.production.rundir:
             rundir = self.production.rundir
         else:
-            rundir = os.path.join(os.path.expanduser("~"),
-                                  self.production.event.name,
-                                  self.production.name)
+            rundir = os.path.join(
+                os.path.expanduser("~"),
+                self.production.event.name,
+                self.production.name,
+            )
             self.production.rundir = rundir
 
         if "job label" in self.production.meta:
-            job_label = self.production.meta['job label']
+            job_label = self.production.meta["job label"]
         else:
             job_label = self.production.name
 
-        prior_file = self._determine_prior()
-        
-        command = [os.path.join(config.get("pipelines", "environment"), "bin", "bilby_pipe"),
-                   ini,
-                   "--label", job_label,
-                   "--outdir", f"{cwd}/{self.production.rundir}",
-                   "--accounting", f"{self.production.meta['scheduler']['accounting group']}"
+        command = [
+            os.path.join(config.get("pipelines", "environment"), "bin", "bilby_pipe"),
+            ini,
+            "--label",
+            job_label,
+            "--outdir",
+            f"{cwd}/{self.production.rundir}",
+            "--accounting",
+            f"{self.production.meta['scheduler']['accounting group']}",
         ]
 
         if dryrun:
             print(" ".join(command))
         else:
             self.logger.info(" ".join(command))
-            pipe = subprocess.Popen(command, 
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT)
+            pipe = subprocess.Popen(
+                command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
             out, err = pipe.communicate()
             self.logger.info(out)
             self.logger.error(err)
-            #os.chdir(cwd)
+            # os.chdir(cwd)
             if err or "DAG generation complete, to submit jobs" not in str(out):
                 self.production.status = "stuck"
                 if hasattr(self.production.event, "issue_object"):
-                    raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
-                                                issue=self.production.event.issue_object,
-                                                production=self.production.name)
+                    raise PipelineException(
+                        f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
+                        issue=self.production.event.issue_object,
+                        production=self.production.name,
+                    )
                 else:
-                    raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
-                                            production=self.production.name)
+                    raise PipelineException(
+                        f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
+                        production=self.production.name,
+                    )
             else:
                 if hasattr(self.production.event, "issue_object"):
-                    return PipelineLogger(message=out,
-                                          issue=self.production.event.issue_object,
-                                          production=self.production.name)
+                    return PipelineLogger(
+                        message=out,
+                        issue=self.production.event.issue_object,
+                        production=self.production.name,
+                    )
                 else:
-                    return PipelineLogger(message=out,
-                                          production=self.production.name)
-
+                    return PipelineLogger(message=out, production=self.production.name)
 
     def submit_dag(self, dryrun=False):
         """
@@ -204,7 +219,9 @@ class Bilby(Pipeline):
         Parameters
         ----------
         dryrun : bool
-           If set to true the DAG will not be submitted, but all commands will be printed to standard output instead. Defaults to False.
+           If set to true the DAG will not be submitted,
+           but all commands will be printed to standard
+           output instead. Defaults to False.
 
         Returns
         -------
@@ -223,50 +240,56 @@ class Bilby(Pipeline):
         This overloads the default submission routine, as bilby seems to store
         its DAG files in a different location
         """
-        #os.chdir(self.production.event.meta['working directory'])   
-        #os.chdir(os.path.join(self.production.event.repository.directory,
+        # os.chdir(self.production.event.meta['working directory'])
+        # os.chdir(os.path.join(self.production.event.repository.directory,
         #                      self.category))
 
-
         self.before_submit()
-        
+
         try:
             # to do: Check that this is the correct name of the output DAG file for billby (it
             # probably isn't)
             if "job label" in self.production.meta:
-                job_label = self.production.meta['job label']
+                job_label = self.production.meta["job label"]
             else:
                 job_label = self.production.name
             dag_filename = f"dag_{job_label}.submit"
             command = [
-                #"ssh", f"{config.get('scheduler', 'server')}",
+                # "ssh", f"{config.get('scheduler', 'server')}",
                 "condor_submit_dag",
-                       "-batch-name", f"bilby/{self.production.event.name}/{self.production.name}",
-                                   os.path.join(self.production.rundir, "submit", dag_filename)]
+                "-batch-name",
+                f"bilby/{self.production.event.name}/{self.production.name}",
+                os.path.join(self.production.rundir, "submit", dag_filename),
+            ]
 
             if dryrun:
                 print(" ".join(command))
             else:
-                dagman = subprocess.Popen(command,
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT)
+                dagman = subprocess.Popen(
+                    command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+                )
 
                 stdout, stderr = dagman.communicate()
 
                 if "submitted to cluster" in str(stdout):
-                    cluster = re.search("submitted to cluster ([\d]+)", str(stdout)).groups()[0]
+                    cluster = re.search(
+                        r"submitted to cluster ([\d]+)", str(stdout)
+                    ).groups()[0]
                     self.production.status = "running"
                     self.production.job_id = int(cluster)
                     return cluster, PipelineLogger(stdout)
                 else:
-                    raise PipelineException(f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
-                                            issue=self.production.event.issue_object,
-                                            production=self.production.name)
+                    raise PipelineException(
+                        f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
+                        issue=self.production.event.issue_object,
+                        production=self.production.name,
+                    )
         except FileNotFoundError as error:
-            raise PipelineException("It looks like condor isn't installed on this system.\n"
-                                    f"""I wanted to run {" ".join(command)}.""")
+            raise PipelineException(
+                "It looks like condor isn't installed on this system.\n"
+                f"""I wanted to run {" ".join(command)}."""
+            ) from error
 
-        
     def collect_assets(self):
         """
         Gather all of the results assets for this job.
@@ -277,21 +300,29 @@ class Bilby(Pipeline):
         """
         Collect the combined samples file for PESummary.
         """
-        return glob.glob(os.path.join(self.production.rundir, "result", "*_merge*_result.*"))
-        
+        return glob.glob(
+            os.path.join(self.production.rundir, "result", "*_merge*_result.*")
+        )
+
     def after_completion(self):
-        self.logger.info(f"Job has completed. Running PE Summary.", production=self.production, channels=['mattermost'])
+        self.logger.info(
+            "Job has completed. Running PE Summary.",
+            production=self.production,
+            channels=["mattermost"],
+        )
         cluster = self.run_pesummary()
-        self.production.meta['job id'] = int(cluster)
+        self.production.meta["job id"] = int(cluster)
         self.production.status = "processing"
         self.production.event.update_data()
 
     def collect_logs(self):
         """
-        Collect all of the log files which have been produced by this production and 
+        Collect all of the log files which have been produced by this production and
         return their contents as a dictionary.
         """
-        logs = glob.glob(f"{self.production.rundir}/submit/*.err") + glob.glob(f"{self.production.rundir}/log*/*.err")
+        logs = glob.glob(f"{self.production.rundir}/submit/*.err") + glob.glob(
+            f"{self.production.rundir}/log*/*.err"
+        )
         logs += glob.glob(f"{self.production.rundir}/*/*.out")
         messages = {}
         for log in logs:
@@ -300,8 +331,10 @@ class Bilby(Pipeline):
                     message = log_f.read()
                     message = message.split("\n")
                     messages[log.split("/")[-1]] = "\n".join(message[-100:])
-            except:
-                messages[log.split("/")[-1]] = "There was a problem opening this log file."
+            except FileNotFoundError:
+                messages[
+                    log.split("/")[-1]
+                ] = "There was a problem opening this log file."
         return messages
 
     def check_progress(self):
@@ -320,14 +353,19 @@ class Bilby(Pipeline):
                     p = re.compile(r"dlogz:([\d]*\.[\d]*)")
                     dlogz = p.search(message)
                     if iterations:
-                        messages[log.split("/")[-1]] = (iterations.group(), dlogz.group())
-            except:
-                messages[log.split("/")[-1]] = "There was a problem opening this log file."
+                        messages[log.split("/")[-1]] = (
+                            iterations.group(),
+                            dlogz.group(),
+                        )
+            except FileNotFoundError:
+                messages[
+                    log.split("/")[-1]
+                ] = "There was a problem opening this log file."
         return messages
 
     @classmethod
     def read_ini(cls, filepath):
-        """ 
+        """
         Read and parse a bilby configuration file.
 
         Note that bilby configurations are property files and not compliant ini configs.
@@ -339,28 +377,30 @@ class Bilby(Pipeline):
         """
 
         with open(filepath, "r") as f:
-            file_content = '[root]\n' + f.read()
+            file_content = "[root]\n" + f.read()
 
-        config_parser = ConfigParser.RawConfigParser()
+        config_parser = configparser.RawConfigParser()
         config_parser.read_string(file_content)
 
         return config_parser
 
     def html(self):
         """Return the HTML representation of this pipeline."""
-        pages_dir = os.path.join(self.production.event.name, self.production.name)
         out = ""
 
         return out
-    
+
     def resurrect(self):
         """
         Attempt to ressurrect a failed job.
         """
         try:
-            count = self.production.meta['resurrections']
-        except:
+            count = self.production.meta["resurrections"]
+        except KeyError:
             count = 0
-        if (count < 5) and (len(glob.glob(os.path.join(self.production.rundir, "submit", "*.rescue*")))>0):
-            count +=1
+        if (count < 5) and (
+            len(glob.glob(os.path.join(self.production.rundir, "submit", "*.rescue*")))
+            > 0
+        ):
+            count += 1
             self.submit_dag()
