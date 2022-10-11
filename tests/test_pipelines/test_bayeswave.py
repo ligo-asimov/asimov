@@ -131,6 +131,7 @@ class BayeswaveTests(unittest.TestCase):
         pipeline = "bayeswave"
         apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
         apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{pipeline}.yaml", event=event, ledger=self.ledger)
+        
         f = io.StringIO()
         with contextlib.redirect_stdout(f):
             production = self.ledger.get_event(event)[0].productions[0]
@@ -143,6 +144,7 @@ class BayeswaveTests(unittest.TestCase):
             mock_popen.return_value.communicate.return_value=(b"Blah blah blah To submit: just run this", b"Lots of stuff on stderr")
 
             production.pipeline.build_dag(dryrun=False)
+            os.makedirs(f"working/{production.event.name}/{production.name}")
 
         with contextlib.redirect_stdout(f):
 
