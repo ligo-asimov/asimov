@@ -109,8 +109,6 @@ def stop(dry_run):
     logger.info(f"Stopped asimov cronjob {cluster}")
 
 
-from asimov.cli import manage
-from asimov.cli import report
 
 @click.option("--dry-run", "-n", "dry_run", is_flag=True)
 @click.command()
@@ -118,33 +116,35 @@ def start(dry_run):
     """Set up a cron job on condor to monitor the project."""
 
     submit_description = {
-          "executable": shutil.which("asimov"),  
-          "arguments": "monitor --chain",
-          "accounting_group": config.get("pipelines", "accounting"),
-          "output": f"asimov_cron.out",
-          "on_exit_remove": "false",
-          "error": f"asimov_cron.err",
-          "log": f"asimov_cron.log",
-          "request_cpus": "1",
-          "cron_minute": "*/15",
-          "getenv": "true",
-          "batch_name": f"asimov/monitor/{ledger.data['project']['name']}",
-          "request_memory": "8192MB",
-          "request_disk": "8192MB",
+        "executable": shutil.which("asimov"),
+        "arguments": "monitor --chain",
+        "accounting_group": config.get("pipelines", "accounting"),
+        "output": "asimov_cron.out",
+        "on_exit_remove": "false",
+        "error": "asimov_cron.err",
+        "log": "asimov_cron.log",
+        "request_cpus": "1",
+        "cron_minute": "*/15",
+        "getenv": "true",
+        "batch_name": f"asimov/monitor/{ledger.data['project']['name']}",
+        "request_memory": "8192MB",
+        "request_disk": "8192MB",
     }
     cluster = condor.submit_job(submit_description)
-    ledger.data['cronjob'] = cluster
+    ledger.data["cronjob"] = cluster
     ledger.save()
     click.secho(f"  \t  ● Asimov is running ({cluster})", fg="green")
-    
+
+
 @click.option("--dry-run", "-n", "dry_run", is_flag=True)
 @click.command()
 def stop(dry_run):
     """Set up a cron job on condor to monitor the project."""
-    cluster = ledger.data['cronjob']
+    cluster = ledger.data["cronjob"]
     condor.delete_job(cluster)
-    click.secho(f"  \t  ● Asimov has been stopped", fg="red")
-    
+    click.secho("  \t  ● Asimov has been stopped", fg="red")
+
+
 @click.argument("event", default=None, required=False)
 @click.option(
     "--update",

@@ -3,6 +3,7 @@
 import configparser
 import glob
 import os
+import pathlib
 import re
 import subprocess
 from shutil import copyfile, copytree
@@ -88,8 +89,6 @@ class BayesWave(Pipeline):
             with open("gpstime.txt", "w") as f:
                 f.write(str(gps_time))
                 gps_file = os.path.join("gpstime.txt")
-
-        
 
         if self.production.event.repository:
             ini = self.production.get_configuration()
