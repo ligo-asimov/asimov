@@ -124,10 +124,10 @@ class Bilby(Pipeline):
             priors = update(priors, self.production.meta["priors"])
 
             priors = {}
-            priors = update(priors, self.production.event.ledger.data['priors'])
-            priors = update(priors, self.production.event.meta['priors'])
-            priors = update(priors, self.production.meta['priors'])
-            
+            priors = update(priors, self.production.event.ledger.data["priors"])
+            priors = update(priors, self.production.event.meta["priors"])
+            priors = update(priors, self.production.meta["priors"])
+
             liq = Liquid(template)
             rendered = liq.render(priors=priors, config=config)
 
@@ -430,7 +430,6 @@ class Bilby(Pipeline):
 
     def html(self):
         """Return the HTML representation of this pipeline."""
-        pages_dir = os.path.join(self.production.event.name, self.production.name)
         out = ""
         out += """<div class="asimov-pipeline bilby">"""
         out += """<ul>"""
