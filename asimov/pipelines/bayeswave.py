@@ -124,8 +124,6 @@ class BayesWave(Pipeline):
             )
             self.production.rundir = rundir
 
-        pathlib.Path(rundir).mkdir(parents=True, exist_ok=False)
-
         gps_time = self.production.get_meta("event time")
 
         pipe_cmd = os.path.join(
