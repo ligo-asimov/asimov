@@ -213,8 +213,11 @@ class BayesWave(Pipeline):
             with open(sub_file, "r") as f_handle:
                 original = f_handle.read()
             with open(sub_file, "w") as f_handle:
+                print(subfile)
+                print("Adding disk request")
                 f_handle.write(f"request_disk = {64000}" + original)
-
+        
+                
     def submit_dag(self, dryrun=False):
         """
         Submit a DAG file to the condor cluster.
