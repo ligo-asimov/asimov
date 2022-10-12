@@ -10,7 +10,6 @@ from asimov import current_ledger as ledger
 from asimov import logger
 from asimov.event import DescriptionException
 from asimov.pipeline import PipelineException
-from asimov.pipelines import known_pipelines
 
 
 @click.group(chain=True)
