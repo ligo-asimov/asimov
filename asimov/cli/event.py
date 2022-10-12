@@ -13,7 +13,7 @@ from gwdatafind import find_urls
 
 from asimov import config
 from asimov import current_ledger as ledger
-from asimov.cli import find_calibrations
+from asimov.utils import find_calibrations
 from asimov.event import DescriptionException, Event
 from asimov.utils import update
 
