@@ -39,6 +39,7 @@ def build(event, dryrun):
     Create the run configuration files for a given event for jobs which are ready to run.
     If no event is specified then all of the events will be processed.
     """
+    print(ledger.location)
     for event in ledger.get_event(event):
         click.echo(f"● Working on {event.name}")
         ready_productions = event.get_all_latest()
@@ -53,7 +54,7 @@ def build(event, dryrun):
                 "cancelled",
                 "stopped",
             }:
-                continue
+                continue  # I think this test might be unused
             try:
                 _ = production.get_configuration()
             except ValueError:
@@ -142,17 +143,19 @@ def submit(event, update, dryrun):
             }:
                 continue
             if production.status.lower() == "restart":
-                if production.pipeline.lower() in known_pipelines:
-                    pipe = known_pipelines[production.pipeline.lower()](
-                        production, "C01_offline"
-                    )
+                pipe = production.pipeline
+                try:
                     pipe.clean(dryrun=dryrun)
-                    pipe.submit_dag(dryrun=dryrun)
+                except PipelineException:
+                    logger.error("The pipeline failed to clean up after itself.")
+                pipe.submit_dag(dryrun=dryrun)
+                click.echo(
+                    click.style("●", fg="green")
+                    + f" Resubmitted {production.event.name}/{production.name}"
+                )
+                production.status = "running"
             else:
-                # if production.pipeline.lower() in known_pipelines:
-                pipe = (
-                    production.pipeline
-                )  # known_pipelines[production.pipeline.lower()](production, "C01_offline")
+                pipe = production.pipeline
                 try:
                     pipe.build_dag(dryrun=dryrun)
                 except PipelineException:

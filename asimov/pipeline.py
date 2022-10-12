@@ -314,7 +314,7 @@ class Pipeline:
             time.sleep(20)
             self.production.meta.pop("job id")
 
-    def clean(self):
+    def clean(self, dryrun=False):
         """
         Remove all of the artefacts from a job from the working directory.
         """
