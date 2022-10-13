@@ -79,7 +79,7 @@ class Bilby(Pipeline):
                     template = os.path.join(
                         config.get("bilby", "priors"), template_filename
                     )
-                except configparser.NoOptionError:
+                except (configparser.NoOptionError, configparser.NoSectionError):
                     from pkg_resources import resource_filename
 
                     template = resource_filename(
