@@ -78,7 +78,6 @@ class TestBuild(unittest.TestCase):
             runner = CliRunner()
 
             result = runner.invoke(manage.manage, ['build', '--dryrun'])
-            
             for event in EVENTS:
                     self.assertTrue(f"Working on {event}" in result.output)
                     self.assertTrue(f"Will create Prod0" in result.output)
@@ -152,7 +151,7 @@ class TestSubmit(unittest.TestCase):
                 self.assertTrue(os.path.exists(os.path.join(self.cwd, "tests", "tmp", "project", "checkouts", event, "C01_offline", "Prod0.ini")))
                     
 
-    def test_build_dryruns(self):
+    def test_build_submit_dryruns(self):
         """Check that multiple events can be built at once"""
         with patch("asimov.current_ledger", new=YAMLLedger("ledger.yml")):
             reload(asimov)
@@ -160,10 +159,9 @@ class TestSubmit(unittest.TestCase):
             runner = CliRunner()
 
             result = runner.invoke(manage.manage, ['build', 'submit', '--dryrun'])
-            
             for event in EVENTS:
-                    self.assertTrue(f"Working on {event}" in result.output)
-                    self.assertTrue(f"Submitted" in result.output)
+                    output = """/bayeswave_pipe --trigger-time=1126259462.391 -r working/GW150914_095045/Prod0"""
+                    self.assertTrue(output in result.output)
 
     def test_submit_reset(self):
         """Check that an event analysis can be reset"""
