@@ -53,6 +53,10 @@ class Bilby(Pipeline):
             self.logger.info("No results directory found")
             return False
 
+    def before_submit(self):
+        """Pre-submit hook."""
+        self._determine_prior()
+
     def _determine_prior(self):
         """
         Determine the correct choice of prior file for this production.
