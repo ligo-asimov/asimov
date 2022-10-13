@@ -52,14 +52,18 @@ class Bilby(Pipeline):
 
     def before_submit(self):
         """Pre-submit hook."""
-        self._determine_prior()
+        pass
 
     def _determine_prior(self):
         """
         Determine the correct choice of prior file for this production.
         """
 
+        self.logger.info("[bilby] Determining the prior file for this production")
+
         if "prior file" in self.production.meta:
+            self.logger.info("[bilby] A prior file has already been specified.")
+            self.logger.info(f"[bilby] {self.production.meta['prior file']}")
             return self.production.meta["prior file"]
         else:
             template = None
@@ -75,6 +79,7 @@ class Bilby(Pipeline):
 
             if template is None:
                 template_filename = f"{event_type}.prior.template"
+                self.logger.info(f"[bilby] Constructing a prior using {event_type}.prior.template.")
                 try:
                     template = os.path.join(
                         config.get("bilby", "priors"), template_filename
@@ -86,9 +91,6 @@ class Bilby(Pipeline):
                         "asimov", f"priors/{template_filename}"
                     )
 
-            # with open(template, "r") as old_prior:
-            #    prior_string = old_prior.read().format(**prior_parameters)
-
             priors = {}
             priors = update(priors, self.production.event.ledger.data["priors"])
             priors = update(priors, self.production.event.meta["priors"])
@@ -99,6 +101,7 @@ class Bilby(Pipeline):
 
             prior_name = f"{self.production.name}.prior"
             prior_file = os.path.join(os.getcwd(), prior_name)
+            self.logger.info(f"[bilby] Saving the new prior file as {prior_file}")
             with open(prior_file, "w") as new_prior:
                 new_prior.write(rendered)
 
@@ -148,6 +151,8 @@ class Bilby(Pipeline):
 
         self.logger.info(f"[bilby] Working in {cwd}")
 
+        self._determine_prior()  # Build the prior file
+
         if self.production.event.repository:
             ini = self.production.event.repository.find_prods(
                 self.production.name, self.category
@@ -192,7 +197,7 @@ class Bilby(Pipeline):
             out, err = pipe.communicate()
             self.logger.info(out)
             self.logger.error(err)
-            # os.chdir(cwd)
+
             if err or "DAG generation complete, to submit jobs" not in str(out):
                 self.production.status = "stuck"
                 if hasattr(self.production.event, "issue_object"):
@@ -244,9 +249,9 @@ class Bilby(Pipeline):
         This overloads the default submission routine, as bilby seems to store
         its DAG files in a different location
         """
-        # os.chdir(self.production.event.meta['working directory'])
-        # os.chdir(os.path.join(self.production.event.repository.directory,
-        #                      self.category))
+
+        cwd = os.getcwd()
+        self.logger.info(f"[bilby] Working in {cwd}")
 
         self.before_submit()
 
