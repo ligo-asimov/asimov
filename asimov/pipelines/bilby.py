@@ -185,6 +185,8 @@ class Bilby(Pipeline):
 
         self._determine_prior()  # Build the prior file
 
+        self._determine_prior()  # Build the prior file
+
         if self.production.event.repository:
             ini = self.production.event.repository.find_prods(
                 self.production.name, self.category
