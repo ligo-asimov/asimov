@@ -261,12 +261,13 @@ class BayeswaveTests(unittest.TestCase):
         pipeline = "bayeswave"
         apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
         apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{pipeline}.yaml", event=event, ledger=self.ledger)
-        
         f = io.StringIO()
         with contextlib.redirect_stdout(f):
             production = self.ledger.get_event(event)[0].productions[0]
             with set_directory(os.path.join("checkouts", event, config.get("general", "calibration_directory"))):
                 production.make_config(f"{production.name}.ini")
+            # We need to make the workdir as this ought to be done by bayeswave_pipe
+            os.makedirs(os.path.join("working", event, production.name))
 
             mock_popen.returncode=0
             mock_popen.return_value.communicate.return_value=(b"Blah blah blah To submit: just run this", b"Lots of stuff on stderr")
@@ -301,6 +302,8 @@ class BayeswaveTests(unittest.TestCase):
                 production.make_config(f"{production.name}.ini")
             production.pipeline.build_dag(dryrun=True)
             self.assertTrue("bayeswave_pipe" in f.getvalue())
+        # We need to make the workdir as this ought to be done by bayeswave_pipe
+        os.makedirs(os.path.join("working", event, production.name))
         with set_directory(os.path.join(config.get("general", "rundir_default"), event, production.name)):
             with open("bayeswave_post.sub", "w") as submit_file:
                 submit_file.write("This is some test text and is just garbage")
