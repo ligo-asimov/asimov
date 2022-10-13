@@ -159,6 +159,7 @@ def submit(event, update, dryrun):
                     )
                 continue
             if production.status.lower() == "restart":
+                print("RESTARTING")
                 pipe = production.pipeline
                 try:
                     pipe.clean(dryrun=dryrun)
