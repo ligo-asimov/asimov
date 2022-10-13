@@ -212,7 +212,6 @@ class BayesWave(Pipeline):
             with open(sub_file, "r") as f_handle:
                 original = f_handle.read()
             with open(sub_file, "w") as f_handle:
-                print(f"Adding disk request to {sub_file}")
                 f_handle.write(f"request_disk = {64000}\n" + original)
 
     def submit_dag(self, dryrun=False):
