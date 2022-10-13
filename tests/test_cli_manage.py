@@ -184,7 +184,6 @@ status: restart
             runner = CliRunner()
             
             result = runner.invoke(manage.manage, ['submit', '--dryrun'])
-            
             self.assertTrue(f"Resubmitted {event}/Prod8" in result.output)
 
     @unittest.skip("I can't get the mocking to work properly.")
