@@ -5,6 +5,7 @@ Trigger handling code.
 import glob
 import os
 from copy import deepcopy
+import configparser
 
 import networkx as nx
 import yaml
@@ -921,7 +922,7 @@ class Production:
             raise ValueError("Could not open the ini file")
         except configparser.MissingSectionHeaderError:
             raise ValueError("This isn't a valid ini file")
-
+        
         return ini
 
     @classmethod
