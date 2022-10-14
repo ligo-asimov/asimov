@@ -54,17 +54,17 @@ However, under normal circumstances theese won't be accessible via the web, whic
 
 The location of the pages can be changed in the configuration file for the project, which is called ``asimov.conf``.
 The value
-
 ::
    [general]
    webroot = pages/
 
+
 Can be changed to point instead to a directory which is served by a webserver.
 For example, on an LDG cluster you can set
-
 ::
    [general]
    webroot = /home/albert.einstein/LVC/projects/my-asimov-project
+
 
 In order to produce a summary page visible at
 ``https://ldas-jobs.ligo.caltech.edu/~albert.einstein/LVC/projects/my-asimov-project``
