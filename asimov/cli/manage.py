@@ -38,7 +38,6 @@ def build(event, dryrun):
     Create the run configuration files for a given event for jobs which are ready to run.
     If no event is specified then all of the events will be processed.
     """
-    print(ledger.location)
     for event in ledger.get_event(event):
         click.echo(f"● Working on {event.name}")
         ready_productions = event.get_all_latest()
@@ -53,6 +52,11 @@ def build(event, dryrun):
                 "cancelled",
                 "stopped",
             }:
+                if dryrun:
+                    click.echo(
+                        click.style("●", fg="yellow")
+                        + f" {production.name} is marked as {production.status.lower()} so no action will be performed"
+                    )
                 continue  # I think this test might be unused
             try:
                 _ = production.get_configuration()
@@ -142,9 +146,13 @@ def submit(event, update, dryrun):
                 "cancelled",
                 "stopped",
             }:
+                if dryrun:
+                    click.echo(
+                        click.style("●", fg="yellow")
+                        + f" {production.name} is marked as {production.status.lower()} so no action will be performed"
+                    )
                 continue
             if production.status.lower() == "restart":
-                print("RESTARTING")
                 pipe = production.pipeline
                 try:
                     pipe.clean(dryrun=dryrun)
