@@ -72,7 +72,6 @@ You can also set the locations of these directories when creating the project us
 
 		    $ asimov init --results /home/albert.einstein/results
 
-    if your results directory shoould be located in ``/home/albert.einstein/results``, for example.
     It can also be changed in the configuration file, ``asimov.conf`` in the root directory of the project by editing the value of ``[storage]/results_store``
 
     .. code-block:: ini
