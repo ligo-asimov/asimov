@@ -162,7 +162,9 @@ def status(event):
     for event in current_ledger.get_event(event):
         click.secho(f"{event.name:30}", bold=True)
         if len(event.productions) > 0:
-            click.secho("\tProductions", bold=True)
+            click.secho("\tAnalyses", bold=True)
+            if len(event.productions) == 0:
+                click.echo("\t<NONE>")
             for production in event.productions:
                 click.echo(
                     f"\t- {production.name} "
@@ -171,10 +173,10 @@ def status(event):
                     + click.style(f"{production.status}")
                 )
         if len(event.get_all_latest()) > 0:
-            click.secho("\tProductions waiting: ", bold=True, nl=False)
+            click.secho("\tAnalyses waiting: ", bold=True,)
             waiting = event.get_all_latest()
             for awaiting in waiting:
-                click.echo(f"{awaiting.name} ", nl=False)
+                click.echo(f"{awaiting.name} ",)
             click.echo("")
 
 

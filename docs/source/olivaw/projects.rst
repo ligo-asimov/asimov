@@ -49,6 +49,35 @@ Asimov will create a number of new directories when it's creating a project.
 ``pages``
     This directory is used to store html-format output from both asimov and the pipelines.
 
+Customising a project
+---------------------
+
+Sometimes it can be useful to change the default settings for a project.
+For example, you may want to move the ``pages`` directory to be located somewhere that is served by a web-server.
+The configuration of the project is handled by the ``asimov.conf`` file, and by editing the configuration values in this file you can change asimov's default behaviour.
+
+You can also set the locations of these directories when creating the project using ``asimov init``.
+
+``results``
+    The results directory can be specified when creating the project using the ``--results`` option on the ``asimov init`` command, for example
+
+    .. code-block:: console
+
+		    $ asimov init --results /home/albert.einstein/results
+
+    It can also be changed in the configuration file, ``asimov.conf`` in the root directory of the project by editing the value of ``[storage]/results_store``
+
+    .. code-block:: ini
+
+		    [storage]
+		    results_store = /home/albert.einstein/results
+
+    .. warning:: Results stores
+
+		 In order to prevent results becoming corrupted or overwritten, asimov enforces a specific layout on the results store directory, and it will expect this to be present. If you change the location of the results store after creating the project be sure to either copy the results directory from the current project to the new location first, or ensure that the new location is set up as a results store.
+		 For more information about doing this, see the :ref:`storage` guide.
+
+    
 Cloning projects
 ----------------
 
