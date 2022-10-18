@@ -45,6 +45,8 @@ extensions = [
     'sphinx-jsonschema',
     'sphinx_multiversion'
 ]
+
+html_logo = "textmark.png"
 autodoc_mock_imports = ["htcondor", "git"]
 templates_path = ['_templates']
 language = 'en'
