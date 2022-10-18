@@ -41,7 +41,7 @@ If the pipeline supports it, it is also possible to access diagnostic plots and 
 
 An example of a summary page, for an event with a completed Bayeswave event but a "stuck" bilby event is shown in this screenshot:
 
-.. figure:: screenshots/report-stuck.png
+.. figure:: ../screenshots/report-stuck.png
    :scale: 75%
    :alt: A screenshot of an asimov summary page
 
