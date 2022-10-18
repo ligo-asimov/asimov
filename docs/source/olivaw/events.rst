@@ -6,6 +6,11 @@ Once you've created an asimov project you'll need to add some gravitational wave
 
 You can do this completely manually, or you can retrieve a pre-existing event from LIGO's event database, GraceDB.
 
+Creating an event from a YAML file
+----------------------------------
+
+.. todo:: Add instructions about using YAML files and the ``asimov apply`` command.
+
 Creating an event
 -----------------
 
