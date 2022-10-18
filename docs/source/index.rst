@@ -1,18 +1,57 @@
-Asimov : The PE Automator and Manager
-=====================================
+.. raw:: html
+	 
+	 <div class="px-4 py-5 my-5 text-center">
+	 <h1 class="display-5 fw-bold">
+	 Manage and automate analyses with <code>asimov</code>.
+	 </h1>
+	 <p class="lead mb-4">
+	 A powerful and extensible automation framework for scientific analysis workflows.
+	 </p>
+	 </div>
 
-`Asimov` is a python package to help with setting-up, automating, and monitoring parameter estimation workflows for gravitational wave signals.
+
+.. raw:: html
+
+	 <div class="d-flex flex-column flex-lg-row align-items-md-stretch justify-content-md-center gap-3 mb-4">
+	 <div class="d-inline-block v-align-middle fs-5">
+	 <pre>$ pip install asimov</pre>
+	 </div>
+	 <a class="btn btn-lg btn-primary d-flex align-items-center justify-content-center fw-semibold"
+	    href="getting-started.html"
+	 >
+	 <i class="bi bi-book"></i><span>  </span><span style="padding-left: 1rem;">Documentation</span>
+	 </a>
+	 </div>
+	 
+`Asimov` is a python package to help with setting-up, automating, and monitoring scientific data analysis.
+It is designed to make organising a scientific project, simplifying your workflow, and making your analysis easier to reproduce.
 
 Asimov makes setting-up and running parameter estimation jobs easier.
 It can generate configuration files for several parameter estimation pipelines, and handle submitting these to a cluster.
 Whether you're setting-up a preliminary analysis for a single gravitational wave event, or analysing hundreds of events for a catalog, Asimov can help.
 
-Features
---------
+.. raw:: html
 
-Job monitoring and management
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	 <div class="row g-4 py-5 row-cols-1 row-cols-lg-2">
+
+.. raw:: html
+
+	 <div class="feature col">
+	 <i class="bi bi-bar-chart"></i>
+
+Scientific analysis management
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Asimov is able to interact with high throughput job management tools, and can submit jobs to clusters, monitor them for problems, and initiate post-processing tasks.
+Once your analysis is completed asimov can manage the data products and results, and prepare them for publication and distribution.
+
+.. raw:: html
+
+	 </div>
+
+.. raw:: html
+
+	 <div class="feature col">
+	 <i class="bi bi-cpu-fill"></i>
 
 Uniform pipeline interface
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -20,89 +59,119 @@ Uniform pipeline interface
 Asimov provides an API layer which allows a single configuration to be deployed to numerous different analysis pipelines.
 Current gravitational wave pipelines which are supported are ``lalinference``, ``bayeswave``, ``RIFT``, and ``bilby``.
 
+.. raw:: html
+	 
+	 </div>
+	 </div>
+
+.. raw:: html
+
+	 <div class="row g-4 py-5 row-cols-1 row-cols-lg-2">
+	 
+.. raw:: html
+
+	 <div class="feature col">
+	 <i class="bi bi-briefcase"></i>
+
 Centralised configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Asimov records all ongoing, completed, and scheduled analyses, allowing jobs, configurations, and results to be found easily.
+
+.. raw:: html
+	 
+	 </div>
+
+
+.. raw:: html
+
+	 <div class="feature col">
+	 <i class="bi bi-briefcase"></i>
+
 
 Reporting overview
 ~~~~~~~~~~~~~~~~~~
 
 Asimov can provide both machine-readible and human-friendly reports of all jobs it is monitoring, while collating relevant log files and outputs.
 
+.. raw:: html
+	 
+	 </div>
+	 </div>
+
 Quick installation
 ------------------
 
 Asimov is available on ``pypi`` and can be installed via ``pip install asimov``.
-You can find more details about installing ``asimov`` in the :ref:`installationguide`.
 
 
 
-Tutorials & Introductions
--------------------------
+..
+   Tutorials
+   ---------
 
-Asimov is designed to be capable of running many different kinds of analyses, and to be flexible and extendable.
-However, it can be a little overwhelming to jump right in the deep end, so we've put together some tutorials which show how to use the core functionality of the package, including project management and analysis creation.
+   .. toctree::
+      :maxdepth: 2
+      :caption: Tutorials
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Tutorials
-
-   starting-project
-   build-process
+      starting-project
+      starting-analysis
 
 Users' guide
 ------------
 
-The full users' guide for asimov covers everything you might need in the day-to-day use of asimov, but doesn't cover details about adding new pipelines or dealing in detail with the various databases asimov uses to manage its analyses.
-
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Users' guide
 
+   getting-started
    installation
    olivaw/projects
    olivaw/events
    olivaw/productions
    olivaw/running
+   olivaw/monitoring
    olivaw/reporting
+   storage
    olivaw/review
+   
+.. toctree::
+   :maxdepth: 1
+   :caption: Pipeline Guides
 
+   pipelines
+   pipelines/lalinference
+   pipelines/bilby
+   pipelines/rift
+   pipelines/bayeswave
+   
 Advanced topics
 ---------------
 
-These sections of the documentation cover the technical designs of various aspects of the software, including how various interfaces with external packkages work, and the specifications for data storage.
-
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Advanced topics
 	     
    configuration
-   yamlformat
-   gitlab-interface
    test-interface
-   templates
-   reports
+   clusters
 
 Developers' Guide
 -----------------
 
-We always welcome new contributions to the asimov package from both members of the gravitational wave community, and the general public.
-Please familiarise yourself with the contributors' guidelines for more information.
-
 .. toctree::
-   :maxdepth: 1
    :caption: Development Guide
 
-   Contributors' Guide <contributing>
-   Contributors' Code of Conduct <code-of-conduct>
-   building-docs
+   contributing.rst
+   code-of-conduct.rst
+
+   asimov-repository
    
+   ledger   
+   pipelines-dev
    
 Module documentation
 --------------------
-
-This section of the guide contains the code-level documentation for asimov, and may be useful for developers, but you shouldn't normally need it as a normal user of asimov!
 
 .. toctree::
    :maxdepth: 1
@@ -111,7 +180,6 @@ This section of the guide contains the code-level documentation for asimov, and 
    api/git
    state
    pipelines
-   storage
    config
 	     
 Indices and tables
@@ -120,3 +188,4 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+* :ref:`routingtable`

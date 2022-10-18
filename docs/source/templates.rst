@@ -15,17 +15,7 @@ This should be stored in the ``templating>directory`` variable, e.g.
    [templating]
    directory = config-templates
 
-Specifiying a specific template
--------------------------------
 
-In order to tell asimov to use your new template you'll need to add the `template` entry to whichever production you want to use it.
-For example to use a template called ``pbilby.ini`` in a bilby production instead of the pipeline default template we would use a ledger entry which looked something like this. ::
-
-  - ProdP1:
-      pipeline: bilby
-      approximant: IMRPhenomXPHM
-      template: pbilby
-   
 Writing templates
 -----------------
 
@@ -33,8 +23,7 @@ Templating in ``asimov`` is handled by the ``liquidpy`` (https://liquidpy.readth
 
 The template has access to all of the metadata for a given production, as specified in its YAML block.
 
-..
-   The template should be saved in the templates directory with the name ``<PIPELINE>.ini``, with ``<PIPELINE>`` replaced with the name of the pipeline, e.g. ``lalinference.ini``.
+The template should be saved in the templates directory with the name ``<PIPELINE>.ini``, with ``<PIPELINE>`` replaced with the name of the pipeline, e.g. ``lalinference.ini``.
 
 
 Example template

@@ -1,5 +1,5 @@
-Working with analysis productions
-=================================
+Working with analyses
+=====================
 
 Once we have a project and at least one event we can start to add analyses.
 A single analysis with asimov is called a "production".
@@ -8,6 +8,11 @@ Asimov interacts with a number of different analysis pipelines in order to produ
 
 In order to make starting an analysis as easy as possible asimov maps its standard configuration values to all of its supported pipelines.
 This means that setting-up equivalent jobs with two different pipelines requires only a couple of commands.
+
+Adding an analysis from a YAML file
+-----------------------------------
+
+.. todo:: Add instructions on using YAML files and the ``asimov apply`` command.
 
 Adding a new production
 -----------------------
