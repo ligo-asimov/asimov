@@ -1,4 +1,4 @@
-image: python:3.7
+image: python:3.9
 
 stages:
   - test
@@ -73,7 +73,7 @@ pages:
   - pip install -r docs-requirements.txt
   - pip install -r requirements.txt
   - pip install .
-  - cd docs && make multi #sphinx-multiversion docs/source public
+  - sphinx-multiversion docs/source public
   - echo "<!DOCTYPE html><html><head><title>Redirecting to master branch</title><meta charset=\"utf-8\"><meta http-equiv=\"refresh\" content=\"0; url=./master/index.html\">    <link rel=\"canonical\" href=\"https://asimov.docs.ligo.org/asimov/master/index.html\"></head></html>" > public/index.html 
   artifacts:
     paths:
