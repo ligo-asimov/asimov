@@ -42,7 +42,7 @@ def datetime_from_epoch(dt, tzinfo=UTC):
 UTC = tz.tzutc()
 
 logger = logger.getChild("condor")
-logger.setLevel(logging.INFO)
+logger.setLevel(LOGGER_LEVEL)
 
 
 def datetime_from_epoch(dt, tzinfo=UTC):
