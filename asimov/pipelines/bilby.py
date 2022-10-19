@@ -14,9 +14,9 @@ from liquid import Liquid
 from asimov.utils import update
 
 from .. import config
-from ..pipeline import Pipeline, PipelineException, PipelineLogger
-from .pesummary import PESummary
-from asimov.utils import set_directory
+from ..pipeline import Pipeline, PipelineException, PipelineLogger, PESummaryPipeline
+
+import logging
 
 class Bilby(Pipeline):
     """
