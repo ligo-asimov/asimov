@@ -47,20 +47,42 @@ config_locations.reverse()
 config.read([conffile for conffile in config_locations])
 
 
+logging.getLogger("werkzeug").setLevel(logging.WARNING)
+logging.getLogger("MARKDOWN").setLevel(logging.WARNING)
+logging.getLogger("matplotlib").setLevel(logging.WARNING)
+logging.getLogger("git").setLevel(logging.WARNING)
+
 
 logger_name = "asimov"
 logger = logging.getLogger(logger_name)
 
+logger_levels = {
+    "debug": logging.DEBUG,
+    "info": logging.INFO,
+    "warning": logging.WARNING,
+    "error": logging.ERROR,
+    "update": 9,
+}
+try:
+    LOGGER_LEVEL = logger_levels[config.get("logging", "logging level")]
+except configparser.NoOptionError:
+    LOGGER_LEVEL = logging.INFO
+
+try:
+    PRINT_LEVEL = logger_levels[config.get("logging", "print level")]
+except configparser.NoOptionError:
+    PRINT_LEVEL = logging.ERROR
+    
 ch = logging.StreamHandler()
 print_formatter = logging.Formatter('[%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S")
 ch.setFormatter(print_formatter)
-ch.setLevel(logging.ERROR)
+ch.setLevel(PRINT_LEVEL)
 
 logfile = "asimov.log"
 fh = logging.FileHandler(logfile)
 formatter = logging.Formatter('%(asctime)s [%(name)s][%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S")
 fh.setFormatter(formatter)
-# fh.setLevel()
+fh.setLevel(LOGGER_LEVEL)
 
 logger.addHandler(ch)
 logger.addHandler(fh)

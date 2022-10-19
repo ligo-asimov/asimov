@@ -14,7 +14,7 @@ import yaml
 from ligo.gracedb.rest import GraceDb, HTTPError
 from liquid import Liquid
 
-from asimov import config, logger
+from asimov import config, logger, LOGGER_LEVEL
 from asimov.pipelines import known_pipelines
 from asimov.storage import Store
 from asimov.utils import update
@@ -92,10 +92,10 @@ class Event:
         self.name = name
 
         self.logger = logger.getChild("event").getChild(f"{self.name}")
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(LOGGER_LEVEL)
 
-        pathlib.Path(os.path.join(config.get("general", "logs"), name)).mkdir(parents=True, exist_ok=True)
-        logfile = os.path.join(config.get("general", "logs"), name, "asimov.log")
+        pathlib.Path(os.path.join(config.get("logging", "directory"), name)).mkdir(parents=True, exist_ok=True)
+        logfile = os.path.join(config.get("logging", "directory"), name, "asimov.log")
         
         fh = logging.FileHandler(logfile)
         formatter = logging.Formatter('%(asctime)s - %(message)s', "%Y-%m-%d %H:%M:%S")
@@ -500,6 +500,10 @@ class Event:
         ]
         return set(ends)  # only want to return one version of each production!
 
+    def build_report(self):
+        for production in self.productions:
+            production.build_report()
+    
     def html(self):
         card = f"""
         <div class="card event-data" id="card-{self.name}">
@@ -545,11 +549,11 @@ class Production:
         self.event = event if isinstance(event, Event) else event[0]
         self.name = name
 
-        pathlib.Path(os.path.join(config.get("general", "logs"), self.event.name, name)).mkdir(parents=True, exist_ok=True)
-        logfile = os.path.join(config.get("general", "logs"), self.event.name, name, "asimov.log")
+        pathlib.Path(os.path.join(config.get("logging", "directory"), self.event.name, name)).mkdir(parents=True, exist_ok=True)
+        logfile = os.path.join(config.get("logging", "directory"), self.event.name, name, "asimov.log")
         
         self.logger = logger.getChild("analysis").getChild(f"{self.event.name}/{self.name}")
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(LOGGER_LEVEL)
         
         fh = logging.FileHandler(logfile)
         formatter = logging.Formatter('%(asctime)s - %(message)s', "%Y-%m-%d %H:%M:%S")
@@ -1064,6 +1068,10 @@ class Production:
             self.logger.info(f"Saved as {filename}")
         else:
             print(rendered)
+
+    def build_report(self):
+        if self.pipeline:
+            self.pipeline.build_report()
             
     def html(self):
         """

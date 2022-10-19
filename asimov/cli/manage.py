@@ -9,6 +9,7 @@ import click
 
 from asimov import current_ledger as ledger
 import asimov
+from asimov import LOGGER_LEVEL
 from asimov.event import DescriptionException
 from asimov.pipeline import PipelineException
 
@@ -41,7 +42,7 @@ def build(event, dryrun):
     If no event is specified then all of the events will be processed.
     """
     logger = asimov.logger.getChild("cli").getChild("manage.build")
-    logger.setLevel(logging.INFO)
+    logger.setLevel(LOGGER_LEVEL)
     for event in ledger.get_event(event):
 
         click.echo(f"● Working on {event.name}")
@@ -132,7 +133,7 @@ def submit(event, update, dryrun):
     If no event is specified then all of the events will be processed.
     """
     logger = asimov.logger.getChild("cli").getChild("manage.submit")
-    logger.setLevel(logging.INFO)
+    logger.setLevel(LOGGER_LEVEL)
     for event in ledger.get_event(event):
         ready_productions = event.get_all_latest()
         for production in ready_productions:

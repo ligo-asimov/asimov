@@ -314,10 +314,16 @@ class BayesWave(Pipeline):
         Collect all of the log files which have been produced by this production and
         return their contents as a dictionary.
         """
+        messages = {}
+
+        logfile = os.path.join(config.get("logging", "directory"), self.production.event.name, self.production.name, "asimov.log")
+        with open(logfile, "r") as log_f:
+            message = log_f.read()
+            messages["production"] = message
+        
         logs = glob.glob(f"{self.production.rundir}/logs/*.err") + glob.glob(
             f"{self.production.rundir}/*.err"
         )
-        messages = {}
         for log in logs:
             with open(log, "r") as log_f:
                 message = log_f.read()

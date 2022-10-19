@@ -45,17 +45,24 @@ class Bilby(Pipeline):
         """
         Check for the production of the posterior file to signal that the job has completed.
         """
+        self.logger.info("Checking if the bilby job has completed")
         results_dir = glob.glob(f"{self.production.rundir}/result")
         if len(results_dir) > 0:  # dynesty_merge_result.json
-            if len(glob.glob(os.path.join(results_dir[0], "*merge*_result.*"))) > 0:
+            results_files = glob.glob(os.path.join(results_dir[0], "*merge*_result.*"))
+            self.logger.debug(f"results files {results_files}")
+            if len(results_files) > 0:
+                self.logger.info("Results files found, the job is finished.")
                 return True
             else:
+                self.logger.info("No results files found.")
                 return False
         else:
+            self.logger.info("No results directory found")
             return False
 
     def before_submit(self):
         """Pre-submit hook."""
+        self.logger.info("Running the before_submit hook")
         pass
 
     def _determine_prior(self):
@@ -204,26 +211,12 @@ class Bilby(Pipeline):
 
             if err or "DAG generation complete, to submit jobs" not in str(out):
                 self.production.status = "stuck"
-                if hasattr(self.production.event, "issue_object"):
-                    raise PipelineException(
-                        f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
-                        issue=self.production.event.issue_object,
-                        production=self.production.name,
-                    )
-                else:
-                    raise PipelineException(
-                        f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
-                        production=self.production.name,
-                    )
+                raise PipelineException(
+                    f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
+                    production=self.production.name,
+                )
             else:
-                if hasattr(self.production.event, "issue_object"):
-                    return PipelineLogger(
-                        message=out,
-                        issue=self.production.event.issue_object,
-                        production=self.production.name,
-                    )
-                else:
-                    return PipelineLogger(message=out, production=self.production.name)
+                return PipelineLogger(message=out, production=self.production.name)
 
     def submit_dag(self, dryrun=False):
         """
@@ -255,7 +248,7 @@ class Bilby(Pipeline):
         """
 
         cwd = os.getcwd()
-        self.logger.info(f"[bilby] Working in {cwd}")
+        self.logger.info(f"Working in {cwd}")
 
         self.before_submit()
 
@@ -282,22 +275,29 @@ class Bilby(Pipeline):
                     command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
                 )
 
+                self.logger.info(" ".join(command))
+                
                 stdout, stderr = dagman.communicate()
 
                 if "submitted to cluster" in str(stdout):
                     cluster = re.search(
                         r"submitted to cluster ([\d]+)", str(stdout)
                     ).groups()[0]
+                    self.logger.info(f"Submitted successfully. Running with job id {int(cluster)}")
                     self.production.status = "running"
                     self.production.job_id = int(cluster)
                     return cluster, PipelineLogger(stdout)
                 else:
+                    self.logger.error(f"Could not submit the job to the cluster")
+                    self.logger.info(stdout)
+                    self.logger.error(stderr)
+                    
                     raise PipelineException(
-                        f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
-                        issue=self.production.event.issue_object,
-                        production=self.production.name,
+                        f"The DAG file could not be submitted.",
                     )
+
         except FileNotFoundError as error:
+            self.logger.exception(error)
             raise PipelineException(
                 "It looks like condor isn't installed on this system.\n"
                 f"""I wanted to run {" ".join(command)}."""
@@ -319,9 +319,10 @@ class Bilby(Pipeline):
 
     def after_completion(self):
         self.logger.info(
-            "Job has completed. Running PE Summary.",
+            "Job has completed. Running postprocessing.",
         )
         cluster = self.run_pesummary()
+        self.logger.info(f"PESummary is running with job id {int(cluster)}")
         self.production.meta["job id"] = int(cluster)
         self.production.status = "processing"
         self.production.event.update_data()
@@ -400,7 +401,7 @@ class Bilby(Pipeline):
         out = ""
 
         return out
-
+    
     def resurrect(self):
         """
         Attempt to ressurrect a failed job.
