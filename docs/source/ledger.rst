@@ -183,7 +183,15 @@ Sampler settings
 
 Examples
 ~~~~~~~~
-   
+
+.. code-block:: yaml
+
+		scheduler:
+  		  accounting group: ligo.dev.o4.cbc.pe.bilby
+		  request cpus: 4
+
+
+
 Prior settings
 --------------
 
@@ -241,3 +249,30 @@ Examples
       phase:
 	type: Uniform
 	boundary: periodic
+
+Postprocessing settings
+-----------------------
+
+Examples
+~~~~~~~~
+
+.. code-block:: yaml
+
+
+		postprocessing:
+		  pesummary:
+		    accounting group: ligo.dev.o4.cbc.pe.lalinference
+		    cosmology: Planck15_lal
+		    evolve spins: forward
+		    multiprocess: 4
+		    redshift: exact
+		    regenerate posteriors:
+		    - redshift
+		    - mass_1_source
+		    - mass_2_source
+		    - chirp_mass_source
+		    - total_mass_source
+		    - final_mass_source
+		    - final_mass_source_non_evolved
+		    - radiated_energy
+		    skymap samples: 2000

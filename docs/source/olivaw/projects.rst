@@ -22,6 +22,11 @@ It is also possible to customise the project in a number of ways, including spec
 
 .. todo:: Add further information about customising project creation
 
+Adding default analysis settings
+--------------------------------
+
+.. todo:: Add documentation about default analysis settings.
+	  
 The structure of a project
 --------------------------
 
