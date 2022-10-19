@@ -1,4 +1,3 @@
-
 Creating and managing events
 ============================
 
@@ -9,10 +8,99 @@ You can do this completely manually, or you can retrieve a pre-existing event fr
 Creating an event from a YAML file
 ----------------------------------
 
-.. todo:: Add instructions about using YAML files and the ``asimov apply`` command.
+The simplest way to add an event which has been used in a previous analysis is by using an event yaml file.
+For events included in the published gravitational wave catalogue a curated set of these is available.
 
-Creating an event
------------------
+.. todo:: Link to the documentation for the curated event YAML files.
+
+Curated data files provide all of the settings required for a given gravitational event to be analysed, but do not include specifications for any specific analyses.
+This includes information about the appropriate sampling rate to use to analyse the job, any settings required to mitigate data quality concerns, as well as things like the time of the event and the appropriate detector data channels to use for the analysis.
+
+One of these YAML files can be added to a project with the ``asimov apply`` command, and files can either be added by specifying the URL to the file, in which case asimov will first download the file, or by providing a path to the file locally.
+
+For example, to add GW150914 you should run
+
+.. code-block:: console
+
+		$ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/events/gwtc-2-1/GW150914_095045.yaml
+
+A full list of all of the events available in this manner is available in the curated settings documentation.
+
+You can also write your own YAML file describing an event, and this can be more convenient that setting everything up using the command line interface, described later in this document, if there are lots of specific settings which are required for the analysis of the event, which need to override the defaults which have been added to the project.
+
+An event YAML file needs to specify settings in a specific format, which is described fully in the :ref:`ledger` documentation.
+The YAML file must also contain a ``kind: event`` pair so that asimov knows that the file describes an event.
+
+A very simple file might look something like this.
+
+.. code-block:: YAML
+
+		kind: event
+		name: MyEvent
+		data:
+		  channels:
+		    H1: H1:DCS-CALIB_STRAIN_CLEAN_SUB60HZ_C01
+		    L1: L1:DCS-CALIB_STRAIN_CLEAN_SUB60HZ_C01
+		    V1: V1:Hrec_hoft_16384Hz
+		  frame types:
+		    H1: H1_HOFT_CLEAN_SUB60HZ_C01
+		    L1: L1_HOFT_CLEAN_SUB60HZ_C01
+		    V1: V1Online
+		  segment length: 64
+		event time: 1258804321
+		interferometers:
+		- L1
+		- H1
+
+but many more settings can be added to it.
+
+Adding an event from GraceDB
+----------------------------
+		
+One of the major sources of data about gravitational wave events is `GraceDB`, a database of gravitational wave triggers which have been identified by one of many searches.
+
+GraceDB clusters these triggers into "superevents", and normally we will want to request data from one of these superevents in order to start an analysis with `asimov`.
+
+If you're interacting with an asimov project using the command line interface you can directly download information about a trigger and create an event in the project.
+
+If you want to pull information from non-public events you'll first need to ensure that you have a LIGO proxy set up.
+The easiest way to do this as a normal user is just to run `ligo_proxy_init`:
+
+.. code-block:: console
+   
+   $ ligo_proxy_init isaac.asimov
+
+and then provide your password to set up a proxy.
+If you're working with publically available triggers then you can skip this step, and asimov will gather all of the publically available data which it can.
+
+.. code-block:: console
+   
+   $ asimov event create --superevent S200316bj
+
+.. note::
+   
+   `GraceDB` will only provide a small amount of the total information which is needed to set up an analysis.
+   You'll need things like default data settings before you can start an analysis.
+
+
+Getting a set of events from `GraceDB`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sometimes it's helpful to be able to gather a large set of events from `GraceDB` according to some criteria.
+You can do this by specifying the search criterion on the command line, and all of the retrieved events will be created in the project.
+For example:
+
+.. code-block:: console
+		
+   $ asimov event create --search "label: PE_READY"
+
+will search `GraceDB` for all events marked as "PE READY" and will add them to the project.
+
+A complete description of the query language for `GraceDB` can be found in its documentation: https://gracedb.ligo.org/documentation/queries.html.
+
+
+Creating an event using the command line
+-----------------------------------------
 
 The simplest way to make a new event is manually (however you'll need to specify all of its details manually later).
 
@@ -20,62 +108,14 @@ For example, if we want to make an event, and call it "GW150914" we can run
 
 .. code-block:: console
 
-		$ olivaw event create GW150914
+		$ asimov event create GW150914
 
-The ledger file will then be updated to include the new event:
+.. warning::
 
-.. code-block:: yaml
+   Because this approach doesn't add all of the required configuration settings for a gravitational wave analysis we don't recommend this approach for setting up most analyses, unless they're using default settings applied across the entire project.
 
-		events:
-		- calibration: {}
-		  interferometers: []
-		  name: GW150914
-		  productions: []
-		  working directory: working/GW150914
-
-In most situations we'll want to pull some additional information about an event automatically.
-This can be done using asimov's integration with GraceDB, and all we need is either the ``GID`` of the preferred event, or the ``SID`` of the superevent.
-
-Let's try the GID approach first, because GW150914, for historical reasons, doesn't have a superevent.
-
-.. note::
-
-   You may need to use ``ligo-proxy-init`` to generate login credentials before running this command.
-
-.. code-block:: console
-
-		$ olivaw event create --gid G190047
-
-Then we can see that the ledger has been updated with the event information from the GraceDB server:
-
-.. code-block:: yaml
-
-		- calibration: {}
-		  event time: 1126259462.426435
-		  interferometers:
-		  - H1
-		  - L1
-		  name: GW150914
-		  productions: []
-		  working directory: working/GW150914
-
-
-Equivalently, if we have a superevent we can use the ``--superevent`` option, and the preferred event will be found automatically.
-
-.. code-block:: console
-
-		 $ olivaw event create GW190425 --superevent S190425z
-
-If this event has an external git repository for storing configurations you can tell asimov about it here as well, and it will be checked-out, and asimov will add configurations to it automatically.
-
-For example:
-
-.. code-block:: console
-
-		$ olivaw event create --gid G190047 --repository git@git.ligo.org/pe/O1/GW150914
-
-Adding configurations
----------------------
+Adding additional configuration information
+-------------------------------------------
 
 While it's possible to manually update the configuration for each event (e.g. data quality information, and prior information) these can also be imported from other locations.
 
@@ -86,6 +126,7 @@ As an example, suppose we have some default data to add to an event, and this is
 
 .. code-block:: yaml
 
+		kind: configuration
 		data:
 		  channels:
 		    H1: H1:DCH-CALIB_STRAIN_C02
@@ -101,11 +142,13 @@ As an example, suppose we have some default data to add to an event, and this is
 		    component: [1, 1000]
 		    q: [0.05, 1.0]
 
-In order to add these default data to an existing event we can use the ``olivaw event load`` command:
+.. todo:: Confirm that this works.
+		    
+In order to add these default data to an existing event we can use the ``asimov apply`` command:
 
 .. code-block:: console
 
-		$ olivaw event load GW170817 data.yaml
+		$ asimov apply -f data.yaml --event GW150914
 
 These will then be added to the event record in the ledger.
 
@@ -117,6 +160,9 @@ If we have a JSON file from the PEConfigurator we need to use the ``olivaw event
 
 Adding calibration evelopes
 ---------------------------
+
+.. warning:: This command is deprecated; when it is possible to find calibration envelopes automatically asimov will now do so when the event is created.
+	     This command will be removed soon.
 
 Many analyses will require access to calibration envelopes for the detectors.
 Asimov includes a tool for locating the appropriate envelopes for events.
@@ -143,6 +189,6 @@ If you need to add calibrations manually you can do that by specifying them as o
 Command documentation
 ---------------------
 .. click:: asimov.olivaw:olivaw
-   :prog: olivaw
+   :prog: asimov
    :commands: event
    :nested: full

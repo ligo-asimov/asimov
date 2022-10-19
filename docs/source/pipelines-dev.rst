@@ -53,6 +53,7 @@ These methods are required for the interface to function properly.
     For example, the Bayeswave interface returns a dictionary in the format
 
     ::
+       
        {"psds": {"L1": /path/to/L1/psd, "H1": /path/to/H1/psd}}
 
 ``Pipeline.collect_logs``
@@ -144,7 +145,7 @@ There are a number of different python packaging technologies, so we will provid
 ``setup.cfg``
 ~~~~~~~~~~~~~~
 
-.. code-block:: toml
+.. code-block:: ini
 
    [options]
    install_requires =
@@ -158,4 +159,19 @@ There are a number of different python packaging technologies, so we will provid
 
    [options.entry_points]
    asimov.pipelines =
-		    mypipeline = asimov:MyPipeline
+		    mypipeline = mypipeline.asimov:MyPipeline
+
+``setup.py``
+~~~~~~~~~~~~
+
+.. code-block:: python
+
+   import setuptools
+
+   setuptools.setup(
+      name = "MyPipeline",
+      ...,
+      entry_points = {
+        "asimov.pipelines": ["mypipeline = mypipeline.asimov:MyPipeline"]
+    },
+

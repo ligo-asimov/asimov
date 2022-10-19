@@ -1,3 +1,6 @@
+:page_template: homepage.html
+
+
 .. raw:: html
 	 
 	 <div class="px-4 py-5 my-5 text-center">
@@ -122,7 +125,7 @@ Users' guide
 
 .. toctree::
    :maxdepth: 2
-   :caption: Users' guide
+   :caption: 📚 Users' guide
 
    getting-started
    installation

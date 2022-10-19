@@ -55,6 +55,10 @@ html_theme = 'kentigern'
 
 todo_include_todos = True
 
+html_theme_options = {
+    "theme_navbar_title": "Manual",
+}
+
 # Multiversion
 smv_tag_whitelist = r'^v\d+\.\d+\.?\d*$'
 smv_branch_whitelist = r'^(master|review)$'
