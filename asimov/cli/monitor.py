@@ -3,6 +3,7 @@ import configparser
 import os
 import sys
 import click
+import logging
 
 from asimov import condor, config, logger, LOGGER_LEVEL
 from asimov import current_ledger as ledger
@@ -90,6 +91,7 @@ def start(dry_run):
     ledger.data["cronjob"] = cluster
     ledger.save()
     click.secho(f"  \t  ● Asimov is running ({cluster})", fg="green")
+    logger.info(f"Running asimov cronjob as  {cluster}")
 
 
 @click.option("--dry-run", "-n", "dry_run", is_flag=True)
@@ -99,6 +101,7 @@ def stop(dry_run):
     cluster = ledger.data["cronjob"]
     condor.delete_job(cluster)
     click.secho("  \t  ● Asimov has been stopped", fg="red")
+    logger.info(f"Stopped asimov cronjob {cluster}")
 
 
 @click.argument("event", default=None, required=False)
@@ -153,6 +156,8 @@ def monitor(ctx, event, update, dry_run, chain):
             for production in event.productions
             if production.status.lower() in ACTIVE_STATES
         ]
+        
+        
         for production in on_deck:
 
             logger.debug(f"Available analyses: {event}/{production.name}")
@@ -162,7 +167,7 @@ def monitor(ctx, event, update, dry_run, chain):
                 + click.style(f"{production.name}", bold=True)
                 + click.style(f"[{production.pipeline}]", fg="green")
             )
-
+            
             # Jobs marked as ready can just be ignored as they've not been stood-up
             if production.status.lower() == "ready":
                 click.secho(f"  \t  ● {production.status.lower()}", fg="green")
