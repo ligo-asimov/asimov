@@ -3,6 +3,7 @@ Olivaw management commands
 """
 import os
 import pathlib
+import logging
 
 import click
 
@@ -12,6 +13,7 @@ from asimov import condor
 from asimov import LOGGER_LEVEL
 from asimov.event import DescriptionException
 from asimov.pipeline import PipelineException
+
 
 
 @click.group(chain=True)

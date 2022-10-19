@@ -13,6 +13,7 @@ from asimov.utils import set_directory
 from .. import config
 from ..pipeline import Pipeline, PipelineException, PipelineLogger, PESummaryPipeline
 
+import logging
 
 class Bilby(Pipeline):
     """
