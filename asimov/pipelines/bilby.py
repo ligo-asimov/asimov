@@ -370,7 +370,7 @@ class Bilby(Pipeline):
             out += """</div>"""
 
         return out
-
+    
     def resurrect(self):
         """
         Attempt to ressurrect a failed job.
