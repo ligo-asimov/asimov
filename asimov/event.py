@@ -1227,10 +1227,6 @@ class Production:
         liq = Liquid(template_file)
         rendered = liq.render(production=self, config=config)
 
-        logger.info(
-            f"[{self.event.name}/{self.name}] configuration created using {template_file} as a template"
-        )
-
         if not dryrun:
             with open(filename, "w") as output_file:
                 output_file.write(rendered)
