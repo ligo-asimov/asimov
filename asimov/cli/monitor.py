@@ -3,6 +3,7 @@ import configparser
 import os
 import sys
 import click
+import logging
 
 from asimov import condor, config, logger, LOGGER_LEVEL
 from asimov import current_ledger as ledger
@@ -112,6 +113,8 @@ def monitor(ctx, event, update, dry_run, chain):
             for production in event.productions
             if production.status.lower() in ACTIVE_STATES
         ]
+        
+        
         for production in on_deck:
 
             logger.debug(f"Available analyses: {event}/{production.name}")
@@ -121,7 +124,7 @@ def monitor(ctx, event, update, dry_run, chain):
                 + click.style(f"{production.name}", bold=True)
                 + click.style(f"[{production.pipeline}]", fg="green")
             )
-
+            
             # Jobs marked as ready can just be ignored as they've not been stood-up
             if production.status.lower() == "ready":
                 click.secho(f"  \t  ● {production.status.lower()}", fg="green")

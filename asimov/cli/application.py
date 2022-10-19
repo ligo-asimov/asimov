@@ -6,6 +6,7 @@ Inspired by the kubectl apply approach from kubernetes.
 import click
 import requests
 import yaml
+import logging
 
 from asimov import LOGGER_LEVEL, logger
 import asimov.event

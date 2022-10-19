@@ -11,6 +11,7 @@ import datetime
 from dateutil import tz
 import htcondor
 import yaml
+import logging
 
 from asimov import config, logger, LOGGER_LEVEL
 
@@ -39,6 +40,9 @@ def datetime_from_epoch(dt, tzinfo=UTC):
     return datetime.datetime.utcfromtimestamp(dt).replace(tzinfo=tzinfo)
 
 UTC = tz.tzutc()
+
+logger = logger.getChild("condor")
+logger.setLevel(logging.INFO)
 
 
 def datetime_from_epoch(dt, tzinfo=UTC):
