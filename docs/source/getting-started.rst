@@ -147,6 +147,7 @@ You'll need to have asimov installed first; you can find information about doing
 6. **Monitoring your analyses**
    Once the job is running you'll want to check on it to see if it's finished (or if something's gone wrong).
    The simplest way to do this is with the ``asimov monitor`` command.
+   You'll need to run this in the main project directory, and not in one of its subdirectories.
 
    .. code-block:: console
 
