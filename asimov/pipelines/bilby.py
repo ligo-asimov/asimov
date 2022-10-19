@@ -16,6 +16,7 @@ from asimov.utils import update
 from .. import config
 from ..pipeline import Pipeline, PipelineException, PipelineLogger, PESummaryPipeline
 
+import logging
 
 class Bilby(Pipeline):
     """
