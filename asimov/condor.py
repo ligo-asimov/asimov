@@ -11,6 +11,7 @@ import datetime
 from dateutil import tz
 import htcondor
 import yaml
+import logging
 
 from asimov import config, logger, LOGGER_LEVEL
 
@@ -19,7 +20,6 @@ UTC = tz.tzutc()
 logger = logger.getChild("condor")
 logger.setLevel(LOGGER_LEVEL)
 
-
 def datetime_from_epoch(dt, tzinfo=UTC):
     """Returns the `datetime.datetime` for a given Unix epoch
 
@@ -37,31 +37,6 @@ def datetime_from_epoch(dt, tzinfo=UTC):
         the datetime that represents the given Unix epoch
     """
     return datetime.datetime.utcfromtimestamp(dt).replace(tzinfo=tzinfo)
-
-UTC = tz.tzutc()
-
-logger = logger.getChild("condor")
-logger.setLevel(LOGGER_LEVEL)
-
-
-def datetime_from_epoch(dt, tzinfo=UTC):
-    """Returns the `datetime.datetime` for a given Unix epoch
-
-    Parameters
-    ----------
-    dt : `float`
-        a Unix timestamp
-
-    tzinfo : `datetime.tzinfo`, optional
-        the desired timezone for the output `datetime.datetime`
-
-    Returns
-    -------
-    datetime.datetime
-        the datetime that represents the given Unix epoch
-    """
-    return datetime.datetime.utcfromtimestamp(dt).replace(tzinfo=tzinfo)
-
 
 def submit_job(submit_description):
     """
