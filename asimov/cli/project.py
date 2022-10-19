@@ -45,6 +45,8 @@ def make_project(
 
     project_name = name
 
+
+    
     # Make the virtual environment
     # builder = venv.EnvBuilder(system_site_packages=False,
     #                           clear=False,
@@ -122,6 +124,7 @@ def init(name, root, working="working", checkouts="checkouts", results="results"
     """
     make_project(name, root, working=working, checkouts=checkouts, results=results)
     click.echo(click.style("●", fg="green") + " New project created successfully!")
+    logger.info(f"A new project was created in {os.getcwd()}")
 
 
 @click.command()
