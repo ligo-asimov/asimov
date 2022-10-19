@@ -11,10 +11,14 @@ import datetime
 from dateutil import tz
 import htcondor
 import yaml
+import logging
 
-from asimov import config
+from asimov import config, logger
 
 UTC = tz.tzutc()
+
+logger = logger.getChild("condor")
+logger.setLevel(logging.INFO)
 
 
 def datetime_from_epoch(dt, tzinfo=UTC):
@@ -258,7 +262,7 @@ class CondorJobList:
             self.refresh()
         else:
             age = os.stat(cache).st_mtime
-            if float(age) < float(config.get("htcondor", "cache_time")):
+            if float(age) < float(config.get("condor", "cache_time")):
                 with open(cache, "r") as f:
                     self.jobs = yaml.safe_load(f)
             else:
@@ -269,7 +273,17 @@ class CondorJobList:
         Poll the schedulers to get the list of running jobs and update the database.
         """
         data = []
-        for schedd_ad in htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd):
+
+        logger.info("Updating the condor cache")
+        
+        try:
+            collectors = htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd)
+        except htcondor.HTCondorLocateError as e:
+            logger.error("Could not find a valid condor scheduler")
+            logger.exception(e)
+            raise e
+            
+        for schedd_ad in collectors:
             try:
                 schedd = htcondor.Schedd(schedd_ad)
                 jobs = schedd.query(

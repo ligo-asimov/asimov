@@ -4,7 +4,9 @@ Trigger handling code.
 
 import glob
 import os
+import pathlib
 from copy import deepcopy
+import logging
 import configparser
 
 import networkx as nx
@@ -88,6 +90,18 @@ class Event:
            when it is loaded. Defaults to False.
         """
         self.name = name
+
+        self.logger = logger.getChild("event").getChild(f"{self.name}")
+        self.logger.setLevel(logging.INFO)
+
+        pathlib.Path(os.path.join(config.get("general", "logs"), name)).mkdir(parents=True, exist_ok=True)
+        logfile = os.path.join(config.get("general", "logs"), name, "asimov.log")
+        
+        fh = logging.FileHandler(logfile)
+        formatter = logging.Formatter('%(asctime)s - %(message)s', "%Y-%m-%d %H:%M:%S")
+        fh.setFormatter(formatter)
+        self.logger.addHandler(fh)
+        
         if "working_directory" in kwargs:
             self.work_dir = kwargs["working_directory"]
         else:
@@ -322,7 +336,7 @@ class Event:
                     data["data"]["calibration"] = find_calibrations(data["event time"])
                 except ValueError:
                     data["data"]["calibration"] = {}
-                    logger.warning("Could not find calibration files for data['name']")
+                    logger.warning(f"Could not find calibration files for {data['name']}")
 
         if "working directory" not in data:
             data["working directory"] = os.path.join(
@@ -398,8 +412,9 @@ class Event:
                 destination,
                 commit_message=f"Downloaded {gfile} from GraceDB",
             )
+            self.logger.info(f"Fetched {gfile} from GraceDB")
         except HTTPError as e:
-            logger.error(
+            self.logger.error(
                 f"Unable to connect to GraceDB when attempting to download {gfile}. {e}"
             )
             raise HTTPError(e)
@@ -529,6 +544,18 @@ class Production:
     def __init__(self, event, name, status, pipeline, comment=None, **kwargs):
         self.event = event if isinstance(event, Event) else event[0]
         self.name = name
+
+        pathlib.Path(os.path.join(config.get("general", "logs"), self.event.name, name)).mkdir(parents=True, exist_ok=True)
+        logfile = os.path.join(config.get("general", "logs"), self.event.name, name, "asimov.log")
+        
+        self.logger = logger.getChild("analysis").getChild(f"{self.event.name}/{self.name}")
+        self.logger.setLevel(logging.INFO)
+        
+        fh = logging.FileHandler(logfile)
+        formatter = logging.Formatter('%(asctime)s - %(message)s', "%Y-%m-%d %H:%M:%S")
+        fh.setFormatter(formatter)
+        self.logger.addHandler(fh)
+
 
         self.category = config.get("general", "calibration_directory")
 
@@ -856,6 +883,7 @@ class Production:
             new_file = os.path.join("gps.txt")
             with open(new_file, "w") as f:
                 f.write(f"{self.event.meta['event time']}")
+            self.logger.info(f"Created a new time file in {new_file} with time {self.event.meta['event time']}")
             self.event.repository.add_file(
                 new_file,
                 os.path.join(self.category, new_file),
@@ -876,6 +904,7 @@ class Production:
             coinc = self.event.repository.find_coincfile(self.category)
             return coinc
         except FileNotFoundError:
+            self.logger.info("Could not find a coinc.xml file")
             self.event.get_gracedb(
                 "coinc.xml",
                 os.path.join(
@@ -972,6 +1001,9 @@ class Production:
         else:
             psds = {}
 
+        for ifo, psd in psds.items():
+            self.logger.debug(f"PSD-{ifo}: {psd}")
+
         return psds
 
     def _check_compatible(self, other_production):
@@ -998,6 +1030,8 @@ class Production:
            Defaults to the directory specified in the asimov configuration file.
         """
 
+        self.logger.info("Creating config file.")
+        
         self.psds = self._collect_psds()
 
         if "template" in self.meta:
@@ -1019,19 +1053,18 @@ class Production:
 
                 template_file = resource_filename("asimov", f"configs/{template}")
 
+        self.logger.info(f"Using {template_file}")
+
         liq = Liquid(template_file)
         rendered = liq.render(production=self, config=config)
-
-        logger.info(
-            f"[{self.event.name}/{self.name}] configuration created using {template_file} as a template"
-        )
 
         if not dryrun:
             with open(filename, "w") as output_file:
                 output_file.write(rendered)
+            self.logger.info(f"Saved as {filename}")
         else:
             print(rendered)
-
+            
     def html(self):
         """
         An HTML representation of this production.

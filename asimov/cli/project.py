@@ -9,15 +9,18 @@ except ImportError:
 
 import os
 import shutil
+import logging
 
 import click
 
-from asimov import config, storage
+from asimov import config, storage, logger
 from asimov.ledger import Ledger
 
+logger = logger.getChild("cli").getChild("project")
+logger.setLevel(logging.INFO)
 
 def make_project(
-    name, root, working="working", checkouts="checkouts", results="results"
+        name, root, working="working", checkouts="checkouts", results="results", logs="logs",
 ):
     """
     Create a new project called NAME.
@@ -35,6 +38,8 @@ def make_project(
 
     project_name = name
 
+
+    
     # Make the virtual environment
     # builder = venv.EnvBuilder(system_site_packages=False,
     #                           clear=False,
@@ -55,6 +60,10 @@ def make_project(
     pathlib.Path(checkouts).mkdir(parents=True, exist_ok=True)
     config.set("general", "git_default", checkouts)
 
+    # Make the log directory
+    pathlib.Path(logs).mkdir(parents=True, exist_ok=True)
+    config.set("general", "logs", logs)
+    
     # Make the results store
     storage.Store.create(root=results, name=f"{project_name} storage")
     config.set("storage", "directory", results)
@@ -102,6 +111,7 @@ def init(name, root, working="working", checkouts="checkouts", results="results"
     """
     make_project(name, root, working=working, checkouts=checkouts, results=results)
     click.echo(click.style("●", fg="green") + " New project created successfully!")
+    logger.info(f"A new project was created in {os.getcwd()}")
 
 
 @click.command()

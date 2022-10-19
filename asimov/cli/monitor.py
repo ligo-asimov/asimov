@@ -1,10 +1,14 @@
 import shutil
-
+import sys
 import click
+import logging
 
-from asimov import condor, config
+from asimov import condor, config, logger
 from asimov import current_ledger as ledger
 from asimov.cli import ACTIVE_STATES, manage, report
+
+logger = logger.getChild("cli").getChild("monitor")
+logger.setLevel(logging.INFO)
 
 
 @click.option("--dry-run", "-n", "dry_run", is_flag=True)
@@ -31,6 +35,7 @@ def start(dry_run):
     ledger.data["cronjob"] = cluster
     ledger.save()
     click.secho(f"  \t  ● Asimov is running ({cluster})", fg="green")
+    logger.info(f"Running asimov cronjob as  {cluster}")
 
 
 @click.option("--dry-run", "-n", "dry_run", is_flag=True)
@@ -40,6 +45,7 @@ def stop(dry_run):
     cluster = ledger.data["cronjob"]
     condor.delete_job(cluster)
     click.secho("  \t  ● Asimov has been stopped", fg="red")
+    logger.info(f"Stopped asimov cronjob {cluster}")
 
 
 @click.argument("event", default=None, required=False)
@@ -65,12 +71,22 @@ def monitor(ctx, event, update, dry_run, chain):
     Monitor condor jobs' status, and collect logging information.
     """
 
+    logger.info(f"Running asimov monitor")
+    
     if chain:
+        logger.info(f"Running in chain mode")
         ctx.invoke(manage.build, event=event)
         ctx.invoke(manage.submit, event=event)
 
-    # First pull the condor job listing
-    job_list = condor.CondorJobList()
+    try:
+        # First pull the condor job listing
+        job_list = condor.CondorJobList()
+    except condor.htcondor.HTCondorLocateError:
+        click.echo(
+            click.style(f"Could not find the condor scheduler", bold=True)
+            )
+        click.echo("You need to run asimov on a machine which has access to a condor scheduler in order to work correctly, or to specify the address of a valid sceduler.")
+    sys.exit()
 
     for event in ledger.get_event(event):
         stuck = 0
@@ -82,22 +98,28 @@ def monitor(ctx, event, update, dry_run, chain):
             for production in event.productions
             if production.status.lower() in ACTIVE_STATES
         ]
+        
+        
         for production in on_deck:
 
+            logger.debug(f"Available analyses: {event}/{production.name}")
+            
             click.echo(
                 "\t- "
                 + click.style(f"{production.name}", bold=True)
                 + click.style(f"[{production.pipeline}]", fg="green")
             )
-
+            
             # Jobs marked as ready can just be ignored as they've not been stood-up
             if production.status.lower() == "ready":
                 click.secho(f"  \t  ● {production.status.lower()}", fg="green")
+                logger.debug(f"Ready production: {event}/{production.name}")
                 continue
 
             # Deal with jobs which need to be stopped first
             if production.status.lower() == "stop":
                 pipe = production.pipeline
+                logger.debug(f"Stop production: {event}/{production.name}")
                 if not dry_run:
                     pipe.eject_job()
                     production.status = "stopped"
@@ -115,6 +137,7 @@ def monitor(ctx, event, update, dry_run, chain):
                         else:
                             job = None
                     else:
+                        logger.debug(f"Running analysis: {event}/{production.name}, cluster {production.meta['job id']}")
                         click.echo("\t\tRunning under condor")
                 else:
                     raise ValueError  # Pass to the exception handler
