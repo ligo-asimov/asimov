@@ -92,7 +92,10 @@ class Pipeline:
         self.production = production
 
         self.category = production.category
-        self.logger = logger
+
+        self.logger = logger.getChild(f"analysis.{production.event.name}/{production.name}")
+        self.logger.setLevel(logging.INFO)
+
 
     def __repr__(self):
         return self.name.lower()

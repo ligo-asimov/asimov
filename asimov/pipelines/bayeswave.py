@@ -13,7 +13,7 @@ from asimov import config, logger
 from asimov.utils import set_directory
 
 from ..git import AsimovFileNotFound
-from ..pipeline import Pipeline, PipelineException, PipelineLogger
+from ..pipeline import Pipeline, PipelineException
 from ..storage import AlreadyPresentException, Store
 
 
@@ -35,7 +35,7 @@ class BayesWave(Pipeline):
 
     def __init__(self, production, category=None):
         super(BayesWave, self).__init__(production, category)
-        self.logger = logger
+        self.logger.info("Using the Bayeswave pipeline")
         if not production.pipeline.lower() == "bayeswave":
             raise PipelineException
 
@@ -142,6 +142,7 @@ class BayesWave(Pipeline):
 
         if dryrun:
             print(" ".join(command))
+            self.logger.info(" ".join(command))
         else:
 
             pipe = subprocess.Popen(
@@ -150,20 +151,14 @@ class BayesWave(Pipeline):
             out, err = pipe.communicate()
             if "To submit:" not in str(out):
                 self.production.status = "stuck"
-
-                raise PipelineException(
-                    f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
-                    production=self.production.name,
-                )
+                self.logger.error("Could not create a DAG file")
+                self.logger.info(f"{command}")
+                self.logger.debug(out)
+                self.logger.debug(err)
             else:
-                if hasattr(self.production.event, "issue_object"):
-                    return PipelineLogger(
-                        message=out,
-                        issue=self.production.event.issue_object,
-                        production=self.production.name,
-                    )
-                else:
-                    return PipelineLogger(message=out, production=self.production.name)
+                self.logger.info("DAG file created")
+                self.logger.debug(out)
+
 
     def detect_completion(self):
         psds = self.collect_assets()["psds"]
@@ -212,6 +207,7 @@ class BayesWave(Pipeline):
             with open(sub_file, "r") as f_handle:
                 original = f_handle.read()
             with open(sub_file, "w") as f_handle:
+                self.logger.info(f"Adding request_disk = {64000} to {sub_file}")
                 f_handle.write(f"request_disk = {64000}\n" + original)
 
     def submit_dag(self, dryrun=False):
@@ -237,27 +233,31 @@ class BayesWave(Pipeline):
            This will be raised if the pipeline fails to submit the job.
         """
         self.before_submit()
-        with set_directory(self.production.rundir):
 
-            command = [
-                "condor_submit_dag",
-                "-batch-name",
-                f"bwave/{self.production.event.name}/{self.production.name}",
-                f"{self.production.name}.dag",
-            ]
+        command = [
+            "condor_submit_dag",
+            "-batch-name",
+            f"bwave/{self.production.event.name}/{self.production.name}",
+            f"{self.production.name}.dag",
+        ]
 
-            if dryrun:
-                print(" ".join(command))
-            else:
+        if dryrun:
+            print(" ".join(command))
+            
+        else:
+            with set_directory(self.production.rundir):
                 try:
                     dagman = subprocess.Popen(
                         command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
                     )
-                except FileNotFoundError:
+                except FileNotFoundError as e:
+                    self.logger.exception(e)
                     raise PipelineException(
                         "It looks like condor isn't installed on this system.\n"
                         f"""I wanted to run {" ".join(command)}."""
-                    )
+                    ) from e
+
+                
 
                 stdout, stderr = dagman.communicate()
 
@@ -267,14 +267,14 @@ class BayesWave(Pipeline):
                     ).groups()[0]
                     self.production.status = "running"
                     self.production.job_id = int(cluster)
+                    self.logger.info(f"Successfully submitted to cluster {self.production.job_id}")
+                    self.logger.debug(stdout)
                     return int(cluster), PipelineLogger(stdout)
                 else:
-                    logger.info(stdout)
-                    logger.error(stderr)
+                    self.logger.info(stdout)
+                    self.logger.error(stderr)
                     raise PipelineException(
                         f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
-                        issue=self.production.event.issue_object,
-                        production=self.production.name,
                     )
 
     def upload_assets(self):
@@ -306,12 +306,8 @@ class BayesWave(Pipeline):
                     file=f"{detector}-{sample_rate}-psd.dat",
                 )
             except Exception as e:
-                error = PipelineLogger(
-                    f"There was a problem committing the PSD for {detector} to the store.\n\n{e}",
-                    issue=self.production.event.issue_object,
-                    production=self.production.name,
-                )
-                error.submit_comment()
+                self.logger.error(f"There was a problem committing the PSD for {detector} to the store.")
+                self.logger.exception(e)
 
     def collect_logs(self):
         """
@@ -378,6 +374,9 @@ class BayesWave(Pipeline):
             )
         )
 
+        self.logger.info("PSD supression has been set")
+        self.logger.info(f"{ifo}-psd.dat will be supressed between {fmin}-Hz and {fmax}-Hz")
+        
         freq = orig_PSD_file[:, 0]
         PSD = orig_PSD_file[:, 1]
 
@@ -398,16 +397,16 @@ class BayesWave(Pipeline):
             self.category, "psds", str(sample_rate), f"{ifo}-psd.dat"
         )
 
+        self.logger.info(f"{ifo}-psd.dat has been supressed between {fmin}-Hz and {fmax}-Hz")
+        
         try:
             self.production.event.repository.add_file(
                 asset, destination
             )  # , message=f"Added the supresed {ifo} PSD")
         except Exception as e:
-            raise PipelineException(
-                f"There was a problem committing the suppresed PSD for {ifo} to the repository.\n\n{e}",
-                issue=self.production.event.issue_object,
-                production=self.production.name,
-            )
+            self.logger.error("The supressed PSD could not be committed to the repository")
+            self.logger.exception(e)
+
         copyfile(asset, f"{ifo}-{sample_rate}-psd-suppresed.dat")
         try:
             store.add_file(
@@ -416,9 +415,8 @@ class BayesWave(Pipeline):
                 file=f"{ifo}-{sample_rate}-psd-suppresed.dat",
             )
         except AlreadyPresentException:
-            self.logger.warning(
-                "Attempted to add a supressed PSD which already exists."
-            )
+            self.logger.warning("Attempted to add a supressed PSD which already exists.")
+
 
     def resurrect(self):
         """

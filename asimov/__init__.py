@@ -13,8 +13,6 @@ import logging
 
 from pkg_resources import DistributionNotFound, get_distribution, resource_string
 
-from pkg_resources import DistributionNotFound, get_distribution, resource_string
-
 try:
     __version__ = get_distribution(__name__).version
 except DistributionNotFound:
@@ -49,20 +47,23 @@ config_locations.reverse()
 config.read([conffile for conffile in config_locations])
 
 
-try:
 
-    if config.get("general", "logger") == "file":
-        from .logging import AsimovLogger
+logger_name = "asimov"
+logger = logging.getLogger(logger_name)
 
-        logger = AsimovLogger(logfile="asimov.log")
-    elif config.get("general", "logger") == "database":
-        from .logging import DatabaseLogger
+ch = logging.StreamHandler()
+print_formatter = logging.Formatter('[%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S")
+ch.setFormatter(print_formatter)
+ch.setLevel(logging.ERROR)
 
-        logger = DatabaseLogger()
-except configparser.NoOptionError:
-    from .logging import AsimovLogger
+logfile = "asimov.log"
+fh = logging.FileHandler(logfile)
+formatter = logging.Formatter('%(asctime)s [%(name)s][%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S")
+fh.setFormatter(formatter)
+# fh.setLevel()
 
-    logger = AsimovLogger(logfile="asimov.log")
+logger.addHandler(ch)
+logger.addHandler(fh)
 
 
 try:
@@ -77,5 +78,5 @@ try:
     else:
         current_ledger = None
 except FileNotFoundError:
-    logger.error("Could not find a valid ledger file.")
+    #logger.error("Could not find a valid ledger file.")
     current_ledger = None

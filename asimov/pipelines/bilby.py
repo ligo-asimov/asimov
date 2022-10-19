@@ -5,6 +5,8 @@ import os
 import re
 import subprocess
 import configparser
+import logging
+
 import git.exc
 import time
 
@@ -15,6 +17,7 @@ from asimov.utils import update
 from .. import config, logger
 from ..pipeline import Pipeline, PipelineException, PipelineLogger
 
+import logging
 
 class Bilby(Pipeline):
     """
@@ -34,7 +37,8 @@ class Bilby(Pipeline):
 
     def __init__(self, production, category=None):
         super(Bilby, self).__init__(production, category)
-        self.logger = logger
+        self.logger.info("Using the bilby pipeline")
+        
         if not production.pipeline.lower() == "bilby":
             raise PipelineException
 
@@ -63,11 +67,11 @@ class Bilby(Pipeline):
         Determine the correct choice of prior file for this production.
         """
 
-        self.logger.info("[bilby] Determining the prior file for this production")
+        self.logger.info("Determining the prior file for this production")
 
         if "prior file" in self.production.meta:
-            self.logger.info("[bilby] A prior file has already been specified.")
-            self.logger.info(f"[bilby] {self.production.meta['prior file']}")
+            self.logger.info("A prior file has already been specified.")
+            self.logger.info(f"{self.production.meta['prior file']}")
             return self.production.meta["prior file"]
         else:
             template = None
@@ -107,7 +111,7 @@ class Bilby(Pipeline):
 
             prior_name = f"{self.production.name}.prior"
             prior_file = os.path.join(os.getcwd(), prior_name)
-            self.logger.info(f"[bilby] Saving the new prior file as {prior_file}")
+            self.logger.info(f"Saving the new prior file as {prior_file}")
             with open(prior_file, "w") as new_prior:
                 new_prior.write(rendered)
 
@@ -155,7 +159,7 @@ class Bilby(Pipeline):
 
         cwd = os.getcwd()
 
-        self.logger.info(f"[bilby] Working in {cwd}")
+        self.logger.info(f"Working in {cwd}")
 
         self._determine_prior()  # Build the prior file
 
@@ -323,8 +327,6 @@ class Bilby(Pipeline):
     def after_completion(self):
         self.logger.info(
             "Job has completed. Running PE Summary.",
-            production=self.production,
-            channels=["mattermost"],
         )
         cluster = self.run_pesummary()
         self.production.meta["job id"] = int(cluster)
