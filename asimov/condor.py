@@ -13,12 +13,12 @@ import htcondor
 import yaml
 import logging
 
-from asimov import config, logger
+from asimov import config, logger, LOGGER_LEVEL
 
 UTC = tz.tzutc()
 
 logger = logger.getChild("condor")
-logger.setLevel(logging.INFO)
+logger.setLevel(LOGGER_LEVEL)
 
 
 def datetime_from_epoch(dt, tzinfo=UTC):

@@ -8,13 +8,13 @@ import requests
 import yaml
 import logging
 
-from asimov import logger
+from asimov import LOGGER_LEVEL, logger
 import asimov.event
 from asimov import current_ledger as ledger
 from asimov.utils import update
 
 logger = logger.getChild("cli").getChild("apply")
-logger.setLevel(logging.INFO)
+logger.setLevel(LOGGER_LEVEL)
 
 
 def apply_page(file, event, ledger=ledger):

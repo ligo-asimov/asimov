@@ -13,11 +13,11 @@ import logging
 
 import click
 
-from asimov import config, storage, logger
+from asimov import config, storage, logger, LOGGER_LEVEL
 from asimov.ledger import Ledger
 
 logger = logger.getChild("cli").getChild("project")
-logger.setLevel(logging.INFO)
+logger.setLevel(LOGGER_LEVEL)
 
 def make_project(
         name, root, working="working", checkouts="checkouts", results="results", logs="logs",
@@ -62,7 +62,7 @@ def make_project(
 
     # Make the log directory
     pathlib.Path(logs).mkdir(parents=True, exist_ok=True)
-    config.set("general", "logs", logs)
+    config.set("logging", "directory", logs)
     
     # Make the results store
     storage.Store.create(root=results, name=f"{project_name} storage")

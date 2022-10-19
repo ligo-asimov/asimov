@@ -28,7 +28,7 @@ class Mattermost(object):
         """
         self.submit_payload(message, channel)
 
-    def submit_payload(self, message, channel=None):
+    def submit_payload(self, message, attachments=None, props=None, channel=None):
         """
         Send a payload (normally a message) to a chat channel.
 
@@ -42,7 +42,10 @@ class Mattermost(object):
            an @ sign. Defaults to the default channel set in mattermost
            for the webhook.
         """
-        data = {"text": message, "attachments": [attachments], "props": props}
+        data = {"text": message,
+                "attachments": [attachments],
+                "props": props
+                }
 
         if channel:
             data["channel"] = channel

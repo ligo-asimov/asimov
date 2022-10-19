@@ -3,13 +3,12 @@ import sys
 import click
 import logging
 
-from asimov import condor, config, logger
+from asimov import condor, config, logger, LOGGER_LEVEL
 from asimov import current_ledger as ledger
 from asimov.cli import ACTIVE_STATES, manage, report
 
 logger = logger.getChild("cli").getChild("monitor")
-logger.setLevel(logging.INFO)
-
+logger.setLevel(LOGGER_LEVEL)
 
 @click.option("--dry-run", "-n", "dry_run", is_flag=True)
 @click.command()
