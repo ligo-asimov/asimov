@@ -356,7 +356,7 @@ class Bilby(Pipeline):
         out = ""
 
         return out
-
+    
     def resurrect(self):
         """
         Attempt to ressurrect a failed job.
