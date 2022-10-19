@@ -17,6 +17,8 @@ You'll need to have asimov installed first; you can find information about doing
 		   $ cd new-project 
 		   $ asimov init "my first project"
 
+		   ● New project created successfully!
+
    You'll see that asimov creates some new directories and data files in this directory, which are used for storing results, ongoing analyses, and analysis configurations.
 		   
 2. **Download analysis defaults**
@@ -32,6 +34,8 @@ You'll need to have asimov installed first; you can find information about doing
    
 		   $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml
 
+		   ● Successfully applied a configuration update
+		   
    The analyses which we'll use in this quick start guide are all Bayesian analyses, or analyses which are built on Bayesian principles.
    This means that we also need to have a set of default priors which can be applied to all events.
    Again we can download a set of these which are curated for production analyses.
@@ -39,6 +43,8 @@ You'll need to have asimov installed first; you can find information about doing
    .. code-block:: console
 
 		   $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml
+
+		   ● Successfully applied a configuration update
 
    We can always over-write the default priors with values which are specific to an individual event or even an individual analysis, but these project-wide defaults
    are useful so that we don't need to re-specify quantities which will be the same in most or even all of the analyses (for example, we might normally want the luminosity distance prior to be the same for all analyses except in a small number of cases where we expect an event to lie outwith those default ranges).
@@ -55,6 +61,8 @@ You'll need to have asimov installed first; you can find information about doing
 
 		   $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/events/gwtc-2-1/GW150914_095045.yaml
 
+		   ● Successfully applied GW150914_095045
+
    This will add ``GW150914_095045`` to the project's ledger.
    You can see that it's in the ledger by running
 
@@ -63,10 +71,6 @@ You'll need to have asimov installed first; you can find information about doing
 		   $ asimov report status
 
 		   GW150914_095045
-		      Analyses
-		      <NONE>
-		      Analyses waiting
-		      <NONE>
 
    In the next step we'll add some analyses to the event, but initially there are none, as reported here.
 
@@ -84,6 +88,9 @@ You'll need to have asimov installed first; you can find information about doing
 
 		   $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/analyses/production-default.yaml -e GW150914_095045
 
+		   ● Successfully applied Prod0 to GW150914_095045
+		   ● Successfully applied Prod1 to GW150914_095045
+		   
    Again, it is also possible to set up an analysis from scratch, or to alter the settings for a given analysis before it's started.
    Details on how you can do this can be found in the :ref:`analysis guide`.
 
@@ -94,10 +101,11 @@ You'll need to have asimov installed first; you can find information about doing
 		   $ asimov report status
 
 		   GW150914_095045
-		      Analyses
-		      - Prod0 bayeswave ready
-		      Analyses waiting:
-		      - Prod1 bilby ready
+		   Analyses
+		   - Prod0 bayeswave ready
+		   - Prod1 bilby ready
+		   Analyses waiting:
+		   Prod0
 
    Notice how the ``bilby`` analysis is listed as "waiting", as it requires the ``bayeswave`` job to complete before it can be allowed to run.
 		    
@@ -110,8 +118,11 @@ You'll need to have asimov installed first; you can find information about doing
    .. code-block:: console
 
 		   $ asimov manage build
-
-		   To Do: Add the output for this here
+		   
+		   ● Working on GW150914_095045
+		      Working on production Prod0
+		   Prod0 C01_offline checkouts/GW150914_095045
+		   Production config Prod0 created.
 
    If the pipeline which you're building uses a configuration file to describe its settings, this step will produce that configuration file, and will save it in the event repository.
    You can find the event (git) repositories in the ``checkouts`` directory of the current project, but their location can be changed.
@@ -126,9 +137,10 @@ You'll need to have asimov installed first; you can find information about doing
    
    .. code-block:: console
 
-		   $ asimov manage submit
+		   $ asimov manage submit 
 
-		   To Do: Add the output for this here
+		   Prod0 C01_offline checkouts/GW150914_095045
+		   ● Submitted GW150914_095045/Prod0
 
    Once the job has been submitted asimov will record the ID number for the job, and record it in the project ledger so that it can check on its status.
 
@@ -140,7 +152,11 @@ You'll need to have asimov installed first; you can find information about doing
 
 		   $ asimov monitor
 
-		   To Do: Add the output for this here
+		   GW150914_095045
+		   - Prod0[bayeswave]
+		     ● Prod0 is running (condor id: 84047997)
+		   - Prod1[bilby]
+		     ● ready
 
    When you run this, asimov will do a few different things.
    First, it checks with the compute scheduler if the job is still running.
@@ -157,7 +173,7 @@ You'll need to have asimov installed first; you can find information about doing
 
 		   $ asimov start
 
-		   To Do: Add the output for this here
+		   ● Asimov is running (84048002)
 
    In addition to monitoring jobs, this will also automatically build and submit any jobs which are ready to start.
    For example, in this project we have a bilby job which is waiting for the completion of a bayeswave job in order to start.
