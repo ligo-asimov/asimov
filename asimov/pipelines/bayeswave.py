@@ -343,12 +343,8 @@ class BayesWave(Pipeline):
                     file=f"{detector}-{sample_rate}-psd.dat",
                 )
             except Exception as e:
-                error = PipelineLogger(
-                    f"There was a problem committing the PSD for {detector} to the store.\n\n{e}",
-                    issue=self.production.event.issue_object,
-                    production=self.production.name,
-                )
-                error.submit_comment()
+                self.logger.error(f"There was a problem committing the PSD for {detector} to the store.")
+                self.logger.exception(e)
 
     def collect_logs(self):
         """
