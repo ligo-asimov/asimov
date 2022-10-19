@@ -14,8 +14,8 @@ You'll need to have asimov installed first; you can find information about doing
    .. code-block:: console
 
 		   $ mkdir new-project
-		   $ cd new-project "my first project"
-		   $ asimov init
+		   $ cd new-project 
+		   $ asimov init "my first project"
 
    You'll see that asimov creates some new directories and data files in this directory, which are used for storing results, ongoing analyses, and analysis configurations.
 		   
