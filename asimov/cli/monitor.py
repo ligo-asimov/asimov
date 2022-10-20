@@ -115,6 +115,11 @@ def stop(dry_run):
 def start(dry_run):
     """Set up a cron job on condor to monitor the project."""
 
+    try:
+        minute_expression = config.get("condor", "cron_minute")
+    except (configparser.NoOptionError, configparser.NoSectionError):
+        minute_expression = "*/15"
+
     submit_description = {
         "executable": shutil.which("asimov"),
         "arguments": "monitor --chain",
@@ -124,7 +129,7 @@ def start(dry_run):
         "error": "asimov_cron.err",
         "log": "asimov_cron.log",
         "request_cpus": "1",
-        "cron_minute": "*/15",
+        "cron_minute": minute_expression,
         "getenv": "true",
         "batch_name": f"asimov/monitor/{ledger.data['project']['name']}",
         "request_memory": "8192MB",
