@@ -160,9 +160,9 @@ class AsimovLogger:
             entries = list(entries)
 
         if offset:
-            return entries[-int(length) + int(offset): -int(offset)]
+            return entries[-int(length) + int(offset) : -int(offset)]
         else:
-            return entries[-int(length):]
+            return entries[-int(length) :]
 
 
 class DatabaseLogger(AsimovLogger):

@@ -155,7 +155,9 @@ def clone(location):
             os.path.join(location, config.get("ledger", "location")), "ledger.yml"
         )
     elif config.get("ledger", "engine") == "gitlab":
-        raise NotImplementedError("The gitlab interface has been removed from this version of asimov.")
+        raise NotImplementedError(
+            "The gitlab interface has been removed from this version of asimov."
+        )
 
     config.set("ledger", "engine", "yamlfile")
     config.set("ledger", "location", "ledger.yml")
