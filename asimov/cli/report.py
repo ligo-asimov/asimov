@@ -12,6 +12,7 @@ import otter
 import otter.bootstrap as bt
 
 from asimov import config, current_ledger
+
 tz = pytz.timezone("Europe/London")
 
 
@@ -173,10 +174,15 @@ def status(event):
                     + click.style(f"{production.status}")
                 )
         if len(event.get_all_latest()) > 0:
-            click.secho("\tAnalyses waiting: ", bold=True,)
+            click.secho(
+                "\tAnalyses waiting: ",
+                bold=True,
+            )
             waiting = event.get_all_latest()
             for awaiting in waiting:
-                click.echo(f"{awaiting.name} ",)
+                click.echo(
+                    f"{awaiting.name} ",
+                )
             click.echo("")
 
 

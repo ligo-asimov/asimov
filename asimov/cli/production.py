@@ -97,7 +97,9 @@ def create(event, pipeline, family, comment, needs, template, status, approximan
     click.echo(f"\t{production}")
 
     if config.get("ledger", "engine") == "gitlab":
-        raise NotImplementedError("The Gitlab interface has been removed from this version.""")
+        raise NotImplementedError(
+            "The Gitlab interface has been removed from this version." ""
+        )
     elif config.get("ledger", "engine") == "yamlfile":
         ledger.events[event.name] = event.to_dict()
         ledger.save()

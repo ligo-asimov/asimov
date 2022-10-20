@@ -6,6 +6,7 @@ import re
 import subprocess
 import configparser
 import git.exc
+import time
 
 from liquid import Liquid
 
@@ -82,7 +83,9 @@ class Bilby(Pipeline):
 
             if template is None:
                 template_filename = f"{event_type}.prior.template"
-                self.logger.info(f"[bilby] Constructing a prior using {event_type}.prior.template.")
+                self.logger.info(
+                    f"[bilby] Constructing a prior using {event_type}.prior.template."
+                )
                 try:
                     template = os.path.join(
                         config.get("bilby", "priors"), template_filename
@@ -215,6 +218,7 @@ class Bilby(Pipeline):
                         production=self.production.name,
                     )
             else:
+                time.sleep(10)
                 if hasattr(self.production.event, "issue_object"):
                     return PipelineLogger(
                         message=out,
