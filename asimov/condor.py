@@ -11,10 +11,14 @@ import datetime
 from dateutil import tz
 import htcondor
 import yaml
+import logging
 
-from asimov import config
+from asimov import config, logger, LOGGER_LEVEL
 
 UTC = tz.tzutc()
+
+logger = logger.getChild("condor")
+logger.setLevel(LOGGER_LEVEL)
 
 
 def datetime_from_epoch(dt, tzinfo=UTC):
@@ -44,14 +48,19 @@ def submit_job(submit_description):
     hostname_job = htcondor.Submit(submit_description)
 
     try:
+        logger.info(f"Trying to submit to {config.get('condor', 'scheduler')}")
         # There should really be a specified submit node, and if there is, use it.
         schedulers = htcondor.Collector().locate(
             htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler")
         )
         schedd = htcondor.Schedd(schedulers)
+        logger.info(f"Found scheduler: {schedd}")
     except:  # NoQA
         # If you can't find a specified scheduler, use the first one you find
-        schedd = htcondor.Schedd()
+        collectors = htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd)
+        logger.info("Searching for a scheduler of any kind")
+        logger.info(f"Found {collectors}")
+        schedd = htcondor.Schedd(colelctors[0])
     with schedd.transaction() as txn:
         cluster_id = hostname_job.queue(txn)
     return cluster_id
@@ -73,10 +82,12 @@ def delete_job(cluster_id):
 def collect_history(cluster_id):
     try:
         # There should really be a specified submit node, and if there is, use it.
+        logger.info(f"Attempting to use {scheduler}")
         schedulers = htcondor.Collector().locate(
             htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler")
         )
         schedd = htcondor.Schedd(schedulers)
+        logger.info(f"Found {schedd}")
     except:  # NoQA
         # If you can't find a specified scheduler, use the first one you find
         schedd = htcondor.Schedd()
@@ -257,8 +268,9 @@ class CondorJobList:
         if not os.path.exists(cache):
             self.refresh()
         else:
-            age = os.stat(cache).st_mtime
-            if float(age) < float(config.get("htcondor", "cache_time")):
+            age = (- os.stat(cache).st_mtime + datetime.datetime.now().timestamp())
+            logger.info(f"Condor cache is {age} seconds old")
+            if float(age) < float(config.get("condor", "cache_time")):
                 with open(cache, "r") as f:
                     self.jobs = yaml.safe_load(f)
             else:
@@ -269,7 +281,17 @@ class CondorJobList:
         Poll the schedulers to get the list of running jobs and update the database.
         """
         data = []
-        for schedd_ad in htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd):
+
+        logger.info("Updating the condor cache")
+        
+        try:
+            collectors = htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd)
+        except htcondor.HTCondorLocateError as e:
+            logger.error("Could not find a valid condor scheduler")
+            logger.exception(e)
+            raise e
+            
+        for schedd_ad in collectors:
             try:
                 schedd = htcondor.Schedd(schedd_ad)
                 jobs = schedd.query(

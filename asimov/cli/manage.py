@@ -3,13 +3,17 @@ Olivaw management commands
 """
 import os
 import pathlib
+import logging
 
 import click
 
 from asimov import current_ledger as ledger
-from asimov import logger
+import asimov
+from asimov import LOGGER_LEVEL
+from asimov import condor
 from asimov.event import DescriptionException
 from asimov.pipeline import PipelineException
+
 
 
 @click.group(chain=True)
@@ -38,10 +42,14 @@ def build(event, dryrun):
     Create the run configuration files for a given event for jobs which are ready to run.
     If no event is specified then all of the events will be processed.
     """
+    logger = asimov.logger.getChild("cli").getChild("manage.build")
+    logger.setLevel(LOGGER_LEVEL)
     for event in ledger.get_event(event):
+
         click.echo(f"● Working on {event.name}")
         ready_productions = event.get_all_latest()
         for production in ready_productions:
+            logger.info(f"{event.name}/{production.name}")
             click.echo(f"\tWorking on production {production.name}")
             if production.status in {
                 "running",
@@ -75,7 +83,6 @@ def build(event, dryrun):
                         config_loc = os.path.join(f"{production.name}.ini")
                         production.make_config(config_loc, dryrun=dryrun)
                         click.echo(f"Production config {production.name} created.")
-                        logger.info("Run configuration created.", production=production)
                         try:
                             event.repository.add_file(
                                 config_loc,
@@ -85,23 +92,19 @@ def build(event, dryrun):
                             )
                             logger.info(
                                 "Configuration committed to event repository.",
-                                production=production,
                             )
                             ledger.update_event(event)
 
                         except Exception as e:
                             logger.error(
                                 f"Configuration could not be committed to repository.\n{e}",
-                                production=production,
                             )
+                            logger.exception(e)
                         os.remove(config_loc)
 
-                except DescriptionException:
-                    logger.error(
-                        "Run configuration failed",
-                        production=production,
-                        channels=["file", "mattermost"],
-                    )
+                except DescriptionException as e:
+                    logger.error("Run configuration failed")
+                    logger.exception(e)
 
 
 @click.option(
@@ -130,9 +133,12 @@ def submit(event, update, dryrun):
     Submit the run configuration files for a given event for jobs which are ready to run.
     If no event is specified then all of the events will be processed.
     """
+    logger = asimov.logger.getChild("cli").getChild("manage.submit")
+    logger.setLevel(LOGGER_LEVEL)
     for event in ledger.get_event(event):
         ready_productions = event.get_all_latest()
         for production in ready_productions:
+            logger.info(f"{event.name}/{production.name}")
             if production.status.lower() in {
                 "running",
                 "stuck",
@@ -154,8 +160,9 @@ def submit(event, update, dryrun):
                 pipe = production.pipeline
                 try:
                     pipe.clean(dryrun=dryrun)
-                except PipelineException:
+                except PipelineException as e:
                     logger.error("The pipeline failed to clean up after itself.")
+                    logger.exception(e)
                 pipe.submit_dag(dryrun=dryrun)
                 click.echo(
                     click.style("●", fg="green")
@@ -166,11 +173,11 @@ def submit(event, update, dryrun):
                 pipe = production.pipeline
                 try:
                     pipe.build_dag(dryrun=dryrun)
-                except PipelineException:
+                except PipelineException as e:
                     logger.error(
                         "The pipeline failed to build a DAG file.",
-                        production=production,
                     )
+                    logger.exception(e)
                     click.echo(
                         click.style("●", fg="red")
                         + f" Unable to submit {production.name}"
@@ -189,11 +196,14 @@ def submit(event, update, dryrun):
                         click.style("●", fg="red")
                         + f" Unable to submit {production.name}"
                     )
+                    logger.exception(e)
                     ledger.update_event(event)
                     logger.error(
                         f"The pipeline failed to submit the DAG file to the cluster. {e}",
-                        production=production,
                     )
+                # Refresh the job list
+                job_list = condor.CondorJobList()
+                job_list.refresh()
                 # Update the ledger
                 ledger.update_event(event)
 

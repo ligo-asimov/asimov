@@ -4,13 +4,17 @@ import os
 import subprocess
 import time
 import warnings
+from pkg_resources import resource_filename
 
 warnings.filterwarnings("ignore", module="htcondor")
 
 
 import htcondor  # NoQA
 
-from asimov import config, logger, logging  # NoQA
+from asimov import config, logger, logging, LOGGER_LEVEL  # NoQA
+
+import otter
+
 
 from .storage import Store  # NoQA
 
@@ -92,7 +96,10 @@ class Pipeline:
         self.production = production
 
         self.category = production.category
-        self.logger = logger
+
+        self.logger = logger.getChild(f"analysis.{production.event.name}/{production.name}")
+        self.logger.setLevel(LOGGER_LEVEL)
+
 
     def __repr__(self):
         return self.name.lower()
@@ -365,3 +372,31 @@ class Pipeline:
 
     def collect_pages(self):
         pass
+
+    def build_report(self, reportformat="html"):
+        """
+        Build an entire report on this pipeline, including logs and configs.
+        """
+        webdir = config.get("general", "webroot")
+        if reportformat=="html":
+            report = otter.Otter(
+                f"{webdir}/{self.production.event.name}/{self.production.name}/index.html",
+                author="Asimov",
+                title="Asimov analysis report",
+            )
+            report_logs = otter.Otter(
+                f"{webdir}/{self.production.event.name}/{self.production.name}/logs.html",
+                author="Asimov",
+                title="Asimov analysis logs",
+            )
+            report_config = otter.Otter(
+                f"{webdir}/{self.production.event.name}/{self.production.name}/config.html",
+                author="Asimov",
+                title="Asimov analysis configuration",
+            )
+            with report_logs:
+                for log in self.collect_logs().values():
+                    for message in log.split("\n"):
+                        report_logs + message
+            # with report_config:
+            #     report_config + self.

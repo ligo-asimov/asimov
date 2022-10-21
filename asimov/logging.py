@@ -15,7 +15,8 @@ from asimov import mattermost
 
 logging.getLogger("werkzeug").setLevel(logging.WARNING)
 logging.getLogger("MARKDOWN").setLevel(logging.WARNING)
-
+logging.getLogger("matplotlib").setLevel(logging.WARNING)
+logging.getLogger("git").setLevel(logging.WARNING)
 
 class AsimovLogger:
     def __init__(self, logfile):
@@ -29,7 +30,24 @@ class AsimovLogger:
         """
         self.logfile = logfile
         self.mattermost = mattermost.Mattermost()
-        self.file_logger = logging.basicConfig(filename=logfile, level=logging.DEBUG)
+        self.file_logger = logging.basicConfig(filename=logfile)
+
+        logger_name = "asimov"
+        self.logger = logging.getLogger(logger_name)
+
+        formatter = logging.Formatter('%(asctime)s [%(name)s][%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S")
+        print_formatter = logging.Formatter('[%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S")
+
+        ch = logging.StreamHandler()
+        ch.setFormatter(print_formatter)
+        ch.setLevel(logging.ERROR)
+
+        fh = logging.FileHandler(logfile)
+        fh.setFormatter(formatter)
+        fh.setLevel(logging.INFO)
+
+        self.logger.addHandler(ch)
+        self.logger.addHandler(fh)
 
     def log(
         self,
@@ -70,7 +88,8 @@ class AsimovLogger:
         if not production:
             production = ""
 
-        logging.log(logger_levels[level.lower()], message)
+
+        self.logger.log(logger_levels[level.lower()], message)
 
     def info(self, message, production=None, channels="file"):
         """
