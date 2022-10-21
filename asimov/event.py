@@ -653,6 +653,22 @@ class Production:
                 )
                 # self.event.meta['likelihood']['segment start'] = self.meta['data']['segment start']
 
+        # Update waveform data
+        if "waveform" not in self.meta:
+            self.logger.info("Didn't find waveform information in the metadata")
+            self.meta['waveform'] = {}
+            if "approximant" in self.meta:
+                self.logger.warn("Found deprecated approximant information, "
+                                 "moving to waveform area of ledger")
+                approximant = self.meta.pop("approximant")
+                self.meta['waveform']['approximant'] = approximant
+            if "reference frequency" in self.meta:
+                self.logger.warn("Found deprecated ref freq information, "
+                                 "moving to waveform area of ledger")
+                ref_freq = self.meta.pop("reference frequency")
+                self.meta['waveform']['reference frequency'] = ref_freq
+            self.event.update_data()
+
         # Gather the PSDs for the job
         self.psds = self._collect_psds()
 

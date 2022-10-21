@@ -152,7 +152,6 @@ class Rift(Pipeline):
                status: ready
 
 
-
         """
         cwd = os.getcwd()
         if self.production.event.repository:
@@ -199,7 +198,7 @@ class Rift(Pipeline):
         except configparser.NoOptionError:
             calibration = "C01"
 
-        approximant = self.production.meta["approximant"]
+        approximant = self.production.meta["waveform"]["approximant"]
 
         if self.production.rundir:
             rundir = os.path.relpath(self.production.rundir, os.getcwd())
@@ -215,7 +214,7 @@ class Rift(Pipeline):
 
         if "lmax" in self.production.meta:
             lmax = self.production.meta["likelihood"]["lmax"]
-        elif "HM" in self.production.meta["approximant"]:
+        elif "HM" in self.production.meta["waveform"]["approximant"]:
             lmax = 4
         else:
             lmax = 2
