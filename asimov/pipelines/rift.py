@@ -140,14 +140,16 @@ class Rift(Pipeline):
            - Prod3:
                rundir: tests/tmp/s000000xx/Prod3
                pipeline: rift
-               approximant: IMRPhenomPv3
+               waveform:
+                  approximant: IMRPhenomPv3
                lmax: 2
                cip jobs: 5 # This is optional, and will default to 3
                bootstrap: Prod1
                bootstrap fmin: 20
-               needs: Prod1
+               needs:
+                 - Prod1
                comment: RIFT production run.
-               status: wait
+               status: ready
 
 
         """
@@ -196,7 +198,7 @@ class Rift(Pipeline):
         except configparser.NoOptionError:
             calibration = "C01"
 
-        approximant = self.production.meta["approximant"]
+        approximant = self.production.meta["waveform"]["approximant"]
 
         if self.production.rundir:
             rundir = os.path.relpath(self.production.rundir, os.getcwd())
@@ -212,7 +214,7 @@ class Rift(Pipeline):
 
         if "lmax" in self.production.meta:
             lmax = self.production.meta["likelihood"]["lmax"]
-        elif "HM" in self.production.meta["approximant"]:
+        elif "HM" in self.production.meta["waveform"]["approximant"]:
             lmax = 4
         else:
             lmax = 2
