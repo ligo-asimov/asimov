@@ -9,7 +9,6 @@ except ImportError:
 
 import os
 import shutil
-import logging
 
 import click
 
@@ -19,8 +18,14 @@ from asimov.ledger import Ledger
 logger = logger.getChild("cli").getChild("project")
 logger.setLevel(LOGGER_LEVEL)
 
+
 def make_project(
-        name, root, working="working", checkouts="checkouts", results="results", logs="logs",
+    name,
+    root,
+    working="working",
+    checkouts="checkouts",
+    results="results",
+    logs="logs",
 ):
     """
     Create a new project called NAME.
@@ -38,8 +43,6 @@ def make_project(
 
     project_name = name
 
-
-    
     # Make the virtual environment
     # builder = venv.EnvBuilder(system_site_packages=False,
     #                           clear=False,
@@ -63,7 +66,7 @@ def make_project(
     # Make the log directory
     pathlib.Path(logs).mkdir(parents=True, exist_ok=True)
     config.set("logging", "directory", logs)
-    
+
     # Make the results store
     storage.Store.create(root=results, name=f"{project_name} storage")
     config.set("storage", "directory", results)

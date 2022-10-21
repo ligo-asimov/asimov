@@ -72,15 +72,17 @@ try:
     PRINT_LEVEL = logger_levels[config.get("logging", "print level")]
 except configparser.NoOptionError:
     PRINT_LEVEL = logging.ERROR
-    
+
 ch = logging.StreamHandler()
-print_formatter = logging.Formatter('[%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S")
+print_formatter = logging.Formatter("[%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S")
 ch.setFormatter(print_formatter)
 ch.setLevel(PRINT_LEVEL)
 
 logfile = "asimov.log"
 fh = logging.FileHandler(logfile)
-formatter = logging.Formatter('%(asctime)s [%(name)s][%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S")
+formatter = logging.Formatter(
+    "%(asctime)s [%(name)s][%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S"
+)
 fh.setFormatter(formatter)
 fh.setLevel(LOGGER_LEVEL)
 
@@ -99,5 +101,5 @@ try:
     else:
         current_ledger = None
 except FileNotFoundError:
-    #logger.error("Could not find a valid ledger file.")
+    # logger.error("Could not find a valid ledger file.")
     current_ledger = None

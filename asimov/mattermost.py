@@ -42,10 +42,7 @@ class Mattermost(object):
            an @ sign. Defaults to the default channel set in mattermost
            for the webhook.
         """
-        data = {"text": message,
-                "attachments": [attachments],
-                "props": props
-                }
+        data = {"text": message, "attachments": [attachments], "props": props}
 
         if channel:
             data["channel"] = channel

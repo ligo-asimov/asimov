@@ -94,14 +94,16 @@ class Event:
         self.logger = logger.getChild("event").getChild(f"{self.name}")
         self.logger.setLevel(LOGGER_LEVEL)
 
-        pathlib.Path(os.path.join(config.get("logging", "directory"), name)).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(config.get("logging", "directory"), name)).mkdir(
+            parents=True, exist_ok=True
+        )
         logfile = os.path.join(config.get("logging", "directory"), name, "asimov.log")
-        
+
         fh = logging.FileHandler(logfile)
-        formatter = logging.Formatter('%(asctime)s - %(message)s', "%Y-%m-%d %H:%M:%S")
+        formatter = logging.Formatter("%(asctime)s - %(message)s", "%Y-%m-%d %H:%M:%S")
         fh.setFormatter(formatter)
         self.logger.addHandler(fh)
-        
+
         if "working_directory" in kwargs:
             self.work_dir = kwargs["working_directory"]
         else:
@@ -336,7 +338,9 @@ class Event:
                     data["data"]["calibration"] = find_calibrations(data["event time"])
                 except ValueError:
                     data["data"]["calibration"] = {}
-                    logger.warning(f"Could not find calibration files for {data['name']}")
+                    logger.warning(
+                        f"Could not find calibration files for {data['name']}"
+                    )
 
         if "working directory" not in data:
             data["working directory"] = os.path.join(
@@ -503,7 +507,7 @@ class Event:
     def build_report(self):
         for production in self.productions:
             production.build_report()
-    
+
     def html(self):
         card = f"""
         <div class="card event-data" id="card-{self.name}">
@@ -549,17 +553,22 @@ class Production:
         self.event = event if isinstance(event, Event) else event[0]
         self.name = name
 
-        pathlib.Path(os.path.join(config.get("logging", "directory"), self.event.name, name)).mkdir(parents=True, exist_ok=True)
-        logfile = os.path.join(config.get("logging", "directory"), self.event.name, name, "asimov.log")
-        
-        self.logger = logger.getChild("analysis").getChild(f"{self.event.name}/{self.name}")
+        pathlib.Path(
+            os.path.join(config.get("logging", "directory"), self.event.name, name)
+        ).mkdir(parents=True, exist_ok=True)
+        logfile = os.path.join(
+            config.get("logging", "directory"), self.event.name, name, "asimov.log"
+        )
+
+        self.logger = logger.getChild("analysis").getChild(
+            f"{self.event.name}/{self.name}"
+        )
         self.logger.setLevel(LOGGER_LEVEL)
-        
+
         fh = logging.FileHandler(logfile)
-        formatter = logging.Formatter('%(asctime)s - %(message)s', "%Y-%m-%d %H:%M:%S")
+        formatter = logging.Formatter("%(asctime)s - %(message)s", "%Y-%m-%d %H:%M:%S")
         fh.setFormatter(formatter)
         self.logger.addHandler(fh)
-
 
         self.category = config.get("general", "calibration_directory")
 
@@ -887,7 +896,9 @@ class Production:
             new_file = os.path.join("gps.txt")
             with open(new_file, "w") as f:
                 f.write(f"{self.event.meta['event time']}")
-            self.logger.info(f"Created a new time file in {new_file} with time {self.event.meta['event time']}")
+            self.logger.info(
+                f"Created a new time file in {new_file} with time {self.event.meta['event time']}"
+            )
             self.event.repository.add_file(
                 new_file,
                 os.path.join(self.category, new_file),
@@ -1035,7 +1046,7 @@ class Production:
         """
 
         self.logger.info("Creating config file.")
-        
+
         self.psds = self._collect_psds()
 
         if "template" in self.meta:
@@ -1072,7 +1083,7 @@ class Production:
     def build_report(self):
         if self.pipeline:
             self.pipeline.build_report()
-            
+
     def html(self):
         """
         An HTML representation of this production.
