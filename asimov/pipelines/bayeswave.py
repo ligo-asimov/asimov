@@ -155,6 +155,7 @@ class BayesWave(Pipeline):
                 self.logger.info(f"{command}")
                 self.logger.debug(out)
                 self.logger.debug(err)
+                raise PipelineException("The DAG file could not be created.")
             else:
                 self.logger.info("DAG file created")
                 self.logger.debug(out)
