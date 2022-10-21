@@ -16,7 +16,6 @@ from asimov.utils import update
 from .. import config
 from ..pipeline import Pipeline, PipelineException, PipelineLogger, PESummaryPipeline
 
-import logging
 
 class Bilby(Pipeline):
     """
@@ -367,7 +366,7 @@ class Bilby(Pipeline):
             out += """</div>"""
 
         return out
-    
+
     def resurrect(self):
         """
         Attempt to ressurrect a failed job.

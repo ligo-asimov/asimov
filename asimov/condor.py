@@ -11,7 +11,6 @@ import datetime
 from dateutil import tz
 import htcondor
 import yaml
-import logging
 
 from asimov import config, logger, LOGGER_LEVEL
 
