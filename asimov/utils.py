@@ -24,13 +24,12 @@ def set_directory(path: (Path, str)):
 
     origin = Path().absolute()
     try:
-        # print(f"{origin} → {path}")
         logger.info(f"Working temporarily in {path}")
         os.chdir(path)
         yield
     finally:
-        # print(f"{path} → {origin}")
         os.chdir(origin)
+        logger.info(f"Now working in {origin} again")
 
 
 def find_calibrations(time):

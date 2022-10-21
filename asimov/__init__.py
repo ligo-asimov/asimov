@@ -9,6 +9,7 @@ __email__ = "daniel.williams@ligo.org"
 __packagename__ = __name__
 
 import os
+import logging
 
 from pkg_resources import DistributionNotFound, get_distribution, resource_string
 
@@ -46,20 +47,45 @@ config_locations.reverse()
 config.read([conffile for conffile in config_locations])
 
 
+logging.getLogger("werkzeug").setLevel(logging.WARNING)
+logging.getLogger("MARKDOWN").setLevel(logging.WARNING)
+logging.getLogger("matplotlib").setLevel(logging.WARNING)
+logging.getLogger("git").setLevel(logging.WARNING)
+
+
+logger_name = "asimov"
+logger = logging.getLogger(logger_name)
+
+logger_levels = {
+    "debug": logging.DEBUG,
+    "info": logging.INFO,
+    "warning": logging.WARNING,
+    "error": logging.ERROR,
+    "update": 9,
+}
 try:
-
-    if config.get("general", "logger") == "file":
-        from .logging import AsimovLogger
-
-        logger = AsimovLogger(logfile="asimov.log")
-    elif config.get("general", "logger") == "database":
-        from .logging import DatabaseLogger
-
-        logger = DatabaseLogger()
+    LOGGER_LEVEL = logger_levels[config.get("logging", "logging level")]
 except configparser.NoOptionError:
-    from .logging import AsimovLogger
+    LOGGER_LEVEL = logging.INFO
 
-    logger = AsimovLogger(logfile="asimov.log")
+try:
+    PRINT_LEVEL = logger_levels[config.get("logging", "print level")]
+except configparser.NoOptionError:
+    PRINT_LEVEL = logging.ERROR
+    
+ch = logging.StreamHandler()
+print_formatter = logging.Formatter('[%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S")
+ch.setFormatter(print_formatter)
+ch.setLevel(PRINT_LEVEL)
+
+logfile = "asimov.log"
+fh = logging.FileHandler(logfile)
+formatter = logging.Formatter('%(asctime)s [%(name)s][%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S")
+fh.setFormatter(formatter)
+fh.setLevel(LOGGER_LEVEL)
+
+logger.addHandler(ch)
+logger.addHandler(fh)
 
 try:
     if config.get("ledger", "engine") == "gitlab":
@@ -73,5 +99,5 @@ try:
     else:
         current_ledger = None
 except FileNotFoundError:
-    logger.error("Could not find a valid ledger file.")
+    #logger.error("Could not find a valid ledger file.")
     current_ledger = None
