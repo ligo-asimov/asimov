@@ -60,7 +60,7 @@ def submit_job(submit_description):
         collectors = htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd)
         logger.info("Searching for a scheduler of any kind")
         logger.info(f"Found {collectors}")
-        schedd = htcondor.Schedd(colelctors[0])
+        schedd = htcondor.Schedd()
     with schedd.transaction() as txn:
         cluster_id = hostname_job.queue(txn)
     return cluster_id
