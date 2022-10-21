@@ -45,8 +45,6 @@ def make_project(
 
     project_name = name
 
-
-    
     # Make the virtual environment
     # builder = venv.EnvBuilder(system_site_packages=False,
     #                           clear=False,
