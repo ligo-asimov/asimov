@@ -11,7 +11,6 @@ import datetime
 from dateutil import tz
 import htcondor
 import yaml
-import logging
 
 from asimov import config, logger, LOGGER_LEVEL
 
@@ -260,7 +259,8 @@ class CondorJobList:
         if not os.path.exists(cache):
             self.refresh()
         else:
-            age = os.stat(cache).st_mtime
+            age = -os.stat(cache).st_mtime + datetime.datetime.now().timestamp()
+            logger.info(f"Condor cache is {age} seconds old")
             if float(age) < float(config.get("condor", "cache_time")):
                 with open(cache, "r") as f:
                     self.jobs = yaml.safe_load(f)
@@ -274,14 +274,14 @@ class CondorJobList:
         data = []
 
         logger.info("Updating the condor cache")
-        
+
         try:
             collectors = htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd)
         except htcondor.HTCondorLocateError as e:
             logger.error("Could not find a valid condor scheduler")
             logger.exception(e)
             raise e
-            
+
         for schedd_ad in collectors:
             try:
                 schedd = htcondor.Schedd(schedd_ad)

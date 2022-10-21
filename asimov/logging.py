@@ -18,6 +18,7 @@ logging.getLogger("MARKDOWN").setLevel(logging.WARNING)
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
 logging.getLogger("git").setLevel(logging.WARNING)
 
+
 class AsimovLogger:
     def __init__(self, logfile):
         """
@@ -35,8 +36,12 @@ class AsimovLogger:
         logger_name = "asimov"
         self.logger = logging.getLogger(logger_name)
 
-        formatter = logging.Formatter('%(asctime)s [%(name)s][%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S")
-        print_formatter = logging.Formatter('[%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S")
+        formatter = logging.Formatter(
+            "%(asctime)s [%(name)s][%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S"
+        )
+        print_formatter = logging.Formatter(
+            "[%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S"
+        )
 
         ch = logging.StreamHandler()
         ch.setFormatter(print_formatter)
@@ -87,7 +92,6 @@ class AsimovLogger:
 
         if not production:
             production = ""
-
 
         self.logger.log(logger_levels[level.lower()], message)
 
@@ -179,9 +183,9 @@ class AsimovLogger:
             entries = list(entries)
 
         if offset:
-            return entries[-int(length) + int(offset) : -int(offset)]
+            return entries[-int(length) + int(offset): -int(offset)]
         else:
-            return entries[-int(length) :]
+            return entries[-int(length):]
 
 
 class DatabaseLogger(AsimovLogger):

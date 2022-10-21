@@ -5,7 +5,6 @@ import os
 import re
 import subprocess
 import configparser
-import logging
 
 import git.exc
 import time
@@ -14,10 +13,9 @@ from liquid import Liquid
 
 from asimov.utils import update
 
-from .. import config, logger
+from .. import config
 from ..pipeline import Pipeline, PipelineException, PipelineLogger
 
-import logging
 
 class Bilby(Pipeline):
     """
@@ -38,7 +36,7 @@ class Bilby(Pipeline):
     def __init__(self, production, category=None):
         super(Bilby, self).__init__(production, category)
         self.logger.info("Using the bilby pipeline")
-        
+
         if not production.pipeline.lower() == "bilby":
             raise PipelineException
 
@@ -279,24 +277,26 @@ class Bilby(Pipeline):
                 )
 
                 self.logger.info(" ".join(command))
-                
+
                 stdout, stderr = dagman.communicate()
 
                 if "submitted to cluster" in str(stdout):
                     cluster = re.search(
                         r"submitted to cluster ([\d]+)", str(stdout)
                     ).groups()[0]
-                    self.logger.info(f"Submitted successfully. Running with job id {int(cluster)}")
+                    self.logger.info(
+                        f"Submitted successfully. Running with job id {int(cluster)}"
+                    )
                     self.production.status = "running"
                     self.production.job_id = int(cluster)
                     return cluster, PipelineLogger(stdout)
                 else:
-                    self.logger.error(f"Could not submit the job to the cluster")
+                    self.logger.error("Could not submit the job to the cluster")
                     self.logger.info(stdout)
                     self.logger.error(stderr)
-                    
+
                     raise PipelineException(
-                        f"The DAG file could not be submitted.",
+                        "The DAG file could not be submitted.",
                     )
 
         except FileNotFoundError as error:
@@ -404,7 +404,7 @@ class Bilby(Pipeline):
         out = ""
 
         return out
-    
+
     def resurrect(self):
         """
         Attempt to ressurrect a failed job.
