@@ -4,7 +4,6 @@ import os
 import subprocess
 import time
 import warnings
-from pkg_resources import resource_filename
 
 warnings.filterwarnings("ignore", module="htcondor")
 

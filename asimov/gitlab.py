@@ -196,7 +196,7 @@ class EventIssue(Event):
         """
         for label in self.issue_object.labels:
             if f"{STATE_PREFIX}::" in label:
-                return label[len(STATE_PREFIX) + 2 :]
+                return label[len(STATE_PREFIX) + 2:]
         return None
 
     @state.setter
