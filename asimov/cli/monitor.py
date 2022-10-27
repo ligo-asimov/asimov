@@ -170,6 +170,7 @@ def monitor(ctx, event, update, dry_run, chain):
                         )
                         if "profiling" not in production.meta:
                             production.meta["profiling"] = {}
+                            
                         # production.meta['profiling'] = job.get_data()['WallClockCheckpoint']
                         production.status = "running"
                     elif job.status.lower() == "completed":
@@ -242,8 +243,9 @@ def monitor(ctx, event, update, dry_run, chain):
                                 production.meta["job id"]
                             )
                             production.meta["job id"] = None
-                        except condor.htcondor.HTCondorIOError:
-                            # self.logger.error("Could not collect condor profiling data.")
+                        except condor.htcondor.HTCondorIOError as e:
+                            self.logger.error("Could not collect condor profiling data.")
+                            self.logger.exception(e)
                             pass
 
                         finish += 1
