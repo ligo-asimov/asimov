@@ -86,7 +86,10 @@ def collect_history(cluster_id):
         schedd = htcondor.Schedd(schedulers)
     except:  # NoQA
         # If you can't find a specified scheduler, use the first one you find
-        schedd = htcondor.Schedd()
+        collectors = htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd)
+        logger.info("Searching for a scheduler of any kind")
+        logger.info(f"Found {collectors[-1]}")
+        schedd = htcondor.Schedd(collectors[-1])
         HISTORY_CLASSADS = [
             "CompletionDate",
             "CpusProvisioned",
