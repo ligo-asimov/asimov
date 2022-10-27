@@ -178,11 +178,11 @@ class Pipeline:
             "--multi_process",
             "4",
             "--approximant",
-            self.production.meta["approximant"],
+            self.production.meta["waveform"]["approximant"],
             "--f_low",
             str(min(self.production.meta["quality"]["minimum frequency"].values())),
             "--f_ref",
-            str(self.production.meta["likelihood"]["reference frequency"]),
+            str(self.production.meta["waveform"]["reference frequency"]),
             "--regenerate",
             "redshift mass_1_source mass_2_source chirp_mass_source"
             " total_mass_source final_mass_source final_mass_source_non_evolved radiated_energy",
