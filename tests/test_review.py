@@ -15,6 +15,8 @@ repository: {0}/tests/test_data/s000000xx/
 data: 
   channels:
     L1: /this/is/fake
+  calibration: 
+    L1: Fake
 interferometers: 
 - L1
 quality: {{}}
@@ -38,6 +40,8 @@ name: S000000xx
 data: 
   channels:
     L1: /this/is/fake
+  calibration: 
+    L1: Fake
 working directory: {0}/tests/tmp/
 repository: {0}/tests/test_data/s000000xx/
 interferometers: 
