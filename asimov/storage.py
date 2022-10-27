@@ -293,7 +293,7 @@ class Store:
             event, production, name, hash, this_uuid
         )
 
-        destination = os.path.join(self.root, event, production, this_uuid.hex)
+        destination = os.path.join(self.root, event, production, name)
 
         copyfile(file, destination)
 
@@ -301,7 +301,7 @@ class Store:
 
         self.manifest.update()
 
-        return {"file": file, "hash": self._hash(file), "uuid": this_uuid.urn}
+        return {"file": name, "hash": self._hash(destination), "uuid": this_uuid.urn}
 
     def fetch_file(self, event, production, file, hash=None):
         """
