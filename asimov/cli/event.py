@@ -276,7 +276,7 @@ def checkifo(event):
 @event.command()
 def calibration(event, calibration):
     event = ledger.get_event(event)[0]
-    try:
+    try:        
         event._check_calibration()
     except DescriptionException:
         print(event.name)
