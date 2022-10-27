@@ -52,7 +52,8 @@ Details of the metadata stored in the production ledger can be found on the :ref
       - 1.0
     productions:
     - Prod1:
-	approximant: IMRPhenomXPHM
+        waveform:
+	   approximant: IMRPhenomXPHM
 	comment: Bilby job
 	pipeline: bilby
 	status: ready
@@ -276,7 +277,7 @@ A full example ``bilby`` template is available below:
 
     waveform-generator=bilby.gw.waveform_generator.WaveformGenerator
     reference-frequency={{ production.meta['quality']['reference-frequency'] }}
-    waveform-approximant={{ production.meta['approximant'] }}
+    waveform-approximant={{ production.meta['waveform']['approximant'] }}
     catch-waveform-errors=False
     pn-spin-order=-1
     pn-tidal-order=-1

@@ -73,13 +73,13 @@ def create(event, pipeline, family, comment, needs, template, status, approximan
         ]
         needs = bw_entries
     #
-    production = {"comment": comment, "pipeline": pipeline, "status": status}
+    production = {"comment": comment, "pipeline": pipeline, "status": status, "waveform": {}}
     if needs:
         production["needs"] = needs
     if template:
         production["template"] = template
     if approximant:
-        production["approximant"] = approximant
+        production["waveform"]["approximant"] = approximant
     if len(family_entries) > 0:
         number = max(family_entries) + 1
     else:
