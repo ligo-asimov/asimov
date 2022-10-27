@@ -52,12 +52,13 @@ def submit_job(submit_description):
             htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler")
         )
         schedd = htcondor.Schedd(schedulers)
+        logger.info(f"Found scheduler: {schedd.machine}")
     except:  # NoQA
         # If you can't find a specified scheduler, use the first one you find
         collectors = htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd)
         logger.info("Searching for a scheduler of any kind")
-        logger.info(f"Found {collectors}")
-        schedd = htcondor.Schedd()
+        logger.info(f"Found {collectors[-1].machine}")
+        schedd = htcondor.Schedd(collectors[-1])
     with schedd.transaction() as txn:
         cluster_id = hostname_job.queue(txn)
     return cluster_id
