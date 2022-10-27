@@ -77,7 +77,7 @@ def submit_job(submit_description):
             htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler")
         )
         schedd = htcondor.Schedd(schedulers)
-        logger.info(f"Found scheduler: {schedd.machine}")
+        logger.info(f"Found scheduler: {schedd}")
     except:  # NoQA
         # If you can't find a specified scheduler, try until it works
         collectors = htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd)
