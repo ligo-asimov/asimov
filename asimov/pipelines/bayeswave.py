@@ -297,7 +297,7 @@ class BayesWave(Pipeline):
 
         sample_rate = self.production.meta["likelihood"]["sample rate"]
         self.logger.info(self.collect_assets())
-        for detector, asset in self.collect_assets()["psds"]:
+        for detector, asset in self.collect_assets()["psds"].items():
             store = Store(root=config.get("storage", "directory"))
             try:
                 store.add_file(
