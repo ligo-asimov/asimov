@@ -276,7 +276,7 @@ def checkifo(event):
 @click.argument("event")
 @event.command()
 def calibration(event, calibration):
-    event = ledger.get_event(event)
+    event = ledger.get_event(event)[0]
     try:
         event._check_calibration()
     except DescriptionException:
@@ -304,7 +304,7 @@ def calibration(event, calibration):
             calibrations[ifo] = os.path.join(
                 f"{calibration}", "calibration", f"{ifo}.dat"
             )
-        event.meta["calibration"] = calibrations
+        event.meta["data"]["calibration"] = calibrations
         ledger.update_event(event)
 
 
