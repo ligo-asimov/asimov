@@ -13,7 +13,7 @@ from gwdatafind import find_urls
 
 from asimov import config
 from asimov import current_ledger as ledger
-from asimov.utils import find_calibrations
+from asimov.utils import find_calibrations, update
 from asimov.event import DescriptionException, Event
 from asimov.utils import update
 
@@ -277,7 +277,7 @@ def checkifo(event):
 @event.command()
 def calibration(event, calibration):
     event = ledger.get_event(event)[0]
-    try:
+    try:        
         event._check_calibration()
     except DescriptionException:
         print(event.name)
@@ -289,22 +289,7 @@ def calibration(event, calibration):
             for cal in calibration:
                 calibrations[cal.split(":")[0]] = cal.split(":")[1]
         print(calibrations)
-        for ifo, envelope in calibrations.items():
-            description = f"Added calibration {envelope} for {ifo}."
-            calibration = config.get("general", "calibration_directory")
-            try:
-                event.repository.add_file(
-                    envelope,
-                    os.path.join(f"{calibration}", "calibration", f"{ifo}.dat"),
-                    commit_message=description,
-                )
-            except GitCommandError as e:
-                if "nothing to commit," in e.stderr:
-                    pass
-            calibrations[ifo] = os.path.join(
-                f"{calibration}", "calibration", f"{ifo}.dat"
-            )
-        event.meta["data"]["calibration"] = calibrations
+        update(event.meta["data"]["calibration"], calibrations)
         ledger.update_event(event)
 
 
