@@ -280,7 +280,7 @@ def calibration(event, calibration):
     try:
         event._check_calibration()
     except DescriptionException:
-        print(event.title)
+        print(event.name)
         time = event.meta["event time"]
         if not calibration[0]:
             calibrations = find_calibrations(time)
