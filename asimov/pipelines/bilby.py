@@ -208,15 +208,16 @@ class Bilby(Pipeline):
             )
             out, err = pipe.communicate()
             self.logger.info(out)
-            self.logger.error(err)
 
             if err or "DAG generation complete, to submit jobs" not in str(out):
                 self.production.status = "stuck"
+                self.logger.error(err)
                 raise PipelineException(
                     f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
                     production=self.production.name,
                 )
             else:
+                time.sleep(10)
                 return PipelineLogger(message=out, production=self.production.name)
 
     def submit_dag(self, dryrun=False):

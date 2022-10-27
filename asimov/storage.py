@@ -293,7 +293,7 @@ class Store:
             event, production, name, hash, this_uuid
         )
 
-        destination = os.path.join(self.root, event, production, this_uuid.hex)
+        destination = os.path.join(self.root, event, production, name)
 
         copyfile(file, destination)
 
