@@ -410,7 +410,8 @@ class BayesWave(Pipeline):
                 store.add_file(
                     self.production.event.name,
                     self.production.name,
-                    file=f"{detector}-{sample_rate}-psd.dat",
+                    file=asset,
+                    new_name=f"{detector}-{sample_rate}-psd.dat"
                 )
             except Exception as e:
                 self.logger.error(
