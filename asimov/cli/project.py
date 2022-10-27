@@ -9,6 +9,7 @@ except ImportError:
 
 import os
 import shutil
+import getpass
 
 import click
 
@@ -26,6 +27,7 @@ def make_project(
     checkouts="checkouts",
     results="results",
     logs="logs",
+    user=None,
 ):
     """
     Create a new project called NAME.
@@ -79,6 +81,12 @@ def make_project(
     python_loc = shutil.which("python").split("/")[:-2]
     config.set("pipelines", "environment", os.path.join("/", *python_loc))
 
+    # Set the default condor user
+    if not user:
+        config.set("condor", "user",  getpass.getuser())
+    else:
+        config.set("condor", "user", user)
+
     Ledger.create(engine="yamlfile", name=project_name, location="ledger.yml")
 
     with open("asimov.conf", "w") as config_file:
@@ -108,7 +116,12 @@ def make_project(
     default="results",
     help="The location where the results store should be created.",
 )
-def init(name, root, working="working", checkouts="checkouts", results="results"):
+@click.option(
+    "--user",
+    default=None,
+    help="The user account to be used for accounting purposes. Defaults to the current user if not set."
+)
+def init(name, root, working="working", checkouts="checkouts", results="results", user=None):
     """
     Roll-out a new project.
     """
