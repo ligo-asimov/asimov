@@ -210,16 +210,16 @@ class Event:
         """
         Find the calibration envelope locations.
         """
-        if ("calibration" in self.meta) and (
+        if ("calibration" in self.meta['data']) and (
             set(self.meta["interferometers"]).issubset(
-                set(self.meta["calibration"].keys())
+                set(self.meta['data']["calibration"].keys())
             )
         ):
             pass
         else:
             raise DescriptionException(
                 f"""Some of the required calibration envelopes are missing from this issue."""
-                f"""{set(self.meta['interferometers']) - set(self.meta['calibration'].keys())}"""
+                f"""{set(self.meta['interferometers']) - set(self.meta['data']['calibration'].keys())}"""
             )
 
     def _check_psds(self):
