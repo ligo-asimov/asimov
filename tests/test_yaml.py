@@ -14,27 +14,27 @@ name: S000000xx
 data: 
   channels:
     L1: /this/is/fake
+  calibration: 
+    L1: Fake
 working directory: {0}/tests/tmp/
 repository: {0}/tests/test_data/s000000xx/
 interferometers: 
 - L1
-calibration: 
-  L1: Fake
 quality: {{}}
 productions:
 - Prod0:
     pipeline: lalinference
     comment: PSD production
     status: wait
-
 """
 
 BAD_YAML = """
 repository: {0}/tests/test_data/s000000xx/
 working directory: {0}/tests/tmp/
 interferometers: [L1]
-calibration:
-  L1: Fake
+data:
+  calibration:
+    L1: Fake
 quality: {{}}
 productions:
 - Prod0:
@@ -46,8 +46,9 @@ productions:
 BAD_YAML_2 = """
 name: S200311bg
 interferometers: [L1]
-calibration:
-- L1: Fake
+data:
+  calibration:
+  - L1: Fake
 working directory: {0}/tests/tmp/
 productions:
 - Prod0:
@@ -55,8 +56,6 @@ productions:
     status: wait
 
 """
-
-
 
 class EventTests(unittest.TestCase):
     """All tests of the YAML event format."""
@@ -141,8 +140,8 @@ class ProductionTests(unittest.TestCase):
             YAML_WITH_PRODUCTION_PRIORS = """
             name: S200311bg
             interferometers: [L1]
-            calibration: {{}}
-            data: 
+            data:
+              calibration: {{}}
               channels:
                 L1: /this/is/fake
             working directory: {0}/tests/tmp/
@@ -177,8 +176,8 @@ class ProductionTests(unittest.TestCase):
         YAML_WITH_PRODUCTION_PRIORS = """
         name: S200311bg
         interferometers: [L1]
-        calibration: {{}}
         data:
+          calibration: {{}}
           channels:
             L1: /this/is/fake
         working directory: {0}/tests/tmp/
