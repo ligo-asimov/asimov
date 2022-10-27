@@ -30,7 +30,7 @@ from asimov.cli import production
 @click.group()
 def olivaw():
     """
-    This is the main olivaw program which runs the DAGs for each event issue.
+    This is the main program which runs the DAGs for each event issue.
     """
     pass
 
