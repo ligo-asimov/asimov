@@ -256,7 +256,7 @@ class Store:
             hasher.update(buf)
         return hasher.hexdigest()
 
-    def add_file(self, event, production, file):
+    def add_file(self, event, production, file, new_name=None):
         """
         Add a file to the store.
 
@@ -269,6 +269,8 @@ class Store:
            Can be either a production object or the name of the production.
         file : str
            The path to the origin file to be stored.
+        new_name : str
+           The new name of the file once it's stored.
 
         Returns
         -------
@@ -285,8 +287,10 @@ class Store:
 
         this_uuid = uuid.uuid4()
 
+        name = new_name if new_name else os.path.basename(file)
+
         self.manifest.add_record(
-            event, production, os.path.basename(file), hash, this_uuid
+            event, production, name, hash, this_uuid
         )
 
         destination = os.path.join(self.root, event, production, this_uuid.hex)
