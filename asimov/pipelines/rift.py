@@ -11,7 +11,8 @@ from ligo.gracedb.rest import HTTPError
 from asimov import config, logger
 from asimov.utils import set_directory
 
-from ..pipeline import Pipeline, PipelineException, PipelineLogger
+from asimov.pipeline import Pipeline, PipelineException, PipelineLogger
+from asimov.pipeline import PESummaryPipeline
 
 
 class Rift(Pipeline):
@@ -42,12 +43,11 @@ class Rift(Pipeline):
             self.bootstrap = False
 
     def after_completion(self):
-        self.logger.info(
-            "Job has completed. Running PE Summary.",
-            production=self.production,
-            channels=["mattermost"],
-        )
-        cluster = self.run_pesummary()
+
+        self.logger.info("Job has completed. Running PE Summary.")
+        post_pipeline = PESummaryPipeline(production=self.production)
+        cluster = post_pipeline.submit_dag()
+
         self.production.meta["job id"] = int(cluster)
         self.production.status = "processing"
 
@@ -473,10 +473,13 @@ class Rift(Pipeline):
         else:
             return False
 
-    def samples(self):
+    def samples(self, absolute=False):
         """
         Collect the combined samples file for PESummary.
         """
-        return glob.glob(
-            os.path.join(self.production.rundir, "extrinsic_posterior_samples.dat")
-        )
+
+        if absolute:
+            rundir = os.path.abspath(self.production.rundir)
+        else:
+            rundir = self.production.rundir
+        return glob.glob(os.path.join(rundir, "extrinsic_posterior_samples.dat"))
