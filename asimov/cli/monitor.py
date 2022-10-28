@@ -149,7 +149,6 @@ def monitor(ctx, event, update, dry_run, chain):
             for production in event.productions
             if production.status.lower() in ACTIVE_STATES
         ]
-
         for production in on_deck:
 
             logger.debug(f"Available analyses: {event}/{production.name}")
