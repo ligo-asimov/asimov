@@ -179,6 +179,13 @@ def submit(event, update, dryrun):
                         click.style("●", fg="red")
                         + f" Unable to submit {production.name}"
                     )
+                except ValueError:
+                    logger.info("Unable to submit an unbuilt production")
+                    click.echo(
+                        click.style("●", fg="red")
+                        + f" Unable to submit {production.name} as it hasn't been built yet."
+                    )
+                    click.echo("Try running `asimov manage build` first.")
                 try:
                     pipe.submit_dag(dryrun=dryrun)
                     click.echo(
