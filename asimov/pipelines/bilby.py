@@ -14,7 +14,7 @@ from liquid import Liquid
 from asimov.utils import update
 
 from .. import config
-from ..pipeline import Pipeline, PipelineException, PipelineLogger
+from ..pipeline import Pipeline, PipelineException, PipelineLogger, PESummaryPipeline
 
 
 class Bilby(Pipeline):
@@ -317,16 +317,17 @@ class Bilby(Pipeline):
         """
         Collect the combined samples file for PESummary.
         """
-        return glob.glob(
-            os.path.join(self.production.rundir, "result", "*_merge*_result.*")
-        )
+
+        if absolute:
+            rundir = os.path.abspath(self.production.rundir)
+        else:
+            rundir = self.production.rundir
+        return glob.glob(os.path.join(rundir, "result", "*_merge*_result.*"))
 
     def after_completion(self):
-        self.logger.info(
-            "Job has completed. Running postprocessing.",
-        )
-        cluster = self.run_pesummary()
-        self.logger.info(f"PESummary is running with job id {int(cluster)}")
+        post_pipeline = PESummaryPipeline(production=self.production)
+        self.logger.info("Job has completed. Running PE Summary.")
+        cluster = post_pipeline.submit_dag()
         self.production.meta["job id"] = int(cluster)
         self.production.status = "processing"
         self.production.event.update_data()

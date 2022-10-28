@@ -149,6 +149,7 @@ def monitor(ctx, event, update, dry_run, chain):
                     raise ValueError  # Pass to the exception handler
 
                 if not dry_run:
+
                     if (
                         job.status.lower() == "running"
                         and production.status == "processing"
@@ -167,9 +168,20 @@ def monitor(ctx, event, update, dry_run, chain):
                         )
                         if "profiling" not in production.meta:
                             production.meta["profiling"] = {}
-                            
+
                         # production.meta['profiling'] = job.get_data()['WallClockCheckpoint']
+
                         production.status = "running"
+                    elif (
+                        job.status.lower() == "running"
+                        and production.status == "processing"
+                    ):
+                        click.echo(
+                            "  \t  "
+                            + click.style("●", "green")
+                            + f" {production.name} is postprocessing (condor id: {production.meta['job id']})"
+                        )
+                        production.meta["postprocessing"]["status"] = "running"
                     elif job.status.lower() == "completed":
                         click.echo(
                             "  \t  "
@@ -226,8 +238,19 @@ def monitor(ctx, event, update, dry_run, chain):
                             click.echo(
                                 "  \t  "
                                 + click.style("●", "green")
-                                + f" {production.name} has finished and post-processing is running"
+                                + f" {production.name} has finished and post-processing"
+                                + f" is stuck ({production.meta['job id']})"
                             )
+                            production.meta["postprocessing"]["status"] = "stuck"
+                    elif (
+                        pipe.detect_completion()
+                        and production.status.lower() == "running"
+                    ):
+                        click.echo(
+                            "  \t  "
+                            + click.style("●", "green")
+                            + f" {production.name} has finished and post-processing is running"
+                        )
                     elif (
                         pipe.detect_completion()
                         and production.status.lower() == "running"
@@ -241,8 +264,8 @@ def monitor(ctx, event, update, dry_run, chain):
                             )
                             production.meta["job id"] = None
                         except condor.htcondor.HTCondorIOError as e:
-                            self.logger.error("Could not collect condor profiling data.")
-                            self.logger.exception(e)
+                            logger.error("Could not collect condor profiling data.")
+                            logger.exception(e)
                             pass
 
                         finish += 1

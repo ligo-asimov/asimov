@@ -101,7 +101,15 @@ class YAMLLedger(Ledger):
         """
         self.data["events"] = list(self.events.values())
 
-        categories = {"priors", "sampler", "likelihood", "quality", "data", "scheduler"}
+        categories = {
+            "priors",
+            "sampler",
+            "likelihood",
+            "quality",
+            "data",
+            "scheduler",
+            "postprocessing",
+        }
         for category in categories:
             for i, event in enumerate(self.data["events"]):
                 overloaded = {}
@@ -143,6 +151,24 @@ class YAMLLedger(Ledger):
                         ].pop(category)
                         for prior, values in production_data.items():
                             if "pipeline" in production[prod_name]:
+                                if (
+                                    production[prod_name]["pipeline"]
+                                    in self.data["pipelines"]
+                                ):
+                                    if (
+                                        category
+                                        in self.data["pipelines"][
+                                            production[prod_name]["pipeline"]
+                                        ]
+                                    ):
+                                        inherited = update(
+                                            inherited,
+                                            self.data["pipelines"][
+                                                production[prod_name]["pipeline"]
+                                            ][category],
+                                            inplace=False,
+                                        )
+                            if "postprocessing" in production[prod_name]:
                                 if (
                                     production[prod_name]["pipeline"]
                                     in self.data["pipelines"]
