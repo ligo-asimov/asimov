@@ -7,7 +7,6 @@ import click
 import gwpy
 import gwpy.timeseries
 import numpy as np
-from git import GitCommandError
 from glue.lal import Cache
 from gwdatafind import find_urls
 
@@ -15,7 +14,6 @@ from asimov import config
 from asimov import current_ledger as ledger
 from asimov.utils import find_calibrations, update
 from asimov.event import DescriptionException, Event
-from asimov.utils import update
 
 
 @click.group()
@@ -277,7 +275,7 @@ def checkifo(event):
 @event.command()
 def calibration(event, calibration):
     event = ledger.get_event(event)[0]
-    try:        
+    try:
         event._check_calibration()
     except DescriptionException:
         print(event.name)
