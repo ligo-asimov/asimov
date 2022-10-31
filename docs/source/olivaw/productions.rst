@@ -1,5 +1,5 @@
-Working with analyses
-=====================
+Setting-up analyses
+===================
 
 Once we have a project and at least one event we can start to add analyses.
 A single analysis with asimov is called a "production".
