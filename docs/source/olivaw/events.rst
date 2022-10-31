@@ -161,30 +161,31 @@ If we have a JSON file from the PEConfigurator we need to use the ``olivaw event
 Adding calibration evelopes
 ---------------------------
 
-.. warning:: This command is deprecated; when it is possible to find calibration envelopes automatically asimov will now do so when the event is created.
-	     This command will be removed soon.
-
 Many analyses will require access to calibration envelopes for the detectors.
-Asimov includes a tool for locating the appropriate envelopes for events.
 
-Provided you've already added a gpstime to the event (either manually, or from GraceDB) you can run
 
 .. note::
 
-   This should work on LIGO clusters, but you'll need to follow the instructions for adding calibration information manually if you're running the command elsewhere.
+   This should work on the CIT LIGO cluster, but you'll need to follow the instructions for adding calibration information manually if you're running the command elsewhere.
 
+
+For an event called ``GW170817`` in the ledger you can find the calibration envelopes and add them to the ledger by running
+   
 .. code-block:: console
 
-		$ olivaw event calibration GW170817
+		$ asimov event calibration GW170817
 
 This will search for the calibration files for all of the available detectors, and add them to the event record in the ledger.
+Note that the ``asimov apply`` command will perform this action for you, so you don't need to run this command if you made your event from a YAML file.
 
 If you need to add calibrations manually you can do that by specifying them as options:
 
 .. code-block:: console
 
-		$ olivaw event calibration GW150914 --calibration H1:h1-cal.dat -- calibration L1:l1-cal.dat
+		$ asimov event calibration GW150914 --calibration H1:/home/albert.einstein/h1-cal.dat -- calibration L1:/home/albert.einstein/l1-cal.dat
 
+It's safest to use absolute filepaths here.
+		
 
 Command documentation
 ---------------------
