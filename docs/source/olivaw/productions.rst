@@ -12,8 +12,100 @@ This means that setting-up equivalent jobs with two different pipelines requires
 Adding an analysis from a YAML file
 -----------------------------------
 
-.. todo:: Add instructions on using YAML files and the ``asimov apply`` command.
+One of the easiest ways to add an analysis to an event is to use a YAML file which describes its main settings.
+Default settings can be added to a project on a pipeline-by-pipeline basis, so that they apply to all analyses using that pipeline.
+For example, you might want to set some defaults which are applied to all ``bilby`` jobs which are run by asimov.
 
+These pipeline defaults can be added by a ``configuration`` type YAML file.
+For example, to set some sensible defaults for ``bilby`` we could make a file called ``bilby-defaults.yaml``, and then add this YAML data to the file:
+
+.. code-block:: yaml
+
+		kind: configuration
+		pipelines:
+  		  bilby:
+		    sampler:
+  		      sampler: dynesty
+		    scheduler:
+		      accounting group: ligo.dev.o4.cbc.pe.bilby
+		      request cpus: 4
+
+These settings will then be used by all of the bilby analyses in the project unless one of the settings is explicitly overwritten by the analysis settings.
+We must apply these configurations to the project before they can be used.
+This should be done with the ``asimov apply`` command.
+
+.. code-block:: console
+
+		$ asimov apply -f bilby-defaults.yaml
+
+We can also add specific analyses to each event in the project using ``analysis`` type YAML files.
+For example, to create a bilby analysis we would make a file called ``bilby-analysis.yaml``, and add this YAML data to the file:
+
+.. code-block:: yaml
+
+		kind: analysis
+		name: Prod1
+		pipeline: bilby
+		approximant: IMRPhenomXPHM
+		comment: Bilby parameter estimation job
+		needs:
+		  - Prod0
+
+This will create an analysis called ``Prod1`` which uses bilby, and depends on another analysis called ``Prod1`` completing before it will be run.
+Again we can add this analysis to the project with ``asimov apply`` by running
+
+.. code-block:: console
+
+		$ asimov apply -f bilby-analysis.yaml -e GW150914
+
+Note how we had to specify ``-e GW150914`` so that asimov knew which event to add the analysis to (in this case, an event called ``GW150914``).
+We could also add this information directly to the YAML file:
+
+.. code-block:: yaml
+		:emphasize-lines: 2
+
+		kind: analysis
+		event: GW150914
+		name: Prod1
+		pipeline: bilby
+		approximant: IMRPhenomXPHM
+		comment: Bilby parameter estimation job
+		needs:
+		  - Prod0
+
+It's also possible to add multiple analyses to the same file, should you want to always add the same set of analyses to every event.
+This is very useful if you want to add a set of analyses with a set of dependency relationships.
+To take the above example, where there is a dependency on ``Prod0``, it might be helpful for your own organisation to keep its specification in the same file.
+This can be done by separating the analysis descriptions with three hyphens (``---``).
+For example:
+
+.. code-block:: yaml
+
+		kind: analysis
+		name: Prod0
+		pipeline: bayeswave
+		comment: Bayeswave on-source PSD estimation job
+		---
+		kind: analysis
+		name: Prod1
+		pipeline: bilby
+		approximant: IMRPhenomXPHM
+		comment: Bilby parameter estimation job
+		needs:
+		  - Prod0
+
+Now if we run ``asimov apply`` with this file both ``Prod0`` and ``Prod1`` will be added at the same time.
+
+You can find curated analysis description files in the `curated settings repository <https://git.ligo.org/asimov/data/-/tree/main/analyses>`_.
+
+.. todo:: Add a pointer to the curated settings documentation.
+
+For example, you can add the standard set of GWTC-3 analyses by running
+
+.. code-block:: console
+
+		$ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/analyses/production-default.yaml
+		
 Adding a new production
 -----------------------
 
