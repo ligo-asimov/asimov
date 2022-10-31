@@ -106,68 +106,54 @@ For example, you can add the standard set of GWTC-3 analyses by running
 
 		$ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/analyses/production-default.yaml
 		
-Adding a new production
------------------------
+Using the command line
+----------------------
 
-Let's try adding a `lalinference` production to an event called GW150914.
-Provided we don't need to perform any customisation to our production we can just run
+.. note:: Future changes
+
+	  In future versions of ``asimov`` this command is likely to change signficantly to make it more useful than the current version.
+
+We can also use the command line to add an analysis, but we'll be much more limited as to which settings can be changed for the analysis.
+We can do this with the ``asimov production create`` command.
+For example, to add a ``bilby`` analysis to an event called ``GW150914`` we can run
 
 .. code-block:: console
 
-		$ olivaw production create GW150914 lalinference --approximant IMRPhenomPv2
+		$ asimov production create GW150914 bilby --approximant IMRPhenomPv2
 
-If we now look at the ledger we can see that the GW150914 event has been updated to include a productions section, and the lalinference job has been added:
-
-.. code-block:: yaml
-
-		events:
-		- calibration: {}
-		  event time: 1126259462.426435
-		  interferometers:
-		  - H1
-		  - L1
-		  name: GW150914
-		  productions:
-		  - Prod0:
-		      approximant: IMRPhenomPv2
-		      comment: null
-		      pipeline: lalinference
-		      review: []
-		      status: wait
-		  working directory: working/GW150914
-
+This command will add a ``bilby`` analysis using the ``IMRPhenomXPHM`` approximant to the event ``GW150914``.
+		
 When creating the production we can also add a comment, which may be useful to help distinguish it from similar analyses when we're looking at many jobs.
 We can do that by adding the ``--comment`` option:
 
 .. code-block:: console
 
-		$ olivaw production create GW150914 lalinference --comment "Higher mode analysis"
+		$ asimov production create GW150914 bilby --comment "Higher mode analysis"
 
 
-Naming productions
-------------------
-		  
-Asimov names productions automatically, with the first becoming ``Prod0`` by default, and future jobs being incremented, so ``Prod1``, ``Prod2``, and so on.
-We can customise the prefix of the name with the ``--family`` option.
-For example, if you wanted to call your exploratory runs ``Exp0``, ``Exp1``, and so-forth you could do that by using this command:
+.. note:: Naming analyses
+		
+	  Asimov names analyses automatically when they're created , with the first becoming ``Prod0`` by default, and future jobs being incremented, so ``Prod1``, ``Prod2``, and so on.
+	  We can customise the prefix of the name with the ``--family`` option.
+	  For example, if you wanted to call your exploratory runs ``Exp0``, ``Exp1``, and so-forth you could do that by using this command:
 
-.. code-block:: console
+	  .. code-block:: console
 
-		$ olivaw production create GW150914 lalinference --family Exp
+			  $ asimov production create GW150914 bilby --family Exp
 
 Analysis dependencies
 ---------------------
 
-When we create the production we can supply some additional information, including a list of dependencies.
-Any production can have multiple other productions as a dependency; asimov will construct a graph by analysing the dependencies for all productions, and will ensure that they are executed in the correct order.
+When we create the analysis we can supply some additional information, including a list of dependencies.
+Any analysis can have multiple other analyses as a dependency; asimov will construct a graph by analysing the dependencies for all analyses, and will ensure that they are executed in the correct order.
 
 Suppose you have set up a job which produces PSDs which are required for all subsequent analyses.
-This production is called ``Prod0``.
+This analysis is called ``Prod0``.
 Then we can set up  a subsequent analysis with
 
 .. code-block:: console
 
-		$ olivaw production create GW150914 lalinference --needs Prod0
+		$ asimov production create GW150914 bilby --needs Prod0
 
 This production will not be set-up and run until ``Prod0`` has been completed.
 		
@@ -189,7 +175,7 @@ If you want a production to be ready to start as soon as it is created, however,
 
 .. code-block:: console
 
-		$ olivaw production create GW150914 lalinference --status ready
+		$ asimov production create GW150914 lalinference --status ready
 
 
 Pipeline template
@@ -205,7 +191,15 @@ A custom template can be included using the ``--template`` option, for example
 
 .. code-block:: console
 
-		$ olivaw production create GW150914 lalinference --template testinggr.ini
+		$ asimov production create GW150914 lalinference --template testinggr.ini
 
 
 You can find more information about configuration templates at the `templates` page of the documentation.
+
+
+Command documentation
+---------------------
+.. click:: asimov.olivaw:olivaw
+   :prog: asimov
+   :commands: production
+   :nested: full
