@@ -1,3 +1,5 @@
+.. _rift-pipelines:
+
 RIFT pipelines
 ==============
 

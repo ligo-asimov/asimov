@@ -1,8 +1,5 @@
-asimov package
-==============
-
-Submodules
-----------
+Modules
+=======
 
 asimov.condor module
 --------------------
@@ -40,14 +37,6 @@ asimov.mattermost module
 ------------------------
 
 .. automodule:: asimov.mattermost
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-asimov.olivaw module
---------------------
-
-.. automodule:: asimov.olivaw
    :members:
    :undoc-members:
    :show-inheritance:

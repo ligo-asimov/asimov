@@ -23,20 +23,22 @@ Here we list some typical things to keep in mind ensuring the code review is as 
 2. New classes/functions/methods should have a docstring and following the `numpy docstring guide  <https://numpydoc.readthedocs.io/en/latest/format.html>`_, for example
 
 .. code-block:: python
-def my_new_function(x, y, print=False):
-    """
-    A function to calculate the sum of two numbers
-    
-    Parameters
-    ----------
-    x, y: float
-        Input numbers to sum
-    print: bool
-        If true, print a message
-    """
-    if print:
-        print("Message!")
-    return x + y
+		
+		def my_new_function(x, y, print=False):
+		    """
+		    A function to calculate the sum of two numbers
+
+		    Parameters
+		    ----------
+		    x, y: float
+			Input numbers to sum
+		    print: bool
+			If true, print a message
+		    """
+		    if print:
+			print("Message!")
+		    return x + y
+
     
 3. Avoid inline comments unless necessary. Ideally, the code should make it obvious what is going on, if not the docstring, only in subtle cases use comments
 4. Name variables sensibly. Avoid using single-letter variables, it is better to name something ``power_spectral_density_array`` than ``psda``.
@@ -45,45 +47,6 @@ def my_new_function(x, y, print=False):
 
 ..
 
-
-   Automated code checking
-   -----------------------
-
-   In order to automate checking of the code quality, we use
-   [pre-commit](https://pre-commit.com/). For more details, see the documentation,
-   here we will give a quick-start guide:
-   1. Install and configure:
-   ```console
-   $ pip install pre-commit  # install the pre-commit package
-   $ cd asimov
-   $ pre-commit install
-   ```
-   2. Now, when you run `$ git commit`, there will be a pre-commit check.
-      This is going to search for issues in your code: spelling, formatting, etc.
-      In some cases, it will automatically fix the code, in other cases, it will
-      print a warning. If it automatically fixed the code, you'll need to add the
-      changes to the index (`$ git add FILE.py`) and run `$ git commit` again. If
-      it didn't automatically fix the code, but still failed, it will have printed
-      a message as to why the commit failed. Read the message, fix the issues,
-      then recommit.
-   3. The pre-commit checks are done to avoid pushing and then failing. But, you
-      can skip them by running `$ git commit --no-verify`, but note that the C.I.
-      still does the check so you won't be able to merge until the issues are
-      resolved.
-   If you experience any issues with pre-commit, please ask for support on the
-   usual help channels.
-
-
-   ## Code relevance
-
-   The bilby code base is intended to be highly modular and flexible. We encourage
-   people to "develop into" the code base new features and tools that will be
-   widely used. On the other hand, if you are developing a tool which might be
-   highly specialised, it might make more sense to develop a separate python
-   module which **depends** on bilby, but doesn't need to live in the bilby source
-   code.  Adding code into the bilby source comes with advantages, but also adds
-   complexity and review burden to the project. If you are unsure where it should
-   live, open an issue to discuss it. 
 
 Merge requests
 --------------
@@ -260,6 +223,7 @@ this, first find out where the module is being imported from: from any
 directory that is *not* the source directory, do the following
 
 .. code-block:: console
+		
 		$ python
 		>>> import asimov
 		>>> print(asimov.__file__)

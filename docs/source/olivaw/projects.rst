@@ -1,3 +1,5 @@
+.. _project-guide:
+
 ===============
 Asimov Projects
 ===============
