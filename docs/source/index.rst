@@ -181,15 +181,25 @@ Developers' Guide
 
    building-docs
    
-Module documentation
---------------------
+Python API
+----------
 
 .. toctree::
    :maxdepth: 1
-   :caption: Modules
+   :caption: Python API
 
    api/asimov
+   api/condor
+   api/event
    api/git
+   api/gitlab
+   api/ini
+   api/ledger
+   api/locutus
+   api/logging
+   api/mattermost
+   api/olivaw
+   api/pipeline
    config
 	     
 Indices and tables
