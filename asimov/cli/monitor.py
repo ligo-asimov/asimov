@@ -307,7 +307,8 @@ def monitor(ctx, event, update, dry_run, chain):
         if len(others) > 0:
             click.echo("The event also has these analyses which are waiting on other analyses to complete:")
             for production in others:
-                click.echo(f"\t{production.name} which needs {production.meta['needs']}")
+                needs = ', '.join(production.meta['needs'])
+                click.echo(f"\t{production.name} which needs {needs}")
 
         if chain:
             ctx.invoke(report.html)
