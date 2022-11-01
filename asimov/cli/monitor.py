@@ -160,6 +160,7 @@ def monitor(ctx, event, update, dry_run, chain):
                             + f" Postprocessing for {production.name} is running"
                             + f" (condor id: {production.meta['job id']})"
                         )
+
                     elif job.status.lower() == "running":
                         click.echo(
                             "  \t  "
@@ -172,6 +173,7 @@ def monitor(ctx, event, update, dry_run, chain):
                         # production.meta['profiling'] = job.get_data()['WallClockCheckpoint']
 
                         production.status = "running"
+
                     elif (
                         job.status.lower() == "running"
                         and production.status == "processing"
@@ -182,12 +184,16 @@ def monitor(ctx, event, update, dry_run, chain):
                             + f" {production.name} is postprocessing (condor id: {production.meta['job id']})"
                         )
                         production.meta["postprocessing"]["status"] = "running"
-                    elif job.status.lower() == "completed":
+
+                    elif (job.status.lower() == "completed"):
+                        pipe.after_completion()
                         click.echo(
                             "  \t  "
                             + click.style("●", "green")
-                            + f" {production.name} has completed"
+                            + f" {production.name} has finished and post-processing has been started"
                         )
+                        job_list.refresh()
+
                     elif job.status.lower() == "held":
                         click.echo(
                             "  \t  "

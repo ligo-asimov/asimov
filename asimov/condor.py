@@ -54,13 +54,19 @@ def submit_job(submit_description):
         schedd = htcondor.Schedd(schedulers)
         logger.info(f"Found scheduler: {schedd}")
     except:  # NoQA
-        # If you can't find a specified scheduler, use the first one you find
+        # If you can't find a specified scheduler, try until it works
         collectors = htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd)
         logger.info("Searching for a scheduler of any kind")
-        logger.info(f"Found {collectors[-1]}")
-        schedd = htcondor.Schedd(collectors[-1])
-    with schedd.transaction() as txn:
-        cluster_id = hostname_job.queue(txn)
+        for collector in collectors:
+            logger.info(f"Found {collector}")
+            schedd = htcondor.Schedd(collector)
+            with schedd.transaction() as txn:
+                try:
+                    cluster_id = hostname_job.queue(txn)
+                    break
+                except htcondor.HTCondorIOError:
+                    logger.info(f"{collector} cannot receive jobs")
+
     return cluster_id
 
 
@@ -88,19 +94,24 @@ def collect_history(cluster_id):
         # If you can't find a specified scheduler, use the first one you find
         collectors = htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd)
         logger.info("Searching for a scheduler of any kind")
-        logger.info(f"Found {collectors[-1]}")
-        schedd = htcondor.Schedd(collectors[-1])
-        HISTORY_CLASSADS = [
-            "CompletionDate",
-            "CpusProvisioned",
-            "GpusProvisioned",
-            "CumulativeSuspensionTime",
-            "EnteredCurrentStatus",
-            "MaxHosts",
-            "RemoteWallClockTime",
-            "RequestCpus",
-        ]
-        jobs = schedd.history(f"ClusterId == {cluster_id}", projection=HISTORY_CLASSADS)
+        for collector in collectors:
+            logger.info(f"Found {collector}")
+            schedd = htcondor.Schedd(collector)
+            try:
+                HISTORY_CLASSADS = [
+                    "CompletionDate",
+                    "CpusProvisioned",
+                    "GpusProvisioned",
+                    "CumulativeSuspensionTime",
+                    "EnteredCurrentStatus",
+                    "MaxHosts",
+                    "RemoteWallClockTime",
+                    "RequestCpus",
+                ]
+                jobs = schedd.history(f"ClusterId == {cluster_id}", projection=HISTORY_CLASSADS)
+                break
+            except htcondor.HTCondorIOError:
+                logger.info(f"{collector} cannot receive jobs")
         output = {}
         for job in jobs:
             end = float(job["CompletionDate"]) or float(job["EnteredCurrentStatus"])
