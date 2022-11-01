@@ -305,7 +305,7 @@ def monitor(ctx, event, update, dry_run, chain):
             ledger.update_event(event)
 
         all_productions = set(event.productions)
-        others = all_productions - set(on_deck)
+        others = all_productions - set(event.get_all_latest())
         if len(others) > 0:
             click.echo("The event also has these analyses which are waiting on other analyses to complete:")
             for production in others:
