@@ -1,9 +1,12 @@
+.. _reporting-guide:
+
 ================
 Progress reports
 ================
 
 Most of the analyses which are run by asimov take a long period of time to run, and many of the jobs its designed to do involve setting up dozens or even hundreds of analyses.
 While it is possible to use the command line to keep track of this, using the
+
 ::
    asimov monitor
 
@@ -19,8 +22,10 @@ Automatic analysis monitoring
 The tool asimov provides to check the status of all the analyses in a project is called ``asimov monitor``, and running this on the command line will produce a list of all of the analyses which are currently either running, or ready to start running, and give some brief information about them.
 
 For example you might see something like this if you run in an asimov project where there's a running analysis:
-::
-   ❯ asimov monitor
+
+.. code-block:: console
+   
+   $ asimov monitor
    GW150914_095045
         - Prod1[bilby]
           ● Prod1 is running (condor id: 300807672)
@@ -54,6 +59,7 @@ However, under normal circumstances theese won't be accessible via the web, whic
 
 The location of the pages can be changed in the configuration file for the project, which is called ``asimov.conf``.
 The value
+
 ::
    [general]
    webroot = pages/
@@ -61,6 +67,7 @@ The value
 
 Can be changed to point instead to a directory which is served by a webserver.
 For example, on an LDG cluster you can set
+
 ::
    [general]
    webroot = /home/albert.einstein/LVC/projects/my-asimov-project

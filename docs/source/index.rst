@@ -154,7 +154,10 @@ Advanced topics
 .. toctree::
    :maxdepth: 2
    :caption: Advanced topics
-	     
+
+   analyses
+   build-process
+   
    configuration
    test-interface
    clusters
@@ -168,10 +171,15 @@ Developers' Guide
    contributing.rst
    code-of-conduct.rst
 
-   asimov-repository
    
+   asimov-repository
+
+   code-overview
+	     
    ledger   
    pipelines-dev
+
+   building-docs
    
 Module documentation
 --------------------
@@ -180,9 +188,8 @@ Module documentation
    :maxdepth: 1
    :caption: Modules
 
+   api/asimov
    api/git
-   state
-   pipelines
    config
 	     
 Indices and tables

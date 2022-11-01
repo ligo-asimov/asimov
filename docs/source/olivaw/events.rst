@@ -1,3 +1,5 @@
+.. _event-guide:
+
 Creating and managing events
 ============================
 

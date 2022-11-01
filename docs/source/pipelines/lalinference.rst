@@ -1,3 +1,5 @@
+.. _lalinference-pipelines:
+
 LALInference Pipelines
 ======================
 

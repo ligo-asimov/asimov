@@ -1,3 +1,5 @@
+.. _ledger:
+
 The Asimov Ledger
 =================
 
@@ -99,7 +101,9 @@ Examples
   Files should be provided for each detector, indexed by the detector abbreviation.
 
   For example
+  
   ::
+     
      data:
        calibration:
          H1: /home/cal/H1-calibration.dat
@@ -109,7 +113,9 @@ Examples
   This section defines the data channels which should be used in the analysis.
   These should be provided for each detector.
   For example
+  
   ::
+     
      data:
        channels:
 	 H1: H1:DCS-CALIB_STRAIN_C02
@@ -119,7 +125,9 @@ Examples
   This section defines the frame types which should be used in the analysis.
   These should be provided for each detector.
   For example
+  
   ::
+     
      data:
        frame-types:
 	 H1: H1_HOFT_C02
@@ -129,7 +137,9 @@ Examples
   This section defines the segments which should be used in the analysis.
   These should be provided for each detector.
   For example
+  
   ::
+     
      data:
        segments:
 	 H1: H1:DMT-ANALYSIS_READY:1
@@ -139,7 +149,9 @@ Examples
   This section should define data files which contain the analysis data to be used
   in the analysis, and should be provided for each detector.
   For example
+  
   ::
+     
      data:
        data files:
          H1: ./H1-file.gwf

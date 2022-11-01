@@ -5,7 +5,7 @@ Quick Start
 -----------
 
 You can get started with an analysis-ready gravitational wave project in just a few quick steps.
-You'll need to have asimov installed first; you can find information about doing this in the :ref:`installation guide`.
+You'll need to have asimov installed first; you can find information about doing this in the :ref:`installation-guide`.
 
 1. **Create a new asimov project**
    Asimov projects are used to keep all of the data required to construct analyses, and all of the results they produce, together in one organised place.
@@ -53,7 +53,7 @@ You'll need to have asimov installed first; you can find information about doing
 3. **Adding an event**
    Events are the primary subjects for analysis in asimov.
    A good example of an event is a compact binary coalescence signal, such as GW150914, which was the first gravitational wave to be detected, in 2015.
-   For the purposes of this guide we'll use the same set of priors and additional information which were used to analyse this event in the GWTC-2.1 gravitational wave catalogue, however you can also set the entire event up manually by following the instructions in the :ref:`event guide`.
+   For the purposes of this guide we'll use the same set of priors and additional information which were used to analyse this event in the GWTC-2.1 gravitational wave catalogue, however you can also set the entire event up manually by following the instructions in the :ref:`event guide<event-guide>`.
 
    We can download the curated GWTC-2.1 settings by running
 
@@ -92,7 +92,7 @@ You'll need to have asimov installed first; you can find information about doing
 		   ● Successfully applied Prod1 to GW150914_095045
 		   
    Again, it is also possible to set up an analysis from scratch, or to alter the settings for a given analysis before it's started.
-   Details on how you can do this can be found in the :ref:`analysis guide`.
+   Details on how you can do this can be found in the :ref:`analysis guide<analysis-guide>`.
 
    If we now look at the project again we can see that two new analyses are listed for GW150914:
 
@@ -126,7 +126,7 @@ You'll need to have asimov installed first; you can find information about doing
 
    If the pipeline which you're building uses a configuration file to describe its settings, this step will produce that configuration file, and will save it in the event repository.
    You can find the event (git) repositories in the ``checkouts`` directory of the current project, but their location can be changed.
-   Details on doing that are in the :ref:`projects guide`.
+   Details on doing that are in the :ref:`projects guide<project-guide>`.
    Configuration files are produced by taking the settings stored in asimov's project ledger, and combining them with a template configuration file for the pipeline.
    This step also creates all of the files which are required to submit the analysis to an ``htcondor``-based computing scheduler.
    You can find these files inside the ``working`` directory of the current project.
@@ -186,11 +186,17 @@ chances are if you're looking at asimov you'll want to do something a little mor
 What's next?
 ------------
 
++ **Adding more events**
+  If you want to add new events, or download event information from GraceDB you should read the :ref:`event guide<event-guide>`.
+
++ **Adding more analyses**
+  You can also add additional analyses, and change the settings used; you can find more information in the :ref:`analysis guide<analysis-guide>`.
+
 + **Creating overview pages**
   Chances are you don't want to spend all of your time checking the status of jobs on the terminal.
   Asimov can produce clear and tidy web page reports showing the status of all of the analyses it's running which are regularly updated.
-  You can find more information about setting this up in the :ref:`reporting guide`.
+  You can find more information about setting this up in the :ref:`reporting guide<reporting-guide>`.
 
 + **Advanced project configuration**
   For most analyses the default project setup should be sufficient, but if you need to run an extremely large set of analyses, and are sharing the job with lots of other people, it might be convenient to be able to change things.
-  You can find more details about doing that in the :ref:`project guide`.
+  You can find more details about doing that in the :ref:`project guide<project-guide>`.

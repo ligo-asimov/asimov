@@ -1,3 +1,5 @@
+.. _analysis-guide:
+
 Setting-up analyses
 ===================
 
@@ -166,7 +168,7 @@ Analysis status
 ---------------
 
 Asimov uses its ledger to record the last known state of a production, in the form of a state machine.
-Details of the possible states are documented on the :ref:`../state.rst<states page>` of the documentation.
+Details of the possible states are documented in the :ref:`detailed analysis documentation<states>`.
 
 By default a new production is assigned a ``wait`` state, which prevents asimov from generating the configuration file for the pipeline, or starting the analysis.
 This is a useful state to put jobs into until you're happy that all of the settings are correct.
