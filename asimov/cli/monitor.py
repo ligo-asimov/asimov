@@ -246,7 +246,7 @@ def monitor(ctx, event, update, dry_run, chain):
                             production.meta["postprocessing"]["status"] = "stuck"
                     elif (
                         pipe.detect_completion()
-                        and production.status.lower() == "running"
+                        and production.status.lower() == "processing"
                     ):
                         click.echo(
                             "  \t  "
