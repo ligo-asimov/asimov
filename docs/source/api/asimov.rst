@@ -1,13 +1,7 @@
 Modules
 =======
 
-asimov.condor module
---------------------
 
-.. automodule:: asimov.condor
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 asimov.git module
 -----------------
