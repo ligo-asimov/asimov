@@ -402,7 +402,7 @@ class PESummaryPipeline(PostPipeline):
         ]
         # Samples
         command += ["--samples"]
-        command += self.production.pipeline.samples(absolute=True)
+        command += self.production.pipeline.samples(absolute=False)
         # Calibration information
         command += ["--calibration"]
         command += calibration
