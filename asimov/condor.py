@@ -60,12 +60,12 @@ def submit_job(submit_description):
         for collector in collectors:
             logger.info(f"Found {collector}")
             schedd = htcondor.Schedd(collector)
-            with schedd.transaction() as txn:
-                try:
+            try:
+                with schedd.transaction() as txn:
                     cluster_id = hostname_job.queue(txn)
                     break
-                except htcondor.HTCondorIOError:
-                    logger.info(f"{collector} cannot receive jobs")
+            except htcondor.HTCondorIOError:
+                logger.info(f"{collector} cannot receive jobs")
 
     return cluster_id
 
