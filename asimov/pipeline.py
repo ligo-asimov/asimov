@@ -366,7 +366,7 @@ class PESummaryPipeline(PostPipeline):
             if "backwards" in self.meta["evolve spins"]:
                 command += ["--evolve_spins_backwards", "precession_averaged"]
 
-        if "nrsur" in self.meta['waveform']['approximant']:
+        if "nrsur" in self.production.meta['waveform']['approximant'].lower():
             command += ["--NRSur_fits"]
         else:
             command += ["--waveform_fits"]
