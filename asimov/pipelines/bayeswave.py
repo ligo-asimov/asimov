@@ -133,6 +133,15 @@ class BayesWave(Pipeline):
             pipe_cmd,
             # "-l", f"{gps_file}",
             f"--trigger-time={gps_time}",
+        ]
+
+        if "osg" in self.production.meta['scheduler']:
+            if self.production.meta['scheduler']['osg']:
+                command += [
+                    "--osg-jobs",
+                    "--glide-in"
+                ]
+        command += [
             "-r",
             self.production.rundir,
             ini,
