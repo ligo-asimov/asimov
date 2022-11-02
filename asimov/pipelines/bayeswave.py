@@ -138,8 +138,8 @@ class BayesWave(Pipeline):
         if "osg" in self.production.meta['scheduler']:
             if self.production.meta['scheduler']['osg']:
                 command += [
-                    "--osg-jobs",
-                    "--glide-in"
+                    "--osg-deploy",
+                    "--transfer-files"
                 ]
         command += [
             "-r",
