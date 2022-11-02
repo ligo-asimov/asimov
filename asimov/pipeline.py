@@ -338,7 +338,7 @@ class PESummaryPipeline(PostPipeline):
             self.production.name,
             "--gw",
             "--approximant",
-            self.production.meta["approximant"],
+            self.production.meta['waveform']["approximant"],
             "--f_low",
             str(min(self.production.meta["quality"]["minimum frequency"].values())),
             "--f_ref",
@@ -366,7 +366,7 @@ class PESummaryPipeline(PostPipeline):
             if "backwards" in self.meta["evolve spins"]:
                 command += ["--evolve_spins_backwards", "precession_averaged"]
 
-        if "nrsur" in self.meta['approximant']:
+        if "nrsur" in self.meta['waveform']['approximant']:
             command += ["--NRSur_fits"]
         else:
             command += ["--waveform_fits"]
