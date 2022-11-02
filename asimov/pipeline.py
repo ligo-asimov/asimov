@@ -342,7 +342,7 @@ class PESummaryPipeline(PostPipeline):
             "--f_low",
             str(min(self.production.meta["quality"]["minimum frequency"].values())),
             "--f_ref",
-            str(self.production.meta["likelihood"]["reference frequency"]),
+            str(self.production.meta["waveform"]["reference frequency"]),
         ]
 
         if "cosmology" in self.meta:
