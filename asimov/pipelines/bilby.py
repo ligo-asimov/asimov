@@ -322,6 +322,7 @@ class Bilby(Pipeline):
             rundir = os.path.abspath(self.production.rundir)
         else:
             rundir = self.production.rundir
+        self.logger.info(f"Rundir for samples: {rundir}")
         return glob.glob(os.path.join(rundir, "result", "*_merge*_result.*"))
 
     def after_completion(self):
