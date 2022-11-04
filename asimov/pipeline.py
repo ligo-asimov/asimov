@@ -173,7 +173,7 @@ class Pipeline:
             config.get("general", "webroot"),
             self.production.event.name,
             self.production.name,
-            "results",
+            "pesummary",
             "samples",
             files,
         )
