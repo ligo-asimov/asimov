@@ -115,7 +115,7 @@ def collect_history(cluster_id):
                 break
             except htcondor.HTCondorIOError:
                 logger.info(f"{collector} cannot receive jobs")
-        if len(jobs) == 0:
+        if len(list(jobs)) == 0:
             raise ValueError
         output = {}
         for job in jobs:
