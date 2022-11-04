@@ -171,7 +171,7 @@ def monitor(ctx, event, update, dry_run, chain):
                             + f" {production.name} is postprocessing (condor id: {production.meta['job id']})"
                         )
                         production.meta["postprocessing"]["status"] = "running"
-                        
+
                     elif job.status.lower() == "running":
                         click.echo(
                             "  \t  "
@@ -182,7 +182,7 @@ def monitor(ctx, event, update, dry_run, chain):
                             production.meta["profiling"] = {}
                         production.status = "running"
 
-                    elif (job.status.lower() == "completed"):
+                    elif job.status.lower() == "completed":
                         pipe.after_completion()
                         click.echo(
                             "  \t  "
@@ -306,12 +306,18 @@ def monitor(ctx, event, update, dry_run, chain):
             ledger.update_event(event)
 
         all_productions = set(event.productions)
-        complete = {production for production in event.productions if production.status in {"finished", "uploaded"}}
+        complete = {
+            production
+            for production in event.productions
+            if production.status in {"finished", "uploaded"}
+        }
         others = all_productions - set(event.get_all_latest()) - complete
         if len(others) > 0:
-            click.echo("The event also has these analyses which are waiting on other analyses to complete:")
+            click.echo(
+                "The event also has these analyses which are waiting on other analyses to complete:"
+            )
             for production in others:
-                needs = ', '.join(production.meta['needs'])
+                needs = ", ".join(production.meta["needs"])
                 click.echo(f"\t{production.name} which needs {needs}")
 
         if chain:

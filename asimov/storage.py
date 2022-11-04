@@ -289,9 +289,7 @@ class Store:
 
         name = new_name if new_name else os.path.basename(file)
 
-        self.manifest.add_record(
-            event, production, name, hash, this_uuid
-        )
+        self.manifest.add_record(event, production, name, hash, this_uuid)
 
         destination = os.path.join(self.root, event, production, name)
 
