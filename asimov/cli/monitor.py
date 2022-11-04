@@ -222,7 +222,7 @@ def monitor(ctx, event, update, dry_run, chain):
                             + f" {production.name} is postprocessing (condor id: {production.meta['job id']})"
                         )
                         production.meta["postprocessing"]["status"] = "running"
-                        
+
                     elif job.status.lower() == "running":
                         click.echo(
                             "  \t  "
