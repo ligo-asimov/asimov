@@ -1,7 +1,6 @@
 """
 Code for the project ledger.
 """
-from copy import deepcopy
 from functools import reduce
 
 import yaml
