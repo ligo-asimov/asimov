@@ -329,6 +329,7 @@ class PESummaryPipeline(PostPipeline):
         command = [
             "--webdir",
             os.path.join(
+                config.get("project", "root"),
                 config.get("general", "webroot"),
                 self.production.event.name,
                 self.production.name,
