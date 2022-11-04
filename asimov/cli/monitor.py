@@ -268,7 +268,7 @@ def monitor(ctx, event, update, dry_run, chain):
                                 production.meta["job id"]
                             )
                             production.meta["job id"] = None
-                        except condor.htcondor.HTCondorIOError as e:
+                        except ValueError as e:
                             logger.error("Could not collect condor profiling data.")
                             logger.exception(e)
                             pass
