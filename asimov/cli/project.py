@@ -128,9 +128,11 @@ def make_project(
 @click.option(
     "--user",
     default=None,
-    help="The user account to be used for accounting purposes. Defaults to the current user if not set."
+    help="The user account to be used for accounting purposes. Defaults to the current user if not set.",
 )
-def init(name, root, working="working", checkouts="checkouts", results="results", user=None):
+def init(
+    name, root, working="working", checkouts="checkouts", results="results", user=None
+):
     """
     Roll-out a new project.
     """
