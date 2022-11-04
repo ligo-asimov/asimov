@@ -163,19 +163,6 @@ def monitor(ctx, event, update, dry_run, chain):
                             + f" (condor id: {production.meta['job id']})"
                         )
 
-                    elif job.status.lower() == "running":
-                        click.echo(
-                            "  \t  "
-                            + click.style("●", "green")
-                            + f" {production.name} is running (condor id: {production.meta['job id']})"
-                        )
-                        if "profiling" not in production.meta:
-                            production.meta["profiling"] = {}
-
-                        # production.meta['profiling'] = job.get_data()['WallClockCheckpoint']
-
-                        production.status = "running"
-
                     elif (
                         job.status.lower() == "running"
                         and production.status == "processing"
@@ -186,6 +173,16 @@ def monitor(ctx, event, update, dry_run, chain):
                             + f" {production.name} is postprocessing (condor id: {production.meta['job id']})"
                         )
                         production.meta["postprocessing"]["status"] = "running"
+                        
+                    elif job.status.lower() == "running":
+                        click.echo(
+                            "  \t  "
+                            + click.style("●", "green")
+                            + f" {production.name} is running (condor id: {production.meta['job id']})"
+                        )
+                        if "profiling" not in production.meta:
+                            production.meta["profiling"] = {}
+                        production.status = "running"
 
                     elif (job.status.lower() == "completed"):
                         pipe.after_completion()
