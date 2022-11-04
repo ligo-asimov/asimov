@@ -83,7 +83,7 @@ def make_project(
 
     # Set the default condor user
     if not user:
-        config.set("condor", "user",  getpass.getuser())
+        config.set("condor", "user", getpass.getuser())
     else:
         config.set("condor", "user", user)
 
@@ -119,9 +119,11 @@ def make_project(
 @click.option(
     "--user",
     default=None,
-    help="The user account to be used for accounting purposes. Defaults to the current user if not set."
+    help="The user account to be used for accounting purposes. Defaults to the current user if not set.",
 )
-def init(name, root, working="working", checkouts="checkouts", results="results", user=None):
+def init(
+    name, root, working="working", checkouts="checkouts", results="results", user=None
+):
     """
     Roll-out a new project.
     """

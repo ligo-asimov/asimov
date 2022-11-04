@@ -73,7 +73,12 @@ def create(event, pipeline, family, comment, needs, template, status, approximan
         ]
         needs = bw_entries
     #
-    production = {"comment": comment, "pipeline": pipeline, "status": status, "waveform": {}}
+    production = {
+        "comment": comment,
+        "pipeline": pipeline,
+        "status": status,
+        "waveform": {},
+    }
     if needs:
         production["needs"] = needs
     if template:

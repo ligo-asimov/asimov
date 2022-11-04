@@ -210,9 +210,9 @@ class Event:
         """
         Find the calibration envelope locations.
         """
-        if ("calibration" in self.meta['data']) and (
+        if ("calibration" in self.meta["data"]) and (
             set(self.meta["interferometers"]).issubset(
-                set(self.meta['data']["calibration"].keys())
+                set(self.meta["data"]["calibration"].keys())
             )
         ):
             pass
@@ -662,17 +662,21 @@ class Production:
         # Update waveform data
         if "waveform" not in self.meta:
             self.logger.info("Didn't find waveform information in the metadata")
-            self.meta['waveform'] = {}
+            self.meta["waveform"] = {}
         if "approximant" in self.meta:
-            self.logger.warn("Found deprecated approximant information, "
-                             "moving to waveform area of ledger")
+            self.logger.warn(
+                "Found deprecated approximant information, "
+                "moving to waveform area of ledger"
+            )
             approximant = self.meta.pop("approximant")
-            self.meta['waveform']['approximant'] = approximant
-        if "reference frequency" in self.meta['likelihood']:
-            self.logger.warn("Found deprecated ref freq information, "
-                             "moving to waveform area of ledger")
-            ref_freq = self.meta['likelihood'].pop("reference frequency")
-            self.meta['waveform']['reference frequency'] = ref_freq
+            self.meta["waveform"]["approximant"] = approximant
+        if "reference frequency" in self.meta["likelihood"]:
+            self.logger.warn(
+                "Found deprecated ref freq information, "
+                "moving to waveform area of ledger"
+            )
+            ref_freq = self.meta["likelihood"].pop("reference frequency")
+            self.meta["waveform"]["reference frequency"] = ref_freq
 
         # Gather the PSDs for the job
         self.psds = self._collect_psds()

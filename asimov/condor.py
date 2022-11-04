@@ -110,7 +110,9 @@ def collect_history(cluster_id):
                     "RemoteWallClockTime",
                     "RequestCpus",
                 ]
-                jobs = schedd.history(f"ClusterId == {cluster_id}", projection=HISTORY_CLASSADS)
+                jobs = schedd.history(
+                    f"ClusterId == {cluster_id}", projection=HISTORY_CLASSADS
+                )
                 break
             except htcondor.HTCondorIOError:
                 logger.info(f"{collector} cannot receive jobs")

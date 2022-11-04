@@ -135,12 +135,9 @@ class BayesWave(Pipeline):
             f"--trigger-time={gps_time}",
         ]
 
-        if "osg" in self.production.meta['scheduler']:
-            if self.production.meta['scheduler']['osg']:
-                command += [
-                    "--osg-deploy",
-                    "--transfer-files"
-                ]
+        if "osg" in self.production.meta["scheduler"]:
+            if self.production.meta["scheduler"]["osg"]:
+                command += ["--osg-deploy", "--transfer-files"]
         command += [
             "-r",
             self.production.rundir,
@@ -313,7 +310,7 @@ class BayesWave(Pipeline):
                     self.production.event.name,
                     self.production.name,
                     file=asset,
-                    new_name=f"{detector}-{sample_rate}-psd.dat"
+                    new_name=f"{detector}-{sample_rate}-psd.dat",
                 )
             except Exception as e:
                 self.logger.error(
