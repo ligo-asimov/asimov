@@ -837,7 +837,7 @@ class Production:
         Return the run directory for this event.
         """
         if "rundir" in self.meta:
-            return self.meta["rundir"]
+            return os.path.abspath(self.meta["rundir"])
         elif "working directory" in self.event.meta:
 
             value = os.path.join(self.event.meta["working directory"], self.name)
