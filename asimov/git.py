@@ -329,8 +329,8 @@ class EventRepo:
             )
             out, err = dagman.communicate()
 
-            print(out)
-            print(err)
+            self.logger.info(out)
+            self.logger.error(err)
 
             copy(
                 "/home/daniel.williams/public_html/LVC/projects/O3/"

@@ -842,9 +842,7 @@ class Production:
 
             value = os.path.join(self.event.meta["working directory"], self.name)
             self.meta["rundir"] = value
-            if self.event.issue_object is not None:
-                self.event.issue_object.update_data()
-            return value
+            return os.path.abspath(value)
         else:
             return None
 
@@ -963,7 +961,6 @@ class Production:
             ini_loc = self.meta["ini"]
         else:
             # We'll need to search the repository for it.
-            print(self.name, self.category, self.event.repository.directory)
             try:
                 ini_loc = self.event.repository.find_prods(self.name, self.category)[0]
                 if not os.path.exists(ini_loc):
@@ -994,7 +991,6 @@ class Production:
 
         # Check all of the required parameters are included
         if not {"status", "pipeline"} <= pars.keys():
-            print(pars.keys())
             raise DescriptionException(
                 f"Some of the required parameters are missing from {name}", issue, name
             )
