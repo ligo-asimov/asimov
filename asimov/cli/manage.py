@@ -189,11 +189,12 @@ def submit(event, update, dryrun):
                     click.echo("Try running `asimov manage build` first.")
                 try:
                     pipe.submit_dag(dryrun=dryrun)
-                    click.echo(
-                        click.style("●", fg="green")
-                        + f" Submitted {production.event.name}/{production.name}"
-                    )
-                    production.status = "running"
+                    if not dryrun:
+                        click.echo(
+                            click.style("●", fg="green")
+                            + f" Submitted {production.event.name}/{production.name}"
+                        )
+                        production.status = "running"
 
                 except PipelineException as e:
                     production.status = "stuck"
