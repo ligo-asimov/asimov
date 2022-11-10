@@ -199,7 +199,7 @@ class Bilby(Pipeline):
             "--label",
             job_label,
             "--outdir",
-            f"{cwd}/{self.production.rundir}",
+            f"{self.production.rundir}",
             "--accounting",
             f"{self.production.meta['scheduler']['accounting group']}",
         ]
