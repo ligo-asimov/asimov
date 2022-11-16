@@ -209,7 +209,7 @@ class Bilby(Pipeline):
                 "condor_submit_dag",
                 "-batch-name",
                 f"bilby/{self.production.event.name}/{self.production.name}",
-                os.path.join(self.production.rundir, "submit", dag_filename),
+                os.path.join("submit", dag_filename),
             ]
 
             if dryrun:
@@ -223,9 +223,15 @@ class Bilby(Pipeline):
                     command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
                 )
 
-                self.logger.info(" ".join(command))
+                with set_directory(self.rundir):
 
-                stdout, stderr = dagman.communicate()
+                    dagman = subprocess.Popen(
+                        command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+                    )
+
+                    self.logger.info(" ".join(command))
+
+                    stdout, stderr = dagman.communicate()
 
                 if "submitted to cluster" in str(stdout):
                     cluster = re.search(
