@@ -199,7 +199,7 @@ class Bilby(Pipeline):
             "--label",
             job_label,
             "--outdir",
-            f"{self.production.rundir}",
+            f"{os.path.abspath(self.production.rundir)}",
             "--accounting",
             f"{self.production.meta['scheduler']['accounting group']}",
         ]
@@ -280,6 +280,7 @@ class Bilby(Pipeline):
             else:
 
                 with set_directory(self.production.rundir):
+                    self.logger.info(f"Working in {os.getcwd()}")
 
                     dagman = subprocess.Popen(
                         command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
