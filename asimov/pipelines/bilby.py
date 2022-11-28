@@ -11,7 +11,7 @@ import time
 
 from liquid import Liquid
 
-from asimov.utils import update
+from asimov.utils import update, set_directory
 
 from .. import config
 from ..pipeline import Pipeline, PipelineException, PipelineLogger, PESummaryPipeline
@@ -199,7 +199,7 @@ class Bilby(Pipeline):
             "--label",
             job_label,
             "--outdir",
-            f"{self.production.rundir}",
+            f"{os.path.abspath(self.production.rundir)}",
             "--accounting",
             f"{self.production.meta['scheduler']['accounting group']}",
         ]
@@ -272,19 +272,23 @@ class Bilby(Pipeline):
                 "condor_submit_dag",
                 "-batch-name",
                 f"bilby/{self.production.event.name}/{self.production.name}",
-                os.path.join(self.production.rundir, "submit", dag_filename),
+                os.path.join("submit", dag_filename),
             ]
 
             if dryrun:
                 print(" ".join(command))
             else:
-                dagman = subprocess.Popen(
-                    command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-                )
 
-                self.logger.info(" ".join(command))
+                with set_directory(self.production.rundir):
+                    self.logger.info(f"Working in {os.getcwd()}")
 
-                stdout, stderr = dagman.communicate()
+                    dagman = subprocess.Popen(
+                        command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+                    )
+
+                    self.logger.info(" ".join(command))
+
+                    stdout, stderr = dagman.communicate()
 
                 if "submitted to cluster" in str(stdout):
                     cluster = re.search(
