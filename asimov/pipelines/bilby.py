@@ -286,16 +286,16 @@ class Bilby(Pipeline):
                 print(" ".join(command))
             else:
 
-                with set_directory(self.production.rundir):
-                    self.logger.info(f"Working in {os.getcwd()}")
+                #with set_directory(self.production.rundir):
+                self.logger.info(f"Working in {os.getcwd()}")
 
-                    dagman = subprocess.Popen(
-                        command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-                    )
+                dagman = subprocess.Popen(
+                    command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+                )
 
-                    self.logger.info(" ".join(command))
+                self.logger.info(" ".join(command))
 
-                    stdout, stderr = dagman.communicate()
+                stdout, stderr = dagman.communicate()
 
                 if "submitted to cluster" in str(stdout):
                     cluster = re.search(
