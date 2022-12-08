@@ -67,7 +67,7 @@ class Bilby(Pipeline):
     def before_submit(self):
         """Pre-submit hook."""
         self.logger.info("Running the before_submit hook")
-        sub_files = glob.glob(f"{self.production.rundir}/submit/*.sub")
+        sub_files = glob.glob(f"{self.production.rundir}/submit/*.submit")
         for sub_file in sub_files:
             with open(sub_file, "r") as f_handle:
                 original = f_handle.read()
