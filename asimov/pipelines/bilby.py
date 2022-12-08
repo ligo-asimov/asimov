@@ -69,7 +69,7 @@ class Bilby(Pipeline):
         self.logger.info("Running the before_submit hook")
         sub_files = glob.glob(f"{self.production.rundir}/submit/*.submit")
         for sub_file in sub_files:
-            if sub_file[:3] == "dag": continue
+            if sub_file[:2] == "dag": continue
             with open(sub_file, "r") as f_handle:
                 original = f_handle.read()
             with open(sub_file, "w") as f_handle:
