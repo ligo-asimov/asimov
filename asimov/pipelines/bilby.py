@@ -289,7 +289,7 @@ class Bilby(Pipeline):
                 "condor_submit_dag",
                 "-batch-name",
                 f"bilby/{self.production.event.name}/{self.production.name}",
-                os.path.join("submit", dag_filename),
+                os.path.join(self.production.rundir, "submit", dag_filename),
             ]
 
             if dryrun:
