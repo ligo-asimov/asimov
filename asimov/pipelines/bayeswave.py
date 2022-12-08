@@ -212,7 +212,16 @@ class BayesWave(Pipeline):
             with open(sub_file, "w") as f_handle:
                 self.logger.info(f"Adding request_disk = {64000} to {sub_file}")
                 f_handle.write(f"request_disk = {64000}\n" + original)
-
+        python_files = glob.glob(f"{self.production.rundir}/*.py")
+        with py_file in python_files:
+            with open(py_file, "r") as f_handle:
+                original = f_handle.read()
+            with open(py_file, "w") as f_handle:
+                self.logger.info(f"Fixing shebang")
+                path = os.path.join(
+                    config.get("pipelines", "environment"), "bin", "python"
+                )
+                f_handle.write(f"#! {path}\n" + original)
     def submit_dag(self, dryrun=False):
         """
         Submit a DAG file to the condor cluster.
