@@ -66,13 +66,13 @@ GraceDB clusters these triggers into "superevents", and normally we will want to
 If you're interacting with an asimov project using the command line interface you can directly download information about a trigger and create an event in the project.
 
 If you want to pull information from non-public events you'll first need to ensure that you have a LIGO proxy set up.
-The easiest way to do this as a normal user is just to run `ligo_proxy_init`:
+The easiest way to do this as a normal user is just to run `ligo-proxy-init`:
 
 .. code-block:: console
    
-   $ ligo_proxy_init isaac.asimov
+   $ ligo-proxy-init isaac.asimov
 
-and then provide your password to set up a proxy.
+replacing isaac.asimov with your own username, and then provide your password to set up a proxy.
 If you're working with publically available triggers then you can skip this step, and asimov will gather all of the publically available data which it can.
 
 .. code-block:: console
@@ -110,7 +110,7 @@ For example, if we want to make an event, and call it "GW150914" we can run
 
 .. code-block:: console
 
-		$ asimov event create GW150914
+		$ asimov event create --name GW150914
 
 .. warning::
 
@@ -138,13 +138,10 @@ As an example, suppose we have some default data to add to an event, and this is
 		    H1: H1_HOFT_C02
 		    L1: L1_HOFT_C02
 		    V1: V1O2Repro2A
-
 		priors: 
 		    distance: [None, 10000]
 		    component: [1, 1000]
 		    q: [0.05, 1.0]
-
-.. todo:: Confirm that this works.
 		    
 In order to add these default data to an existing event we can use the ``asimov apply`` command:
 
@@ -154,14 +151,14 @@ In order to add these default data to an existing event we can use the ``asimov 
 
 These will then be added to the event record in the ledger.
 
-If we have a JSON file from the PEConfigurator we need to use the ``olivaw event configurator`` command, which maps the outputs from the configurator to asimov's data format:
+If we have a JSON file from the PEConfigurator we need to use the ``asimov event configurator`` command, which maps the outputs from the configurator to asimov's data format:
 
 .. code-block:: console
 
-		$ olivaw event configurator GW170817 --json gw170817.json
+		$ asimov event configurator GW170817 --json gw170817.json
 
-Adding calibration evelopes
----------------------------
+Adding calibration envelopes
+----------------------------
 
 Many analyses will require access to calibration envelopes for the detectors.
 
@@ -184,14 +181,6 @@ If you need to add calibrations manually you can do that by specifying them as o
 
 .. code-block:: console
 
-		$ asimov event calibration GW150914 --calibration H1:/home/albert.einstein/h1-cal.dat -- calibration L1:/home/albert.einstein/l1-cal.dat
+		$ asimov event calibration GW150914 --calibration H1:/home/albert.einstein/h1-cal.dat --calibration L1:/home/albert.einstein/l1-cal.dat
 
 It's safest to use absolute filepaths here.
-		
-
-Command documentation
----------------------
-.. click:: asimov.olivaw:olivaw
-   :prog: asimov
-   :commands: event
-   :nested: full
