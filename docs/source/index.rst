@@ -129,12 +129,12 @@ Users' guide
 
    getting-started
    installation
-   olivaw/projects
-   olivaw/events
-   olivaw/productions
-   olivaw/running
-   olivaw/monitoring
-   olivaw/reporting
+   user-guide/projects
+   user-guide/events
+   user-guide/productions
+   user-guide/running
+   user-guide/monitoring
+   user-guide/reporting
    storage
    olivaw/review
    
