@@ -196,12 +196,4 @@ A custom template can be included using the ``--template`` option, for example
 		$ asimov production create GW150914 lalinference --template testinggr.ini
 
 
-You can find more information about configuration templates at the `templates` page of the documentation.
-
-
-Command documentation
----------------------
-.. click:: asimov.olivaw:olivaw
-   :prog: asimov
-   :commands: production
-   :nested: full
+You can find more information about configuration templates at the :ref:`templates` page of the documentation.
