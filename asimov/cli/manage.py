@@ -64,8 +64,10 @@ def build(event, dryrun):
                     )
                 continue  # I think this test might be unused
             try:
-                _ = production.get_configuration()
-            except ValueError:
+                ini_loc = production.event.repository.find_prods(production.name, production.category)[0]
+                if not os.path.exists(ini_loc):
+                    raise KeyError
+            except KeyError:
                 try:
 
                     # if production.rundir:
@@ -179,7 +181,8 @@ def submit(event, update, dryrun):
                         click.style("●", fg="red")
                         + f" Unable to submit {production.name}"
                     )
-                except ValueError:
+                except ValueError as e:
+                    print("ERROR", e)
                     logger.info("Unable to submit an unbuilt production")
                     click.echo(
                         click.style("●", fg="red")
