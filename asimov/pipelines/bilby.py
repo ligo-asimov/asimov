@@ -65,11 +65,14 @@ class Bilby(Pipeline):
             return False
 
     def before_submit(self):
-        """Pre-submit hook."""
+        """
+        Pre-submit hook.
+        """
         self.logger.info("Running the before_submit hook")
         sub_files = glob.glob(f"{self.production.rundir}/submit/*.submit")
         for sub_file in sub_files:
-            if "dag" in sub_file: continue
+            if "dag" in sub_file:
+                continue
             with open(sub_file, "r") as f_handle:
                 original = f_handle.read()
             with open(sub_file, "w") as f_handle:
@@ -286,7 +289,7 @@ class Bilby(Pipeline):
                 print(" ".join(command))
             else:
 
-                #with set_directory(self.production.rundir):
+                # with set_directory(self.production.rundir):
                 self.logger.info(f"Working in {os.getcwd()}")
 
                 dagman = subprocess.Popen(
