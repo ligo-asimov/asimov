@@ -62,6 +62,7 @@ class Review:
             messages.append(
                 ReviewMessage.from_dict(dictionary=message, production=production)
             )
+
         review_ob = cls()
         messages = sorted(messages, key=lambda k: k.timestamp)
         review_ob.messages = messages
