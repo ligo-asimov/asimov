@@ -55,10 +55,9 @@ status_map = {"cancelled": "light",
 class DescriptionException(Exception):
     """Exception for event description problems."""
 
-    def __init__(self, message, issue=None, production=None):
+    def __init__(self, message, production=None):
         super(DescriptionException, self).__init__(message)
         self.message = message
-        self.issue = issue
         self.production = production
 
     def __repr__(self):
@@ -76,18 +75,6 @@ Please fix the error and then remove the `yaml-error` label from this issue.
 - [ ] Resolved
 """
         return text
-
-    def submit_comment(self):
-        """
-        Submit this exception as a comment on the gitlab
-        issue for the event.
-        """
-        if self.issue:
-            self.issue.add_label("yaml-error", state=False)
-            self.issue.add_note(self.__repr__())
-        else:
-            print(self.__repr__())
-
 
 class Event:
     """
@@ -160,14 +147,6 @@ class Event:
 
         self.meta = kwargs
 
-        self.issue_object = None
-        if "issue" in kwargs:
-            if kwargs["issue"]:
-                self.issue_object = kwargs.pop("issue")
-                self.from_notes()
-        else:
-            self.issue_object = None
-
         self.productions = []
         self.graph = nx.DiGraph()
 
@@ -176,21 +155,7 @@ class Event:
                 try:
                     self.add_production(
                         Production.from_dict(
-                            production, event=self, issue=self.issue_object
-                        )
-                    )
-                except DescriptionException as error:
-                    error.submit_comment()
-
-        self.productions = []
-        self.graph = nx.DiGraph()
-
-        if "productions" in kwargs:
-            for production in kwargs["productions"]:
-                try:
-                    self.add_production(
-                        Production.from_dict(
-                            production, event=self, issue=self.issue_object
+                            production, subject=self,
                         )
                     )
                 except DescriptionException as error:
@@ -277,7 +242,6 @@ class Event:
         """
         Add an additional production to this event.
         """
-
         if production.name in [production_o.name for production_o in self.productions]:
             raise ValueError(
                 f"A production with this name already exists for {self.name}. New productions must have unique names."
@@ -300,17 +264,17 @@ class Event:
         return f"<Event {self.name}>"
 
     @classmethod
-    def from_dict(cls, data, issue=None, update=False, ledger=None):
+    def from_dict(cls, data, update=False, ledger=None):
         """
         Convert a dictionary representation of the event object to an Event object.
         """
-        event = cls(**data, issue=issue, update=update, ledger=ledger)
+        event = cls(**data, update=update, ledger=ledger)
         if ledger:
             ledger.add_event(event)
         return event
 
     @classmethod
-    def from_yaml(cls, data, issue=None, update=False, repo=True, ledger=None):
+    def from_yaml(cls, data, update=False, repo=True, ledger=None):
         """
         Parse YAML to generate this event.
 
@@ -352,8 +316,6 @@ class Event:
         if "productions" in data:
             if isinstance(data["productions"], type(None)):
                 data["productions"] = []
-        else:
-            data["productions"] = []
 
         if "interferometers" in data and "event time" in data:
 
@@ -432,17 +394,6 @@ class Event:
 
         return event
 
-    def from_notes(self):
-        """
-        Update the event data from information in the issue comments.
-
-        Uses nested dictionary update code from
-        https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth#3233356
-        """
-
-        notes_data = self.issue_object.parse_notes()
-        for note in notes_data:
-            update(self.meta, note)
 
     def get_gracedb(self, gfile, destination):
         """
@@ -496,22 +447,9 @@ class Event:
             data["productions"] = []
             for production in self.productions:
                 # Remove duplicate data
-                prod_dict = production.to_dict()[production.name]
-                dupes = []
-                prod_names = []
-                for key, value in prod_dict.items():
-                    if production.name in prod_names:
-                        continue
-                    if key in data:
-                        if data[key] == value:
-                            dupes.append(key)
-                for dupe in dupes:
-                    prod_dict.pop(dupe)
-                prod_names.append(production.name)
-                data["productions"].append({production.name: prod_dict})
+                data["productions"].append(production.to_dict(event=False))
+
         data["working directory"] = self.work_dir
-        if "issue" in data:
-            data.pop("issue")
         if "ledger" in data:
             data.pop("ledger")
         if "pipelines" in data:
@@ -523,10 +461,6 @@ class Event:
         data = self.to_dict()
 
         return yaml.dump(data, default_flow_style=False)
-
-    def to_issue(self):
-        self.text[1] = "\n" + self.to_yaml()
-        return "---".join(self.text)
 
     def draw_dag(self):
         """
