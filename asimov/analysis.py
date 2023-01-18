@@ -106,6 +106,23 @@ class Analysis:
         self.meta["scheduler"]["job id"] = value
 
     @property
+    def job_id(self):
+        """
+        Get the ID number of this job as it resides in the scheduler.
+        """
+        if "scheduler" in self.meta:
+            if "job id" in self.meta['scheduler']:
+                return self.meta['scheduler']["job id"]
+            else:
+                return None
+
+    @job_id.setter
+    def job_id(self, value):
+        if "scheduler" not in self.meta:
+            self.meta['scheduler'] = {}
+        self.meta["scheduler"]["job id"] = value
+
+    @property
     def dependencies(self):
         """Return a list of analyses which this analysis depends upon."""
         all_matches = []
@@ -301,7 +318,6 @@ class SimpleAnalysis(Analysis):
 
         self.logger = logger.getChild("event").getChild(f"{self.name}")
         self.logger.setLevel(LOGGER_LEVEL)
-
 
         if "status" in kwargs:
             self.status_str = kwargs['status'].lower()
