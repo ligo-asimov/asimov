@@ -21,7 +21,7 @@ interferometers:
 - L1
 quality: {{}}
 productions:
-- Prod0:
+  - name: Prod0
     pipeline: lalinference
     comment: PSD production
     status: wait
@@ -48,7 +48,7 @@ interferometers:
 - L1
 quality: {{}}
 productions:
-- Prod0:
+  - name: Prod0
     pipeline: lalinference
     comment: PSD production
     status: wait

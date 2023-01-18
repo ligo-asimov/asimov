@@ -24,7 +24,7 @@ logger = logger.getChild("cli").getChild("apply")
 logger.setLevel(LOGGER_LEVEL)
 
 
-def apply_page(file, event, ledger=ledger):
+def apply_page(file, event=None, ledger=ledger):
     if file[:4] == "http":
         r = requests.get(file)
         if r.status_code == 200:
@@ -41,7 +41,6 @@ def apply_page(file, event, ledger=ledger):
     )  # Load as a dictionary so we can identify the object type it contains
 
     for document in quick_parse:
-
         if document["kind"] == "event":
             logger.info("Found an event")
             document.pop("kind")
@@ -71,10 +70,12 @@ def apply_page(file, event, ledger=ledger):
                     + f" Could not apply a production, couldn't find the event {event}"
                 )
                 logger.exception(e)
-            production = asimov.event.Production.from_dict(document, event=event_o)
+            production = asimov.event.Production.from_dict(document, subject=event_o)
             try:
                 event_o.add_production(production)
+
                 ledger.update_event(event_o)
+
                 click.echo(
                     click.style("●", fg="green")
                     + f" Successfully applied {production.name} to {event_o.name}"
