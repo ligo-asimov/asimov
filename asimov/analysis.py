@@ -29,11 +29,13 @@ from warnings import warn
 
 from liquid import Liquid
 
-from asimov import config
+from asimov import config, logger, LOGGER_LEVEL
 from asimov.pipelines import known_pipelines
 from asimov.utils import update
 from asimov.storage import Store
 
+from .review import Review
+from .ini import RunConfiguration
 
 class Analysis:
     """
@@ -41,12 +43,20 @@ class Analysis:
 
     TODO: Add a check to make sure names cannot conflict
     """
-
+    meta = {}
+    meta_defaults = {"scheduler": {}, "sampler": {}, "review": {}}
+    _reviews = Review()
+    
     @property
     def review(self):
         """
         Return the review information attached to the analysis.
         """
+        if "review" in self.meta:
+            if len(self.meta['review']) > 0:
+                self._reviews = Review.from_dict(self.meta["review"], production=self)
+                self.meta.pop("review")
+        return self._reviews
 
     def _process_dependencies(self, needs):
         """
@@ -55,12 +65,26 @@ class Analysis:
         return needs
 
     @property
+    def job_id(self):
+        """
+        Get the ID number of this job as it resides in the scheduler.
+        """
+        if "scheduler" in self.meta:
+            if "job id" in self.meta['scheduler']:
+                return self.meta['scheduler']["job id"]
+            else:
+                return None
+
+    @job_id.setter
+    def job_id(self, value):
+        if "scheduler" not in self.meta:
+            self.meta['scheduler'] = {}
+        self.meta["scheduler"]["job id"] = value
+
+    @property
     def dependencies(self):
-        if "needs" in self.meta:
-            dependencies = self._process_dependencies(self.meta["needs"])
-        else:
-            dependencies = None
-        return dependencies
+        """Return a list of analyses which this analysis depends upon."""
+        return self._process_dependencies(self._needs)
 
     @property
     def priors(self):
@@ -78,12 +102,10 @@ class Analysis:
     @property
     def status(self):
         return self.status_str.lower()
-
+    
     @status.setter
     def status(self, value):
         self.status_str = value.lower()
-        if self.event.issue_object is not None:
-            self.event.issue_object.update_data()
 
     def results(self, filename=None, handle=False, hash=None):
         store = Store(root=config.get("storage", "results_store"))
@@ -114,7 +136,38 @@ class Analysis:
         else:
             return None
 
-    def make_config(self, filename, template_directory=None):
+    @rundir.setter
+    def rundir(self, value):
+        """
+        Set the run directory.
+        """
+        if "rundir" not in self.meta:
+            self.meta["rundir"] = value
+        else:
+            self.meta["rundir"] = value
+
+    def get_meta(self, key):
+        """
+        Get the value of a metadata attribute, or return None if it doesn't
+        exist.
+        """
+        if key in self.meta:
+            return self.meta[key]
+        else:
+            return None
+
+        
+    def set_meta(self, key, value):
+        """
+        Set a metadata attribute which doesn't currently exist.
+        """
+        if key not in self.meta:
+            self.meta[key] = value
+            self.event.ledger.update_event(self.event)
+        else:
+            raise ValueError
+
+    def make_config(self, filename, template_directory=None, dryrun=False):
         """
         Make the configuration file for this production.
 
@@ -132,14 +185,14 @@ class Analysis:
         else:
             template = f"{self.pipeline}.ini"
 
-        pipeline = known_pipelines[self.pipeline]
+        pipeline = self.pipeline
         if hasattr(pipeline, "config_template"):
             template_file = pipeline.config_template
         else:
             try:
                 template_directory = config.get("templating", "directory")
                 template_file = os.path.join(f"{template_directory}", template)
-            except configparser.NoOptionError:
+            except (configparser.NoOptionError, configparser.NoSectionError):
                 from pkg_resources import resource_filename
 
                 template_file = resource_filename("asimov", f"configs/{template}")
@@ -157,17 +210,98 @@ class SimpleAnalysis(Analysis):
     """
 
     def __init__(self, subject, name, pipeline, status=None, comment=None, **kwargs):
+
         self.event = self.subject = subject
         self.name = name
+
+        self.logger = logger.getChild("event").getChild(f"{self.name}")
+        self.logger.setLevel(LOGGER_LEVEL)
 
         if status:
             self.status_str = status.lower()
         else:
             self.status_str = "none"
-            self.pipeline = pipeline.lower()
-            self.comment = comment
-            self.meta = deepcopy(self.subject.meta)
-            self.meta = update(self.meta, kwargs)
+
+        self.meta = deepcopy(self.meta_defaults)
+        self.meta = update(self.meta, deepcopy(self.subject.meta))
+        if "productions" in self.meta:
+           self.meta.pop("productions")
+        if "needs" in self.meta:
+           self.meta.pop("needs")
+
+        self.meta = update(self.meta, deepcopy(kwargs))
+        self.pipeline = pipeline.lower()
+        self.pipeline = known_pipelines[pipeline.lower()](self)
+        if "needs" in self.meta:
+            self._needs = self.meta.pop("needs")
+        else:
+            self._needs = []
+        
+        self.comment = comment
+
+    def to_dict(self, event=True):
+        """
+        Return this production as a dictionary.
+
+        Parameters
+        ----------
+        event : bool
+           If set to True the output is designed to be included nested within an event.
+           The event name is not included in the representation, and the production name is provided as a key.
+        """
+        dictionary = {}
+        if not event:
+            dictionary["event"] = self.event.name
+            dictionary["name"] = self.name
+
+        dictionary["status"] = self.status
+        if isinstance(self.pipeline, str):
+            dictionary['pipeline'] = self.pipeline
+        else:
+            dictionary["pipeline"] = self.pipeline.name.lower()
+        dictionary["comment"] = self.comment
+
+        if self.review:
+            dictionary["review"] = self.review.to_dicts()
+
+        dictionary['needs'] = self.dependencies
+            
+        if "quality" in self.meta:
+            dictionary["quality"] = self.meta["quality"]
+        if "priors" in self.meta:
+            dictionary["priors"] = self.meta["priors"]
+        for key, value in self.meta.items():
+            dictionary[key] = value
+        if "repository" in self.meta:
+            dictionary["repository"] = self.repository.url
+        if "ledger" in dictionary:
+            dictionary.pop("ledger")
+        if "pipelines" in dictionary:
+            dictionary.pop("pipelines")
+
+        if not event:
+            output = dictionary
+        else:
+            output = {self.name: dictionary}
+        return output
+
+    @classmethod
+    def from_dict(cls, parameters, subject):
+        # Check that pars is a dictionary
+        if not {"pipeline", "name"} <= parameters.keys():
+            raise ValueError(
+                f"Some of the required parameters are missing."
+            )
+        if "status" not in parameters:
+            parameters['status'] = "ready"
+        if "event" in parameters:
+            parameters.pop("event")
+        pipeline = parameters.pop("pipeline")
+        name = parameters.pop("name")
+        if "comment" not in parameters:
+            parameters['comment'] = None
+
+        return cls(subject, name, pipeline,  **parameters)
 
 
 class SubjectAnalysis(Analysis):
@@ -197,16 +331,35 @@ class GravitationalWaveTransient(SimpleAnalysis):
     """
     A single subject, single pipeline analysis for a gravitational wave transient.
     """
-
     def __init__(self, subject, name, pipeline, status=None, comment=None, **kwargs):
-        super().init(subject, name, pipeline, status=None, comment=None, **kwargs)
-        self._checks()
 
+        self.category = config.get("general", "calibration_directory")
+
+        super().__init__(subject, name, pipeline, status=None, comment=None, **kwargs)
+        self._add_missing_parameters()
+        self._checks()
+        
+        self.psds = self._set_psds()
+
+    def _add_missing_parameters(self):
+        for parameter in {"quality", "waveform", "likelihood"}:
+            if not parameter in self.meta:
+                self.meta[parameter] = {}
+                
+        for parameter in {"marginalization"}:
+            if not parameter in self.meta['likelihood']:
+                self.meta['likelihood'][parameter] = {}
+
+        for parameter in {"maximum frequency"}:
+            if not parameter in self.meta['quality']:
+                self.meta['quality'][parameter] = {}
+        
     def _checks(self):
         """
         Carry-out a number of data consistency checks on the information from the ledger.
         """
         # Check that the upper frequency is included, otherwise calculate it
+        
         if self.quality:
             if ("high-frequency" not in self.quality) and (
                 "sample-rate" in self.quality
@@ -241,8 +394,7 @@ class GravitationalWaveTransient(SimpleAnalysis):
         else:
             return "".join(ifos[:2])
 
-    @property
-    def psds(self):
+    def _set_psds(self):
         """
         Return the PSDs stored for this transient event.
         """
@@ -293,6 +445,29 @@ class GravitationalWaveTransient(SimpleAnalysis):
             coinc = self.event.repository.find_coincfile(self.category)
             return coinc
 
+    def get_configuration(self):
+        """
+        Get the configuration file contents for this event.
+        """
+        if "ini" in self.meta:
+            ini_loc = self.meta["ini"]
+        else:
+            # We'll need to search the repository for it.
+            try:
+                ini_loc = self.subject.repository.find_prods(self.name, self.category)[0]
+                if not os.path.exists(ini_loc):
+                    raise ValueError("Could not open the ini file.")
+            except IndexError:
+                raise ValueError("Could not open the ini file.")
+        try:
+            ini = RunConfiguration(ini_loc)
+        except ValueError:
+            raise ValueError("Could not open the ini file")
+        except configparser.MissingSectionHeaderError:
+            raise ValueError("This isn't a valid ini file")
+
+        return ini
+        
 
 class Production(SimpleAnalysis):
     pass

@@ -99,9 +99,6 @@ class Bilby(Pipeline):
                 event_type = "bbh"
                 self.production.meta["event type"] = event_type
 
-                if self.production.event.issue_object:
-                    self.production.event.issue_object.update_data()
-
             if template is None:
                 template_filename = f"{event_type}.prior.template"
                 self.logger.info(
