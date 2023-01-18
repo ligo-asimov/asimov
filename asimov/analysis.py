@@ -61,11 +61,10 @@ class Analysis:
 
     TODO: Add a check to make sure names cannot conflict
     """
-
     meta = {}
     meta_defaults = {"scheduler": {}, "sampler": {}, "review": {}}
     _reviews = Review()
-
+    
     @property
     def review(self):
         """
@@ -122,26 +121,26 @@ class Analysis:
         self.meta["scheduler"]["job id"] = value
 
     @property
+    def job_id(self):
+        """
+        Get the ID number of this job as it resides in the scheduler.
+        """
+        if "scheduler" in self.meta:
+            if "job id" in self.meta['scheduler']:
+                return self.meta['scheduler']["job id"]
+            else:
+                return None
+
+    @job_id.setter
+    def job_id(self, value):
+        if "scheduler" not in self.meta:
+            self.meta['scheduler'] = {}
+        self.meta["scheduler"]["job id"] = value
+
+    @property
     def dependencies(self):
         """Return a list of analyses which this analysis depends upon."""
-        all_matches = []
-        if len(self._needs) == 0:
-            return []
-        else:
-            matches = set({})  # set(self.event.analyses)
-            # matches.remove(self)
-            requirements = self._process_dependencies(self._needs)
-            for attribute, match in requirements:
-                filtered_analyses = list(
-                    filter(
-                        lambda x: x.matches_filter(attribute, match),
-                        self.event.analyses,
-                    )
-                )
-                matches = set.union(matches, set(filtered_analyses))
-            for analysis in matches:
-                all_matches.append(analysis)
-            return all_matches
+        return self._process_dependencies(self._needs)
 
     @property
     def priors(self):
@@ -159,7 +158,7 @@ class Analysis:
     @property
     def status(self):
         return self.status_str.lower()
-
+    
     @status.setter
     def status(self, value):
         self.status_str = value.lower()
@@ -461,7 +460,7 @@ class SimpleAnalysis(Analysis):
     A single subject, single pipeline analysis.
     """
 
-    def __init__(self, subject, name, pipeline, **kwargs):
+    def __init__(self, subject, name, pipeline, status=None, comment=None, **kwargs):
 
         self.event = self.subject = subject
         self.name = name
@@ -469,8 +468,8 @@ class SimpleAnalysis(Analysis):
         self.logger = logger.getChild("event").getChild(f"{self.name}")
         self.logger.setLevel(LOGGER_LEVEL)
 
-        if "status" in kwargs:
-            self.status_str = kwargs["status"].lower()
+        if status:
+            self.status_str = status.lower()
         else:
             self.status_str = "none"
 
@@ -491,7 +490,6 @@ class SimpleAnalysis(Analysis):
             self.meta.pop("productions")
 
         self.meta = update(self.meta, deepcopy(kwargs))
-        self.meta["pipeline"] = pipeline.lower()
         self.pipeline = pipeline.lower()
         self.pipeline = known_pipelines[pipeline.lower()](self)
         if "needs" in self.meta:
@@ -973,9 +971,7 @@ class GravitationalWaveTransient(SimpleAnalysis):
         else:
             # We'll need to search the repository for it.
             try:
-                ini_loc = self.subject.repository.find_prods(self.name, self.category)[
-                    0
-                ]
+                ini_loc = self.subject.repository.find_prods(self.name, self.category)[0]
                 if not os.path.exists(ini_loc):
                     raise ValueError("Could not open the ini file.")
             except IndexError:
