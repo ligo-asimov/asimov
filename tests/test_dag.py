@@ -33,22 +33,38 @@ class DAGTests(unittest.TestCase):
         self.ledger = YAMLLedger(f"ledger.yml")
         apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
         apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/events/gwtc-2-1/GW150914_095045.yaml", event=None, ledger=self.ledger)
+
+    def test_dependency_list(self):
+        """Check that all jobs are run when the dependencies are a chain."""
+        self.assertTrue(len(self.ledger.get_event('GW150914_095045')[0].productions)==0)
+        apply_page(file = f"{self.cwd}/tests/test_data/test_linear_dag.yaml", ledger=self.ledger)
+        event = self.ledger.get_event('GW150914_095045')[0]
+        self.assertTrue(len(event.productions[0]._needs) == 0)
+        self.assertTrue(len(event.productions[0].dependencies) == 0)
+        self.assertTrue(len(event.productions[1].dependencies) == 1)
+
+    def test_dependency_tree(self):
+        apply_page(file = f"{self.cwd}/tests/test_data/test_linear_dag.yaml", ledger=self.ledger)
+        event = self.ledger.get_event('GW150914_095045')[0]
+        self.assertTrue(len(event.graph.edges) == 1)
         
+    def test_linear_dag(self):
+        """Check that all jobs are run when the dependencies are a chain."""
+        apply_page(file = f"{self.cwd}/tests/test_data/test_linear_dag.yaml", ledger=self.ledger)
+        event = self.ledger.get_event('GW150914_095045')[0]
+        self.assertEqual(len(event.get_all_latest()), 1)
+
     def tearDown(self):
+        del(self.ledger)
         shutil.rmtree(f"{self.cwd}/tests/tmp/project")
     
     def test_simple_dag(self):
         """Check that all jobs are run when there are no dependencies specified."""
-        apply_page(file = f"{self.cwd}/tests/test_data/test_simple_dag.yaml", event='GW150914_095045', ledger=self.ledger)
+        apply_page(file = f"{self.cwd}/tests/test_data/test_simple_dag.yaml", ledger=self.ledger)
         event = self.ledger.get_event('GW150914_095045')[0]
+        print(event.productions)
         self.assertEqual(len(event.get_all_latest()), 2)
     
-    def test_linear_dag(self):
-        """Check that all jobs are run when the dependencies are a chain."""
-        apply_page(file = f"{self.cwd}/tests/test_data/test_linear_dag.yaml", event='GW150914_095045', ledger=self.ledger)
-        event = self.ledger.get_event('GW150914_095045')[0]
-        self.assertEqual(len(event.get_all_latest()), 1)
-        
 
     def test_complex_dag(self):
         """Check that all jobs are run when the dependencies are not a chain."""

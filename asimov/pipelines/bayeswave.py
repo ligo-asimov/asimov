@@ -109,7 +109,7 @@ class BayesWave(Pipeline):
             ini.save()
 
             ini = ini.ini_loc
-
+            
         else:
             ini = f"{self.production.name}.ini"
 
@@ -145,12 +145,10 @@ class BayesWave(Pipeline):
         ]
 
         self.logger.info(" ".join(command))
-
         if dryrun:
             print(" ".join(command))
             self.logger.info(" ".join(command))
         else:
-
             pipe = subprocess.Popen(
                 command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
             )
@@ -253,7 +251,7 @@ class BayesWave(Pipeline):
             f"bwave/{self.production.event.name}/{self.production.name}",
             f"{self.production.name}.dag",
         ]
-
+        
         self.logger.info((" ".join(command)))
 
         if dryrun:
