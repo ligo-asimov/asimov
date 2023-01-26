@@ -121,7 +121,6 @@ You'll need to have asimov installed first; you can find information about doing
 		   
 		   ● Working on GW150914_095045
 		      Working on production Prod0
-		   Prod0 C01_offline checkouts/GW150914_095045
 		   Production config Prod0 created.
 
    If the pipeline which you're building uses a configuration file to describe its settings, this step will produce that configuration file, and will save it in the event repository.
@@ -139,7 +138,6 @@ You'll need to have asimov installed first; you can find information about doing
 
 		   $ asimov manage submit 
 
-		   Prod0 C01_offline checkouts/GW150914_095045
 		   ● Submitted GW150914_095045/Prod0
 
    Once the job has been submitted asimov will record the ID number for the job, and record it in the project ledger so that it can check on its status.
