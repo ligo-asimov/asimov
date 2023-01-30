@@ -403,15 +403,15 @@ class SubjectAnalysis(Analysis):
     A single subject analysis which requires results from multiple pipelines.
     """
 
-    def __init__(self, subject, name, pipeline, **kwargs):
+    def __init__(self, subject, name, pipeline, status=None, comment=None, **kwargs):
         self.event = self.subject = subject
         self.name = name
 
         self.logger = logger.getChild("event").getChild(f"{self.name}")
         self.logger.setLevel(LOGGER_LEVEL)
 
-        if "status" in kwargs:
-            self.status_str = kwargs["status"].lower()
+        if status:
+            self.status_str = status.lower()
         else:
             self.status_str = "none"
 
@@ -507,12 +507,14 @@ class ProjectAnalysis(Analysis):
     A multi-subject analysis.
     """
 
-    def __init__(self, subjects, analyses, name, pipeline, ledger=None, **kwargs):
+    def __init__(
+            self, subjects, analyses, name, pipeline, comment=None, ledger=None, **kwargs
+    ):
         """ """
         super().__init__()
 
-        self.name = name  # if name else "unnamed project analysis"
-
+        self.name = name # if name else "unnamed project analysis"
+        
         self.logger = logger.getChild("project analyses").getChild(f"{self.name}")
         self.logger.setLevel(LOGGER_LEVEL)
 
@@ -633,7 +635,83 @@ class ProjectAnalysis(Analysis):
 
         return output
 
+        self.pipeline = pipeline.lower()
+        try:
+            self.pipeline = known_pipelines[pipeline.lower()](self)
+        except:
+            self.logger.warning(f"The pipeline {pipeline} could not be found.")
+        if "needs" in self.meta:
+            self._needs = self.meta.pop("needs")
+        else:
+            self._needs = []
 
+        self.comment = comment
+
+
+    @classmethod
+    def from_dict(cls, parameters, ledger=None):
+        parameters = deepcopy(parameters)
+        # Check that pars is a dictionary
+        if not {"pipeline", "name"} <= parameters.keys():
+            raise ValueError(
+                f"Some of the required parameters are missing. "
+                f"Found {parameters.keys()}"
+            )
+        if "status" not in parameters:
+            parameters['status'] = "ready"
+        if "event" in parameters:
+            parameters.pop("event")
+        pipeline = parameters.pop("pipeline")
+        name = parameters.pop("name")
+        if "comment" not in parameters:
+            parameters['comment'] = None
+        return cls(name=name, pipeline=pipeline, ledger=ledger,  **parameters)
+
+    def to_dict(self):
+        """
+        Return this project production as a dictionary.
+
+        Parameters
+        ----------
+        event : bool
+           If set to True the output is designed to be included nested within an event.
+           The event name is not included in the representation, and the production name is provided as a key.
+        """
+        dictionary = {}
+        dictionary['name'] = self.name
+        dictionary["status"] = self.status
+        if isinstance(self.pipeline, str):
+            dictionary['pipeline'] = self.pipeline
+        else:
+            dictionary["pipeline"] = self.pipeline.name.lower()
+        dictionary["comment"] = self.comment
+
+        if self.review:
+            dictionary["review"] = self.review.to_dicts()
+
+        dictionary['needs'] = self.dependencies
+            
+        if "quality" in self.meta:
+            dictionary["quality"] = self.meta["quality"]
+        if "priors" in self.meta:
+            dictionary["priors"] = self.meta["priors"]
+        for key, value in self.meta.items():
+            dictionary[key] = value
+        if "repository" in self.meta:
+            dictionary["repository"] = self.repository.url
+        if "ledger" in dictionary:
+            dictionary.pop("ledger")
+        if "pipelines" in dictionary:
+            dictionary.pop("pipelines")
+
+        dictionary['subjects'] = self.subjects
+        dictionary['analyses'] = self._analysis_spec
+            
+        output = dictionary
+        
+        return output
+
+    
 class GravitationalWaveTransient(SimpleAnalysis):
     """
     A single subject, single pipeline analysis for a gravitational wave transient.

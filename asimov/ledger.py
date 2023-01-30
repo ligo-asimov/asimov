@@ -150,11 +150,37 @@ class YAMLLedger(Ledger):
             event.add_production(analysis)
             self.events[event.name] = event.to_dict()
         self.save()
+        
+    def add_event(self, event):
+        self.add_subject(subject=event)
 
-    def add_production(self, event, production):
-        event.add_production(production)
-        self.events[event.name] = event.to_dict()
+    def add_analysis(self, analysis, event=None):
+        """
+        Add an analysis to the ledger.
+
+        This method can accept any of the forms of analysis supported by asimov, and
+        will determine the correct way to add them to the ledger.
+
+        Parameters
+        ----------
+        analysis : `asimov.Analysis`
+           The analysis to be added to the ledger.
+        event : str, optional
+           The name of the event which the analysis should be added to.
+           This is not required for project analyses.
+        
+        Examples
+        --------
+        """
+        if isinstance(analysis, ProjectAnalysis):
+            self.data['project analyses'].append(analysis.to_dict())
+        else:
+            event.add_production(analysis)
+            self.events[event.name] = event.to_dict()
         self.save()
+        
+    def add_production(self, event, production):
+        self.add_analysis(production=production, event=event)
 
     def get_defaults(self):
         """
