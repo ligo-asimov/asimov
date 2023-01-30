@@ -152,15 +152,11 @@ class Event:
 
         if "productions" in kwargs:
             for production in kwargs["productions"]:
-                try:
-                    self.add_production(
-                        Production.from_dict(
-                            production, subject=self,
-                        )
+                self.add_production(
+                    Production.from_dict(
+                        production, subject=self,
                     )
-                except DescriptionException as error:
-                    error.submit_comment()
-
+                )
         self._check_required()
 
         if ("interferometers" in self.meta) and ("calibration" in self.meta):
@@ -169,6 +165,10 @@ class Event:
             except DescriptionException:
                 pass
 
+    @property
+    def analyses(self):
+        return self.productions
+            
     def __eq__(self, other):
         if isinstance(other, Event):
             if other.name == self.name:
@@ -459,7 +459,6 @@ class Event:
     def to_yaml(self):
         """Serialise this object as yaml"""
         data = self.to_dict()
-
         return yaml.dump(data, default_flow_style=False)
 
     def draw_dag(self):
