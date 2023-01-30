@@ -11,6 +11,7 @@ import shutil
 import asimov
 import asimov.database
 from asimov import config
+from asimov.analysis import ProjectAnalysis
 from asimov.event import Event, Production
 from asimov.utils import update, set_directory
 
@@ -51,6 +52,7 @@ class YAMLLedger(Ledger):
             update(self.get_defaults(), event, inplace=False)
             for event in self.data["events"]
         ]
+        
         self.events = {ev["name"]: ev for ev in self.data["events"]}
         self.data.pop("events")
 
@@ -61,6 +63,7 @@ class YAMLLedger(Ledger):
         data["asimov"] = {}
         data["asimov"]["version"] = asimov.__version__
         data["events"] = []
+        data["project analyses"] = []
         data["project"] = {}
         data["project"]["name"] = name
         with open(location, "w") as ledger_file:
@@ -135,17 +138,44 @@ class YAMLLedger(Ledger):
                 #os.fsync(ledger_file.fileno())
             os.replace(self.location+"_tmp", self.location)
 
-    def add_event(self, event):
+    def add_subject(self, subject):
+        """Add a new subject to the ledger."""
         if "events" not in self.data:
             self.data["events"] = []
 
-        self.events[event.name] = event.to_dict()
+        self.events[subject.name] = subject.to_dict()
         self.save()
+        
+    def add_event(self, event):
+        self.add_subject(subject=event)
 
-    def add_production(self, event, production):
-        event.add_production(production)
-        self.events[event.name] = event.to_dict()
+    def add_analysis(self, analysis, event=None):
+        """
+        Add an analysis to the ledger.
+
+        This method can accept any of the forms of analysis supported by asimov, and
+        will determine the correct way to add them to the ledger.
+
+        Parameters
+        ----------
+        analysis : `asimov.Analysis`
+           The analysis to be added to the ledger.
+        event : str, optional
+           The name of the event which the analysis should be added to.
+           This is not required for project analyses.
+        
+        Examples
+        --------
+        """
+        if isinstance(analysis, ProjectAnalysis):
+            self.data['project analyses'].append(analysis.to_dict())
+        else:
+            event.add_production(analysis)
+            self.events[event.name] = event.to_dict()
         self.save()
+        
+    def add_production(self, event, production):
+        self.add_analysis(production=production, event=event)
 
     def add_production(self, event, production):
         event.add_production(production)
@@ -176,6 +206,10 @@ class YAMLLedger(Ledger):
             defaults["scheduler"] = self.data["scheduler"]
         return defaults
 
+    @property
+    def project_analyses(self):
+        return [ProjectAnalysis.from_dict(analysis) for analysis in self.data['project analyses']]
+    
     def get_event(self, event=None):
         if event:
             return [Event(**self.events[event], ledger=self)]
