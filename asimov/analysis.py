@@ -789,7 +789,13 @@ class ProjectAnalysis(Analysis):
             dictionary["review"] = self.review.to_dicts()
 
         dictionary['needs'] = self.dependencies
-
+            
+        if "quality" in self.meta:
+            dictionary["quality"] = self.meta["quality"]
+        if "priors" in self.meta:
+            dictionary["priors"] = self.meta["priors"]
+        for key, value in self.meta.items():
+            dictionary[key] = value
         if "repository" in self.meta:
             dictionary["repository"] = self.repository.url
         if "ledger" in dictionary:
