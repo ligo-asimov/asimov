@@ -143,23 +143,15 @@ class YAMLLedger(Ledger):
         event : str, optional
            The name of the event which the analysis should be added to.
            This is not required for project analyses.
-
+        
         Examples
         --------
         """
         if isinstance(analysis, ProjectAnalysis):
-            self.data["project analyses"].append(analysis.to_dict())
+            self.data['project analyses'].append(analysis.to_dict())
         else:
             event.add_production(analysis)
             self.events[event.name] = event.to_dict()
-        self.save()
-        
-    def add_production(self, event, production):
-        self.add_analysis(production=production, event=event)
-
-    def add_production(self, event, production):
-        event.add_production(production)
-        self.events[event.name] = event.to_dict()
         self.save()
         
     def add_event(self, event):

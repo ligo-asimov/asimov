@@ -574,15 +574,15 @@ class SubjectAnalysis(Analysis):
     A single subject analysis which requires results from multiple pipelines.
     """
 
-    def __init__(self, subject, name, pipeline, **kwargs):
+    def __init__(self, subject, name, pipeline, status=None, comment=None, **kwargs):
         self.event = self.subject = subject
         self.name = name
 
         self.logger = logger.getChild("event").getChild(f"{self.name}")
         self.logger.setLevel(LOGGER_LEVEL)
 
-        if "status" in kwargs:
-            self.status_str = kwargs["status"].lower()
+        if status:
+            self.status_str = status.lower()
         else:
             self.status_str = "none"
 
@@ -680,12 +680,14 @@ class ProjectAnalysis(Analysis):
     A multi-subject analysis.
     """
 
-    def __init__(self, subjects, analyses, name, pipeline, ledger=None, **kwargs):
+    def __init__(
+            self, subjects, analyses, name, pipeline, comment=None, ledger=None, **kwargs
+    ):
         """ """
         super().__init__()
 
-        self.name = name  # if name else "unnamed project analysis"
-
+        self.name = name # if name else "unnamed project analysis"
+        
         self.logger = logger.getChild("project analyses").getChild(f"{self.name}")
         self.logger.setLevel(LOGGER_LEVEL)
 
