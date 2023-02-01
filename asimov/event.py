@@ -218,7 +218,7 @@ class Event:
             pass
         else:
             raise DescriptionException(
-                f"""Some of the required calibration envelopes are missing from this issue."""
+                f"""Some of the required calibration envelopes are missing from this event."""
                 f"""{set(self.meta['interferometers']) - set(self.meta['data']['calibration'].keys())}"""
             )
 
