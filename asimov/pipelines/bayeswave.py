@@ -217,7 +217,7 @@ class BayesWave(Pipeline):
             with open(py_file, "r") as f_handle:
                 original = f_handle.read()
             with open(py_file, "w") as f_handle:
-                self.logger.info(f"Fixing shebang")
+                self.logger.info("Fixing shebang")
                 path = os.path.join(
                     config.get("pipelines", "environment"), "bin", "python"
                 )

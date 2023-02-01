@@ -23,11 +23,12 @@ class AsimovTestCase(unittest.TestCase):
         os.makedirs(f"{self.cwd}/tests/tmp/project")
         os.chdir(f"{self.cwd}/tests/tmp/project")
         make_project(name="Test project", root=f"{self.cwd}/tests/tmp/project")
-        self.ledger = YAMLLedger(f"ledger.yml")
+        self.ledger = YAMLLedger("ledger.yml")
 
     def tearDown(self):
         os.chdir(self.cwd)
         shutil.rmtree(f"{self.cwd}/tests/tmp/")
+
 
 class AsimovTest(unittest.TestCase):
     """
@@ -38,4 +39,3 @@ class AsimovTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.events = ledger.get_event()
-        
