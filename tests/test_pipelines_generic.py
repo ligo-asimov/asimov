@@ -17,7 +17,7 @@ from asimov.cli.application import apply_page
 from asimov.ledger import YAMLLedger
 from asimov.pipelines import known_pipelines
 
-from . import AsimovTestCase
+from asimov.testing import AsimovTestCase
 from asimov import config
 from asimov.utils import set_directory
 
