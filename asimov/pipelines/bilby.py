@@ -11,7 +11,7 @@ import time
 
 from liquid import Liquid
 
-from asimov.utils import update, set_directory
+from asimov.utils import update
 
 from .. import config
 from ..pipeline import Pipeline, PipelineException, PipelineLogger, PESummaryPipeline
