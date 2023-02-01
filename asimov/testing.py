@@ -38,3 +38,4 @@ class AsimovTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.events = ledger.get_event()
+        
