@@ -12,7 +12,7 @@ import asimov.event
 from asimov.cli.project import make_project
 from asimov.cli.application import apply_page
 from asimov.ledger import YAMLLedger
-from . import AsimovTestCase
+from asimov.testing import AsimovTestCase
 
 
 class DetcharTests(AsimovTestCase):

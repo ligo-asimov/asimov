@@ -35,7 +35,7 @@ exemplar = {
     "bilby": {
         "minimum frequency": "{ H1:62,L1:92,V1:62, }",
         "segment length": "4",
-        "psd length": "109", # Note that bilby is set-up to round the PSD length to the nearest second
+        "psd length": "109.0", # Note that bilby is set-up to round the PSD length to the nearest second
         "ifo list": "['H1', 'L1', 'V1']",
         "segment start": "2",
         "data channels": "{ H1:WeirdChannel,L1:WeirdChannel,V1:OddChannel, }",
