@@ -98,9 +98,8 @@ For example:
 
 Now if we run ``asimov apply`` with this file both ``Prod0`` and ``Prod1`` will be added at the same time.
 
-You can find curated analysis description files in the `curated settings repository <https://git.ligo.org/asimov/data/-/tree/main/analyses>`_.
-
-.. todo:: Add a pointer to the curated settings documentation.
+You can find curated analysis blueprint in the `curated settings repository <https://git.ligo.org/asimov/data/-/tree/main/analyses>`_.
+Documentation for these blueprint files can be found in its repository: https://git.ligo.org/asimov/data/
 
 For example, you can add the standard set of GWTC-3 analyses by running
 
