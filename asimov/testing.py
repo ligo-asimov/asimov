@@ -29,6 +29,9 @@ class AsimovTestCase(unittest.TestCase):
         os.chdir(self.cwd)
         shutil.rmtree(f"{self.cwd}/tests/tmp/")
 
+    def tearDown(self):
+        os.chdir(self.cwd)
+        shutil.rmtree(f"{self.cwd}/tests/tmp/")
 
 class AsimovTest(unittest.TestCase):
     """
