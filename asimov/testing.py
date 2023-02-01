@@ -33,6 +33,7 @@ class AsimovTestCase(unittest.TestCase):
         os.chdir(self.cwd)
         shutil.rmtree(f"{self.cwd}/tests/tmp/")
 
+
 class AsimovTest(unittest.TestCase):
     """
     Overloads the unittest.TestCase code.
@@ -42,4 +43,3 @@ class AsimovTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.events = ledger.get_event()
-        
