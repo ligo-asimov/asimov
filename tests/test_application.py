@@ -40,7 +40,7 @@ class DetcharTests(AsimovTestCase):
         event = self.ledger.get_event("Nonstandard fmin")[0]
 
         self.assertEqual(event.meta["quality"]["minimum frequency"]["H1"], 62)
-        self.assertEqual(event.meta["quality"]["minimum frequency"]["L1"], 62)
+        self.assertEqual(event.meta["quality"]["minimum frequency"]["L1"], 92)
         self.assertEqual(event.meta["quality"]["minimum frequency"]["V1"], 62)
 
     def test_event_non_standard_channels(self):
