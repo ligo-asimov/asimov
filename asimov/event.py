@@ -664,14 +664,14 @@ class Production:
             self.logger.info("Didn't find waveform information in the metadata")
             self.meta["waveform"] = {}
         if "approximant" in self.meta:
-            self.logger.warn(
+            self.logger.warning(
                 "Found deprecated approximant information, "
                 "moving to waveform area of ledger"
             )
             approximant = self.meta.pop("approximant")
             self.meta["waveform"]["approximant"] = approximant
         if "reference frequency" in self.meta["likelihood"]:
-            self.logger.warn(
+            self.logger.warning(
                 "Found deprecated ref freq information, "
                 "moving to waveform area of ledger"
             )

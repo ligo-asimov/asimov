@@ -2,6 +2,7 @@
 Olivaw management commands
 """
 import os
+import sys
 import pathlib
 
 import click
@@ -183,13 +184,13 @@ def submit(event, update, dryrun):
                         + f" Unable to submit {production.name}"
                     )
                 except ValueError as e:
-                    print("ERROR", e)
                     logger.info("Unable to submit an unbuilt production")
                     click.echo(
                         click.style("●", fg="red")
                         + f" Unable to submit {production.name} as it hasn't been built yet."
                     )
                     click.echo("Try running `asimov manage build` first.")
+                    sys.exit()
                 try:
                     pipe.submit_dag(dryrun=dryrun)
                     if not dryrun:
