@@ -10,10 +10,9 @@ You can do this completely manually, or you can retrieve a pre-existing event fr
 Creating an event from a YAML file
 ----------------------------------
 
-The simplest way to add an event which has been used in a previous analysis is by using an event yaml file.
+The simplest way to add an event which has been used in a previous analysis is by using an event blueprint file.
 For events included in the published gravitational wave catalogue a curated set of these is available.
-
-.. todo:: Link to the documentation for the curated event YAML files.
+Documentation for these blueprint files can be found in its repository: https://git.ligo.org/asimov/data/
 
 Curated data files provide all of the settings required for a given gravitational event to be analysed, but do not include specifications for any specific analyses.
 This includes information about the appropriate sampling rate to use to analyse the job, any settings required to mitigate data quality concerns, as well as things like the time of the event and the appropriate detector data channels to use for the analysis.
