@@ -5,12 +5,7 @@ Progress reports
 ================
 
 Most of the analyses which are run by asimov take a long period of time to run, and many of the jobs its designed to do involve setting up dozens or even hundreds of analyses.
-While it is possible to use the command line to keep track of this, using the
-
-::
-   asimov monitor
-
-command, it can be helpful to set things up so that analyses are checked reguarly and automatically, and so that all of the analyses and information about them can be seen in one place.
+While it is possible to use the command line to keep track of this, using the ``asimov monitor`` command, it can be helpful to set things up so that analyses are checked reguarly and automatically, and so that all of the analyses and information about them can be seen in one place.
 
 These problems can be solved by two features within asimov, its automatic monitoring tool, and its reporting tool.
 
@@ -61,6 +56,7 @@ The location of the pages can be changed in the configuration file for the proje
 The value
 
 ::
+   
    [general]
    webroot = pages/
 
@@ -69,6 +65,7 @@ Can be changed to point instead to a directory which is served by a webserver.
 For example, on an LDG cluster you can set
 
 ::
+   
    [general]
    webroot = /home/albert.einstein/LVC/projects/my-asimov-project
 
