@@ -178,6 +178,9 @@ You'll need to have asimov installed first; you can find information about doing
    For example, in this project we have a bilby job which is waiting for the completion of a bayeswave job in order to start.
    ``asimov start`` will automatically build and submit this bilby analysis once the bayeswave job is complete.
 
+   Eventually, once all of the analyses have completed you can run ``asimov stop`` to end the automatic monitoring.
+   ``asimov stop`` does not stop analyses from running, and only stops their routine monitoring via asimov, so can always be safely restarted by running ``asimov start`` later.
+
 And that's it! We now have a working analysis on GW150914.
 chances are if you're looking at asimov you'll want to do something a little more complicated, so let's look at some next steps.
    
