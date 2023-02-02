@@ -432,7 +432,7 @@ class Bilby(Pipeline):
         out += f"""<li><a href="{pages_dir}/overview.html">Overview pages</a></li>"""
         if self.production.status in {"finished", "uploaded"}:
             if self.production.status == "uploaded":
-                out += f"""<li><a href="{pages_dir}/results/home.html">Summary pages</a></li>"""
+                out += f"""<li><a href="{pages_dir}/pesummary/home.html">Summary pages</a></li>"""
         out += """</ul>"""
 
         image_card = """<div class="card" style="width: 18rem;">
@@ -445,10 +445,13 @@ class Bilby(Pipeline):
 
         plots = [
             [
-                f"{self.production.name}_1d_posterior_luminosity_distance.png",
+                f"{pages_dir}/pesummary/plots/{self.production.name}_1d_posterior_luminosity_distance.png",
                 "luminosity distance",
             ],
-            [f"{self.production.name}_skymap.png", "skymap"],
+            [
+                f"{pages_dir}/pesummary/plots/{self.production.name}_skymap.png",
+                "skymap",
+            ],
         ]
 
         out += """<div class="card-group">"""
@@ -456,8 +459,8 @@ class Bilby(Pipeline):
             if self.production.status in {"finished", "uploaded"}:
                 out += image_card.format(plot[0], plot[1])
 
-        out += """</div>""" # Closes card-group
-        out += """</div>""" # Closes the bilby div
+        out += """</div>"""  # Closes card-group
+        out += """</div>"""  # Closes the bilby div
         return out
 
     def resurrect(self):
