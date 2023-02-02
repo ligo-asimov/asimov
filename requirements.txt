@@ -5,7 +5,7 @@ ligo-gracedb
 liquidpy
 networkx
 numpy
-otter-report
+otter-report>=0.3.3
 python-gitlab
 pytz
 pyyaml
