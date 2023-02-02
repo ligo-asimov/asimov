@@ -459,12 +459,24 @@ class BayesWave(Pipeline):
         """Return the HTML representation of this pipeline."""
         pages_dir = os.path.join(self.production.event.name, self.production.name)
         out = ""
+
+        image_card = """<div class="card" style="width: 18rem;">
+<img class="card-img-top" src="{0}" alt="Card image cap">
+  <div class="card-body">
+    <p class="card-text">{1}</p>
+  </div>
+</div>
+        """
+
         if self.production.status in {"finished", "uploaded"}:
-            out += """<div class="asimov-pipeline">"""
+            out += """<div class="asimov-pipeline bayeswave">"""
             out += (
                 f"""<p><a href="{pages_dir}/index.html">Full Megaplot output</a></p>"""
             )
-            out += f"""<img height=200 src="{pages_dir}/plots/clean_whitened_residual_histograms.png"</src>"""
+            out += image_card.format(
+                f"{pages_dir}/plots/clean_whitened_residual_histograms.png",
+                "Cleaned whitened residual histograms",
+            )
 
             out += """</div>"""
 
