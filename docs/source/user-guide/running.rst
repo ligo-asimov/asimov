@@ -50,12 +50,3 @@ You can also run the ``build`` and ``submit`` stages in a single command:
 		$ asimov manage build submit
 
 Which is identical to running both commands sequentially.
-
-
-Command documentation
----------------------
-.. click:: asimov.olivaw:olivaw
-   :prog: asimov
-   :commands: manage
-   :nested: full
-
