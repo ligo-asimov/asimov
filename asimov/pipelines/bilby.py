@@ -427,7 +427,7 @@ class Bilby(Pipeline):
         """Return the HTML representation of this pipeline."""
         pages_dir = os.path.join(self.production.event.name, self.production.name)
         out = ""
-        out += """<div class="asimov-pipeline">"""
+        out += """<div class="asimov-pipeline bilby">"""
         out += """<ul>"""
         out += f"""<li><a href="{pages_dir}/overview.html">Overview pages</a></li>"""
         if self.production.status in {"finished", "uploaded"}:
@@ -451,12 +451,13 @@ class Bilby(Pipeline):
             [f"{self.production.name}_skymap.png", "skymap"],
         ]
 
+        out += """<div class="card-group">"""
         for plot in plots:
             if self.production.status in {"finished", "uploaded"}:
                 out += image_card.format(plot[0], plot[1])
 
-        out += """</div>"""
-
+        out += """</div>""" # Closes card-group
+        out += """</div>""" # Closes the bilby div
         return out
 
     def resurrect(self):
