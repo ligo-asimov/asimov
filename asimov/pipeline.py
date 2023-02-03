@@ -373,7 +373,7 @@ class PESummaryPipeline(PostPipeline):
         if "multiprocess" in self.meta:
             command += ["--multi_process", str(self.meta["multiprocess"])]
 
-        if "regenerate" in self.meta:
+        if "regenerate posteriors" in self.meta:
             command += ["--regenerate", " ".join(self.meta["regenerate posteriors"])]
 
         # Config file
