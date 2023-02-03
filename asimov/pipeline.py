@@ -397,11 +397,11 @@ class PESummaryPipeline(PostPipeline):
         with utils.set_directory(self.production.rundir):
             with open(f"{self.production.name}_pesummary.sh", "w") as bash_file:
                 bash_file.write(
-                    f"{config.get('pesummary', 'executable')} " + " ".join(command)
+                    f"{config.get('pipelines', 'environment')}/bin/summarypages " + " ".join(command)
                 )
 
         self.logger.info(
-            f"PE summary command: {config.get('pesummary', 'executable')} {' '.join(command)}",
+            f"PE summary command: {config.get('pipelines', 'environment')}/bin/summarypages {' '.join(command)}",
             production=self.production,
             channels=["file"],
         )
@@ -412,7 +412,7 @@ class PESummaryPipeline(PostPipeline):
             print(command)
 
         submit_description = {
-            "executable": config.get("pesummary", "executable"),
+            "executable": os.path.join(config.get("pipelines", "environment"), "bin", "summarypages"),
             "arguments": " ".join(command),
             "accounting_group": self.meta["accounting group"],
             "output": f"{self.production.rundir}/pesummary.out",
