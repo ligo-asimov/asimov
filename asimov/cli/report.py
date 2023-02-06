@@ -40,7 +40,6 @@ def html(event, webdir):
     if not webdir:
         webdir = config.get("general", "webroot")
 
-    print(resource_filename("asimov.cli", "report-theme"))
     report = otter.Otter(
         f"{webdir}/index.html",
         author="Asimov",
