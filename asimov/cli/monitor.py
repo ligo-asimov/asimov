@@ -17,14 +17,14 @@ def start(dry_run):
     """Set up a cron job on condor to monitor the project."""
 
     try:
-        minute_expression = config.get("condor", "cron_minute")
+        minute_expression = config.get("asimov start", "cron_minute")
     except (configparser.NoOptionError, configparser.NoSectionError):
         minute_expression = "*/15"
 
     submit_description = {
         "executable": shutil.which("asimov"),
         "arguments": "monitor --chain",
-        "accounting_group": config.get("pipelines", "accounting"),
+        "accounting_group": config.get("asimov start", "accounting"),
         "output": "asimov_cron.out",
         "on_exit_remove": "false",
         "universe": "local",
