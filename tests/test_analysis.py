@@ -106,16 +106,16 @@ class TestProjectAnalysis(TestBaseAnalysis):
             ledger=self.ledger,
         )
 
-    # def test_that_subjects_are_accessible(self):
-    #     """Test that it is possible to get a list of subjects from a project analysis."""
-    #     self.assertTrue(
-    #         self.ledger.project_analyses[0].subjects
-    #         == ["GW150914_095045", "GW151226_033853"]
-    #     )
-    #     self.assertTrue(
-    #         self.ledger.project_analyses[0].events
-    #         == ["GW150914_095045", "GW151226_033853"]
-    #     )
+    def test_that_subjects_are_accessible(self):
+        """Test that it is possible to get a list of subjects from a project analysis."""
+        self.assertTrue(
+            self.ledger.project_analyses[0].subjects
+            == ["GW150914_095045", "GW151226_033853"]
+        )
+        self.assertTrue(
+            self.ledger.project_analyses[0].events
+            == ["GW150914_095045", "GW151226_033853"]
+        )
 
     def test_that_all_bayeswave_analyses_are_returned(self):
         """Test that the bayeswave analysis is returned for every subject."""
