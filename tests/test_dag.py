@@ -32,7 +32,12 @@ class DAGTests(unittest.TestCase):
         make_project(name="Test project", root=f"{self.cwd}/tests/tmp/project")
         self.ledger = YAMLLedger(f".asimov/ledger.yml")
         apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
-        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/events/gwtc-2-1/GW150914_095045.yaml", event=None, ledger=self.ledger)
+        apply_page(file = f"{self.cwd}/tests/test_data/events_blueprint.yaml", ledger=self.ledger)
+
+
+    def tearDown(self):
+        del(self.ledger)
+        shutil.rmtree(f"{self.cwd}/tests/tmp/project")
 
     def tearDown(self):
         del(self.ledger)
