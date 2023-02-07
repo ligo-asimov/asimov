@@ -27,6 +27,9 @@ import configparser
 from copy import deepcopy
 from warnings import warn
 
+from functools import reduce
+import operator
+
 from liquid import Liquid
 
 from asimov import config, logger, LOGGER_LEVEL
@@ -66,9 +69,9 @@ class Analysis:
         for need in needs:
             try:
                 requirement = need.split(":")
-                requirement = [requirement[0], requirement[1]]
+                requirement = [requirement[0].split("."), requirement[1]]
             except ValueError:
-                requirement = {"name": need}
+                requirement = [["name"], need]
             all_requirements.append(requirement)
         return all_requirements
 
@@ -115,6 +118,23 @@ class Analysis:
     def status(self, value):
         self.status_str = value.lower()
 
+    def matches_filter(self, attribute, match):
+        is_review = False
+        if attribute[0] == "review":
+            is_review = match.lower() == str(self.review.status).lower()
+        is_status = False
+        if attribute[0] == "status":
+            is_status = match.lower() == self.status.lower()
+        is_name = False
+        if attribute[0] == "name":
+            is_name = match == self.name
+        try:
+            in_meta = reduce(operator.getitem, attribute, self.meta) == match
+        except KeyError:
+            in_meta = False
+
+        return is_name | in_meta | is_status | is_review
+        
     def results(self, filename=None, handle=False, hash=None):
         store = Store(root=config.get("storage", "results_store"))
         if not filename:
@@ -217,7 +237,7 @@ class SimpleAnalysis(Analysis):
     A single subject, single pipeline analysis.
     """
 
-    def __init__(self, subject, name, pipeline, status=None, comment=None, **kwargs):
+    def __init__(self, subject, name, pipeline, **kwargs):
 
         self.event = self.subject = subject
         self.name = name
@@ -225,8 +245,9 @@ class SimpleAnalysis(Analysis):
         self.logger = logger.getChild("event").getChild(f"{self.name}")
         self.logger.setLevel(LOGGER_LEVEL)
 
-        if status:
-            self.status_str = status.lower()
+
+        if "status" in kwargs:
+            self.status_str = kwargs['status'].lower()
         else:
             self.status_str = "none"
 
@@ -238,14 +259,17 @@ class SimpleAnalysis(Analysis):
            self.meta.pop("needs")
 
         self.meta = update(self.meta, deepcopy(kwargs))
+        self.meta['pipeline'] = pipeline.lower()
         self.pipeline = pipeline.lower()
         self.pipeline = known_pipelines[pipeline.lower()](self)
         if "needs" in self.meta:
             self._needs = self.meta.pop("needs")
         else:
             self._needs = []
-        
-        self.comment = comment
+        if "comment" in kwargs:
+            self.comment = kwargs['comment']
+        else:
+            self.comment = None
 
     def to_dict(self, event=True):
         """
@@ -319,15 +343,15 @@ class SubjectAnalysis(Analysis):
     A single subject analysis which requires results from multiple pipelines.
     """
 
-    def __init__(self, subject, name, pipeline, status=None, comment=None, **kwargs):
+    def __init__(self, subject, name, pipeline, **kwargs):
         self.event = self.subject = subject
         self.name = name
 
         self.logger = logger.getChild("event").getChild(f"{self.name}")
         self.logger.setLevel(LOGGER_LEVEL)
 
-        if status:
-            self.status_str = status.lower()
+        if "status" in kwargs:
+            self.status_str = kwargs['status'].lower()
         else:
             self.status_str = "none"
 
@@ -346,7 +370,10 @@ class SubjectAnalysis(Analysis):
         else:
             self._needs = []
         
-        self.comment = comment
+        if "comment" in kwargs:
+            self.comment = kwargs['comment']
+        else:
+            self.comment = None
         
     def to_dict(self, event=True):
         """
@@ -423,7 +450,7 @@ class ProjectAnalysis(Analysis):
     """
 
     def __init__(
-            self, subjects, analyses, name, pipeline, status=None, comment=None, ledger=None, **kwargs
+            self, subjects, analyses, name, pipeline, ledger=None, **kwargs
     ):
         """ """
         super().__init__()
@@ -448,11 +475,12 @@ class ProjectAnalysis(Analysis):
             self._subject_obs.append(sub)
             if self._analysis_spec:
                 for attribute, match in requirements:
-                    filtered_analyses = filter(lambda x: str(getattr(x, attribute)).lower() == match, sub.analyses)
+                    #filtered_analyses = filter(lambda x: str(getattr(x, attribute)).lower() == match, sub.analyses)
+                    filtered_analyses = filter(lambda x: x.matches_filter(attribute, match), sub.analyses)
                     for analysis in list(filtered_analyses):
                         self.analyses.append(analysis)
-        if status:
-            self.status_str = status.lower()
+        if "status" in kwargs:
+            self.status_str = kwargs['status'].lower()
         else:
             self.status_str = "none"
 
@@ -466,7 +494,10 @@ class ProjectAnalysis(Analysis):
         else:
             self._needs = []
 
-        self.comment = comment
+        if "comment" in kwargs:
+            self.comment = kwargs['comment']
+        else:
+            self.comment = None
 
     def __repr__(self):
         """
@@ -546,11 +577,11 @@ class GravitationalWaveTransient(SimpleAnalysis):
     """
     A single subject, single pipeline analysis for a gravitational wave transient.
     """
-    def __init__(self, subject, name, pipeline, status=None, comment=None, **kwargs):
+    def __init__(self, subject, name, pipeline, **kwargs):
 
         self.category = config.get("general", "calibration_directory")
 
-        super().__init__(subject, name, pipeline, status=None, comment=None, **kwargs)
+        super().__init__(subject, name, pipeline, **kwargs)
         self._add_missing_parameters()
         self._checks()
         
