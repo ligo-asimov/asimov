@@ -64,13 +64,26 @@ class Analysis:
     def _process_dependencies(self, needs):
         """
         Process the dependencies list for this production.
+
+        The dependencies can be provided either as the name of a production,
+        or a query against the analysis's attributes.
+
+        Parameters
+        ----------
+        needs : list
+           A list of all the requirements
+
+        Returns
+        -------
+        list
+           A list of all the requirements processed for evaluation.
         """
         all_requirements = []
         for need in needs:
             try:
                 requirement = need.split(":")
                 requirement = [requirement[0].split("."), requirement[1]]
-            except ValueError:
+            except IndexError:
                 requirement = [["name"], need]
             all_requirements.append(requirement)
         return all_requirements
@@ -95,7 +108,19 @@ class Analysis:
     @property
     def dependencies(self):
         """Return a list of analyses which this analysis depends upon."""
-        return self._process_dependencies(self._needs)
+        all_matches = []
+        if len(self._needs) == 0:
+            return []
+        else:
+            matches = set({})# set(self.event.analyses)
+            #matches.remove(self)
+            requirements = self._process_dependencies(self._needs)
+            for attribute, match in requirements:
+                filtered_analyses = list(filter(lambda x: x.matches_filter(attribute, match), self.event.analyses))
+                matches = set.union(matches, set(filtered_analyses))
+            for analysis in matches:
+                all_matches.append(analysis)
+            return all_matches
 
     @property
     def priors(self):
@@ -119,6 +144,38 @@ class Analysis:
         self.status_str = value.lower()
 
     def matches_filter(self, attribute, match):
+        """
+        Checks to see if this analysis matches a given filtering
+        criterion.
+
+        A variety of different attributes can be used for filtering.
+        The primary attributes are
+
+            - review status
+
+            - processing status
+
+            - name
+
+        In addition, any quantity contained in the analysis metadata
+        may be used by accessing it in the nested structure of this
+        data, with levels of the hierarchy separated with period
+        characters.  For example, to access the waveform approximant
+        the correct attribute would be `waveform.approximant`.
+
+        Parameters
+        ----------
+        attribute : str
+           The name of the attribute to be tested
+        match : str
+           The string to be matched against the value of the attribute
+
+        Returns
+        -------
+        bool
+           Returns True if this analysis matches the query,
+           otherwise returns False.
+        """
         is_review = False
         if attribute[0] == "review":
             is_review = match.lower() == str(self.review.status).lower()
@@ -255,8 +312,8 @@ class SimpleAnalysis(Analysis):
         self.meta = update(self.meta, deepcopy(self.subject.meta))
         if "productions" in self.meta:
            self.meta.pop("productions")
-        if "needs" in self.meta:
-           self.meta.pop("needs")
+        # if "needs" in self.meta:
+        #    self.meta.pop("needs")
 
         self.meta = update(self.meta, deepcopy(kwargs))
         self.meta['pipeline'] = pipeline.lower()
@@ -296,7 +353,7 @@ class SimpleAnalysis(Analysis):
         if self.review:
             dictionary["review"] = self.review.to_dicts()
 
-        dictionary['needs'] = self.dependencies
+        dictionary['needs'] = self._needs #self.dependencies
             
         if "quality" in self.meta:
             dictionary["quality"] = self.meta["quality"]
@@ -474,11 +531,12 @@ class ProjectAnalysis(Analysis):
             sub = self.ledger.get_event(subject)[0]
             self._subject_obs.append(sub)
             if self._analysis_spec:
+                matches = set(sub.analyses)
                 for attribute, match in requirements:
-                    #filtered_analyses = filter(lambda x: str(getattr(x, attribute)).lower() == match, sub.analyses)
-                    filtered_analyses = filter(lambda x: x.matches_filter(attribute, match), sub.analyses)
-                    for analysis in list(filtered_analyses):
-                        self.analyses.append(analysis)
+                    filtered_analyses = list(filter(lambda x: x.matches_filter(attribute, match), sub.analyses))
+                    matches = set.intersection(matches, set(filtered_analyses))
+                for analysis in matches:
+                    self.analyses.append(analysis)
         if "status" in kwargs:
             self.status_str = kwargs['status'].lower()
         else:
