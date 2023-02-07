@@ -62,7 +62,15 @@ class Analysis:
         """
         Process the dependencies list for this production.
         """
-        return needs
+        all_requirements = []
+        for need in needs:
+            try:
+                requirement = need.split(":")
+                requirement = [requirement[0], requirement[1]]
+            except ValueError:
+                requirement = {"name": need}
+            all_requirements.append(requirement)
+        return all_requirements
 
     @property
     def job_id(self):
@@ -429,18 +437,20 @@ class ProjectAnalysis(Analysis):
         self.events = self.subjects
 
         self._analysis_spec = analyses
+        requirements = self._process_dependencies(self._analysis_spec)
         self.analyses = []
 
         if ledger:
             self.ledger = ledger
-            self._subject_obs = []
-            for subject in self.subjects:
-                sub = self.ledger.get_event(subject)[0]
-                print(sub)
-                self._subject_obs.append(sub)
-                for analysis in sub.analyses:
-                    self.analyses.append(analysis)
-
+        self._subject_obs = []
+        for subject in self.subjects:
+            sub = self.ledger.get_event(subject)[0]
+            self._subject_obs.append(sub)
+            if self._analysis_spec:
+                for attribute, match in requirements:
+                    filtered_analyses = filter(lambda x: str(getattr(x, attribute)).lower() == match, sub.analyses)
+                    for analysis in list(filtered_analyses):
+                        self.analyses.append(analysis)
         if status:
             self.status_str = status.lower()
         else:
@@ -448,7 +458,7 @@ class ProjectAnalysis(Analysis):
 
         self.pipeline = pipeline.lower()
         try:
-            self.pipeline = known_pipelines[pipeline.lower()](self)
+            self.pipeline = known_pipelines[str(pipeline).lower()](self)
         except:
             self.logger.warning(f"The pipeline {pipeline} could not be found.")
         if "needs" in self.meta:
@@ -458,6 +468,15 @@ class ProjectAnalysis(Analysis):
 
         self.comment = comment
 
+    def __repr__(self):
+        """
+        A human-friendly representation of this project.
+
+        Parameters
+        ----------
+        None
+        """
+        return f"<Project analysis for {len(self.events)} events and {len(self.analyses)} analyses>"
 
     @classmethod
     def from_dict(cls, parameters, ledger=None):
