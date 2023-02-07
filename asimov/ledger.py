@@ -211,7 +211,7 @@ class YAMLLedger(Ledger):
 
     @property
     def project_analyses(self):
-        return [ProjectAnalysis.from_dict(analysis) for analysis in self.data['project analyses']]
+        return [ProjectAnalysis.from_dict(analysis, ledger=self) for analysis in self.data['project analyses']]
     
     def get_event(self, event=None):
         if event:
