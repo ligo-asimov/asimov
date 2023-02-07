@@ -140,7 +140,19 @@ class Analysis:
     @property
     def dependencies(self):
         """Return a list of analyses which this analysis depends upon."""
-        return self._process_dependencies(self._needs)
+        all_matches = []
+        if len(self._needs) == 0:
+            return []
+        else:
+            matches = set({})# set(self.event.analyses)
+            #matches.remove(self)
+            requirements = self._process_dependencies(self._needs)
+            for attribute, match in requirements:
+                filtered_analyses = list(filter(lambda x: x.matches_filter(attribute, match), self.event.analyses))
+                matches = set.union(matches, set(filtered_analyses))
+            for analysis in matches:
+                all_matches.append(analysis)
+            return all_matches
 
     @property
     def priors(self):
