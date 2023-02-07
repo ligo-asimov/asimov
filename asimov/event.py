@@ -252,13 +252,9 @@ class Event:
         self.graph.add_node(production)
         
         if production.dependencies:
-            dependencies = production.dependencies
-            dependencies = [
-                production
-                for production in self.productions
-                if production.name in dependencies
-            ]
-            for dependency in dependencies:
+            for dependency in production.dependencies:
+                if (dependency == production):
+                    continue
                 self.graph.add_edge(dependency, production)
 
     def __repr__(self):
@@ -501,7 +497,7 @@ class Event:
             for x in unfinished.reverse().nodes()
             if unfinished.reverse().out_degree(x) == 0
         ]
-        return set(ends)  # only want to return one version of each production!
+        return {end for end in ends if end.status.lower()=="ready"}  # only want to return one version of each production!
 
     def build_report(self):
         for production in self.productions:
