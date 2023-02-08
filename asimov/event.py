@@ -8,6 +8,7 @@ import pathlib
 from copy import deepcopy
 import logging
 import configparser
+import subprocess
 
 import networkx as nx
 import yaml
