@@ -1041,6 +1041,7 @@ class Production:
                 productions[production.name] = production
 
             for previous_job in self.dependencies:
+                print(previous_job, productions[previous_job].pipeline.collect_assets())
                 try:
                     # Check if the job provides PSDs as an asset and were produced with compatible settings
                     if keyword in productions[previous_job].pipeline.collect_assets():
@@ -1089,6 +1090,7 @@ class Production:
 
         self.psds = self._collect_psds()
         self.xml_psds = self._collect_psds(format="xml")
+        
         if "template" in self.meta:
             template = f"{self.meta['template']}.ini"
         else:

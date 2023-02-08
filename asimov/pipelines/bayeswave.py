@@ -430,7 +430,7 @@ class BayesWave(Pipeline):
         xml_psds = {}
         for det in self.production.meta["interferometers"]:
             asset = os.path.join(
-                f"{self.production.event.repository.directory}/{self.production.category}/psds/{self.production.meta['likelihood']['sample rate']}/{det.upper()}-psd.xml.gz"
+                f"{self.production.event.repository.directory}/{self.production.category}/psds/{self.production.meta['likelihood']['sample rate']}/psd_{det.upper()}.xml.gz"
             )
             if os.path.exists(asset):
                 xml_psds[det] = asset
