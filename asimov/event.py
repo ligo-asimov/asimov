@@ -414,6 +414,14 @@ class Event:
             with open("download.file", "w") as dest_file:
                 dest_file.write(file_obj.read().decode())
 
+            if "xml" in gfile:
+                # Convert to the new xml format
+                command = ["ligolw_no_ilwdchar", "download.file"]
+                pipe = subprocess.Popen(
+                    command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+                )
+                out, err = pipe.communicate()
+
             self.repository.add_file(
                 "download.file",
                 destination,
