@@ -8,6 +8,15 @@ name: Prod1
 event: GW150914_095045
 pipeline: rift
 waveform:
-  approximant: SEOBNRv4PHM
+  approximant: IMRPhenomD
+  non-spin: True
+sampler:
+  cip fit method: rf
+  cip sampler method: GMM
+  cip explode jobs auto: True
+  cip explode jobs: 3  
+  internal use aligned phase coordinates: False
+  internal correlate default: True
+  ile jobs per worker: 200
 needs:
   - Bayeswave

@@ -189,7 +189,11 @@ class Rift(Pipeline):
             ]
         if coinc_file:
             command += ["--use-coinc", coinc_file]
-            
+
+        if "non-spin" in self.production.meta['waveform']:
+            if self.production.meta['waveform']['non-spin']:
+                command += ["--assume-no-spin"]
+
         command += [
             "--calibration",
             f"{calibration}",
