@@ -433,7 +433,7 @@ class BayesWave(Pipeline):
                 f"{self.production.event.repository.directory}/{self.production.category}/psds/{self.production.meta['likelihood']['sample rate']}/psd_{det.upper()}.xml.gz"
             )
             if os.path.exists(asset):
-                xml_psds[det] = asset
+                xml_psds[det] = os.path.abspath(asset)
 
         outputs["xml psds"] = xml_psds
 
