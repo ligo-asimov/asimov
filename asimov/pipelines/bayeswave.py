@@ -358,7 +358,7 @@ class BayesWave(Pipeline):
         for detector, asset in self.collect_assets()["psds"]:
             self.production.event.repository.add_file(
                 asset,
-                os.path.join(git_location, str(sample), f"psd_{detector}.dat"),
+                os.path.join(git_location, str(sample), f"{detector}-psd.dat"),
                 commit_message=f"Added the PSD for {detector}.",
             )
 
@@ -430,7 +430,7 @@ class BayesWave(Pipeline):
         xml_psds = {}
         for det in self.production.meta["interferometers"]:
             asset = os.path.join(
-                f"{self.production.event.repository.directory}/{self.production.category}/psds/{self.production.meta['likelihood']['sample rate']}/psd_{det.upper()}.xml.gz"
+                f"{self.production.event.repository.directory}/{self.production.category}/psds/{self.production.meta['likelihood']['sample rate']}/{det.upper()}-psd.xml.gz"
             )
             if os.path.exists(asset):
                 xml_psds[det] = os.path.abspath(asset)
