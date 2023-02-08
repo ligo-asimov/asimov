@@ -1,0 +1,8 @@
+# This is a generic blueprint for a LALInference job.
+# It was constructed for testing-purposes and is not designed for use in analysis.
+kind: analysis
+name: lalinference_test_job
+pipeline: lalinference
+comment: LALInference Primary Parameter Estimation Test Job
+scheduler:
+    accounting group: test

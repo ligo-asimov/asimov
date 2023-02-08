@@ -1,0 +1,52 @@
+kind: configuration
+# This file contains configuration settings for creating analysis jobs
+# which will finish in a short period of time.  These are *ONLY*
+# intended for running end-to-end tests of the infrastructure, and
+# should not be used for any production or exploratory analysis.
+
+# Data quality settings
+
+quality:
+  minimum frequency:
+    H1: 20
+    L1: 20
+    V1: 20
+
+# Pipeline settings
+
+pipelines:
+  bilby:
+    sampler:
+      sampler: dynesty
+      parallel jobs: 2
+      sampler kwargs: "{nlive: 100, dlogz: 1, nact: 5}"
+    scheduler:
+      accounting group: ligo.dev.o4.cbc.pe.bilby
+      request cpus: 16
+  bayeswave:
+    likelihood:
+      iterations: 250000
+    scheduler:
+      accounting group: ligo.dev.o4.cbc.pe.lalinference
+      request memory: 1024
+      request post memory: 16384
+
+# Postprocessing settings
+      
+postprocessing:
+  pesummary:
+    accounting group: ligo.dev.o4.cbc.pe.lalinference
+    cosmology: Planck15_lal
+    evolve spins: forward
+    multiprocess: 4
+    redshift: exact
+    regenerate posteriors:
+    - redshift
+    - mass_1_source
+    - mass_2_source
+    - chirp_mass_source
+    - total_mass_source
+    - final_mass_source
+    - final_mass_source_non_evolved
+    - radiated_energy
+    skymap samples: 2000

@@ -1,86 +1,361 @@
 """
 Code for interacting with the condor scheduler.
+
+An important function of asimov is interaction with condor schedulers in order to track the status of running jobs.
+
+In order to improve performance the code caches results from the query to the scheduler.
+
 """
 import os
-from configparser import ConfigParser
-
+import datetime
+from dateutil import tz
 import htcondor
+import yaml
 
-from . import ini
+from asimov import config, logger, LOGGER_LEVEL
 
-class CondorJob(object):
-    """
-    An object to represent a running condor job.
+UTC = tz.tzutc()
+
+logger = logger.getChild("condor")
+logger.setLevel(LOGGER_LEVEL)
+
+
+def datetime_from_epoch(dt, tzinfo=UTC):
+    """Returns the `datetime.datetime` for a given Unix epoch
 
     Parameters
     ----------
-    cluster_id : int
-       The cluster ID for this job.
+    dt : `float`
+        a Unix timestamp
+
+    tzinfo : `datetime.tzinfo`, optional
+        the desired timezone for the output `datetime.datetime`
+
+    Returns
+    -------
+    datetime.datetime
+        the datetime that represents the given Unix epoch
+    """
+    return datetime.datetime.utcfromtimestamp(dt).replace(tzinfo=tzinfo)
+
+
+def submit_job(submit_description):
+    """
+    Submit a new job to the condor scheduller
     """
 
-    def __init__(self, cluster_id):
-        self.cluster = cluster_id
-        self.data = {}
-        self.get_data()
+    hostname_job = htcondor.Submit(submit_description)
+
+    try:
+        logger.info(f"Trying to submit to {config.get('condor', 'scheduler')}")
+        # There should really be a specified submit node, and if there is, use it.
+        schedulers = htcondor.Collector().locate(
+            htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler")
+        )
+        schedd = htcondor.Schedd(schedulers)
+        logger.info(f"Found scheduler: {schedd}")
+    except:  # NoQA
+        # If you can't find a specified scheduler, try until it works
+        collectors = htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd)
+        logger.info("Searching for a scheduler of any kind")
+        for collector in collectors:
+            logger.info(f"Found {collector}")
+            schedd = htcondor.Schedd(collector)
+            try:
+                with schedd.transaction() as txn:
+                    cluster_id = hostname_job.queue(txn)
+                    break
+            except htcondor.HTCondorIOError:
+                logger.info(f"{collector} cannot receive jobs")
+
+    return cluster_id
+
+
+def delete_job(cluster_id):
+    try:
+        # There should really be a specified submit node, and if there is, use it.
+        schedulers = htcondor.Collector().locate(
+            htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler")
+        )
+        schedd = htcondor.Schedd(schedulers)
+    except:  # NoQA
+        # If you can't find a specified scheduler, use the first one you find
+        schedd = htcondor.Schedd()
+    schedd.act(htcondor.JobAction.Remove, f"ClusterId == {cluster_id}")
+
+
+def collect_history(cluster_id):
+    try:
+        # There should really be a specified submit node, and if there is, use it.
+        schedulers = htcondor.Collector().locate(
+            htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler")
+        )
+        schedd = htcondor.Schedd(schedulers)
+        logger.info(f"Found {schedd}")
+    except:  # NoQA
+        # If you can't find a specified scheduler, use the first one you find
+        collectors = htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd)
+        logger.info("Searching for a scheduler of any kind")
+        for collector in collectors:
+            logger.info(f"Found {collector}")
+            schedd = htcondor.Schedd(collector)
+            HISTORY_CLASSADS = [
+                    "CompletionDate",
+                    "CpusProvisioned",
+                    "GpusProvisioned",
+                    "CumulativeSuspensionTime",
+                    "EnteredCurrentStatus",
+                    "MaxHosts",
+                    "RemoteWallClockTime",
+                    "RequestCpus",
+                ]
+            try:
+                jobs = schedd.history(
+                    f"ClusterId == {cluster_id}", projection=HISTORY_CLASSADS
+                )
+                logger.info(f"Jobs found: {jobs}")
+                break
+            except htcondor.HTCondorIOError:
+                logger.info(f"{collector} cannot receive jobs")
+        if len(list(jobs)) == 0:
+            raise ValueError
+        output = {}
+        for job in jobs:
+            end = float(job["CompletionDate"]) or float(job["EnteredCurrentStatus"])
+            output["end"] = datetime_from_epoch(end).strftime("%Y-%m-%d")
+            # get cpus and gpus
+            try:
+                cpus = float(job["CpusProvisioned"])
+            except (KeyError, ValueError):
+                cpus = float(job.get("RequestCpus", 1))
+            try:
+                gpus = float(job["GpusProvisioned"])
+            except (KeyError, ValueError):
+                gpus = float(job.get("RequestGpus", 1))
+            output["cpus"] = cpus
+            output["gpus"] = gpus
+            # get total job time (seconds)
+            runtime = float(job["RemoteWallClockTime"]) - float(
+                job["CumulativeSuspensionTime"]
+            )
+            # if the job didn't get assigned a MATCH_GLIDEIN_Site,
+            # then it ran in the local pool
+            output["runtime"] = runtime
+        return output
+
+
+class CondorJob(yaml.YAMLObject):
+    """
+    Represent a specific condor Job.
+    """
+
+    yaml_loader = yaml.SafeLoader
+    yaml_tag = "!CondorJob"
+
+    def __init__(self, idno, command, hosts, status, **kwargs):
+        """
+        A representation of a condor job on a scheduler.
+
+        Parameters
+        ----------
+        idno : int
+           The jobId or ClusterId for the job.
+        command: str
+           The command being run.
+        hosts: int
+           The number of hosts currently processing the job.
+        status: int
+           The status condition for the job.
+
+        Examples
+        --------
+        job = CondorJob(346758)
+        """
+
+        self.idno = idno
+        self.command = command
+        self.hosts = hosts
+        self._status = status
+
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    def __repr__(self):
+        out = f"<htcondor job | {self.idno} | {self.status} "
+        out += f"| {self.hosts} | {self.name} | {len(self.subjobs)} subjobs >"
+        return out
+
+    def __str__(self):
+        return repr(self)
+
+    def to_dict(self):
+        """
+        Turn a job into a dictionary representation.
+        """
+        output = {}
+
+        output["name"] = self.name
+        output["id"] = self.idno
+        output["hosts"] = self.hosts
+        output["status"] = self._status
+        output["command"] = self.command
+
+        if self.dag:
+            output["dag id"] = self.dag
+
+        return output
+
+    @classmethod
+    def from_dict(cls, dictionary):
+        """
+        Create a respresentation from a dictionary.
+
+        Parameters
+        ----------
+        dictionary : dict
+           The dictionary of job parameters.
+
+        Returns
+        -------
+        `CondorJob`
+           A condor job object.
+        """
+        cls = cls(
+            idno=dictionary["id"],
+            command=dictionary["command"],
+            hosts=dictionary["hosts"],
+            status=dictionary["status"],
+        )
+        if "name" in dictionary:
+            cls.name = dictionary["name"]
+        else:
+            cls.name = "asimov job"
+        if "dag id" in dictionary:
+            cls.dag = dictionary["dag id"]
+        else:
+            cls.dag = None
+        cls.subjobs = []
+
+        return cls
+
+    def add_subjob(self, job):
+        """
+        Add a subjob of this job.
+
+        Parameters
+        ----------
+        job : `CondorJob`
+           The job which is a subjob.
+        """
+        self.subjobs.append(job)
 
     @property
     def status(self):
-        data = self.get_data()
+        """
+        Get the status of the job.
 
-        job_status = data['JobStatus']
-        statuses = {0: "Unexplained",
-                    1: "Idle",
-                    2: "Running",
-                    3: "Removed",
-                    4: "Completed",
-                    5: "Held",
-                    6: "Submission error"}
-        return statuses[job_status]
+        Returns
+        -------
+        str
+          A description of the status of the job.
+        """
+        statuses = {
+            0: "Unexplained",
+            1: "Idle",
+            2: "Running",
+            3: "Removed",
+            4: "Completed",
+            5: "Held",
+            6: "Submission error",
+        }
+        return statuses[self._status]
 
-    @property
-    def run_directory(self):
-        """
-        Find the run directory.
-        """
-        if not "Err" in self.data:
-            raise ValueError
-        error_file = self.data['Err']
-        rundir = "/".join(error_file.split("/")[:-1])
-        return rundir
 
-    def get_asset(self, path):
-        """
-        Find an asset related to this job.
-        """
-        path = os.path.join(self.run_directory, path)
-        if os.path.exists(path):
-            return path
+class CondorJobList:
+    """
+    Store the list of running condor jobs.
+
+    The list is automatically pulled from the condor scheduller if it is
+    more than 15 minutes old (by default)
+    """
+
+    def __init__(self):
+        self.jobs = {}
+        cache = "_cache_jobs.yaml"
+        if not os.path.exists(cache):
+            self.refresh()
         else:
-            return None
+            age = -os.stat(cache).st_mtime + datetime.datetime.now().timestamp()
+            logger.info(f"Condor cache is {age} seconds old")
+            if float(age) < float(config.get("condor", "cache_time")):
+                with open(cache, "r") as f:
+                    self.jobs = yaml.safe_load(f)
+            else:
+                self.refresh()
 
-    def get_config(self):
+    def refresh(self):
         """
-        Open the configuration file for this job.
+        Poll the schedulers to get the list of running jobs and update the database.
         """
-        ini_location = os.path.join(self.run_directory,
-                                    "config.ini")
+        data = []
 
-        P = ini.RunConfiguration(ini_location)
-        return P
+        logger.info("Updating the condor cache")
 
-    def get_data(self):
-        data = {}
-        for schedd_ad in htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd):
-            schedd = htcondor.Schedd(schedd_ad)
+        try:
+            collectors = htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd)
+        except htcondor.HTCondorLocateError as e:
+            logger.error("Could not find a valid condor scheduler")
+            logger.exception(e)
+            raise e
+
+        for schedd_ad in collectors:
             try:
-                jobs = schedd.xquery(constraint="ClusterId == {}".format(self.cluster))
-                for job in jobs:
-                    data = job
-                    break
-            except RuntimeError as e:
-                print(e)
-        if len(list(data.keys()))==0:
-            raise ValueError
-        self.data = data
-        return data
-    
+                schedd = htcondor.Schedd(schedd_ad)
+                jobs = schedd.query(
+                    opts=htcondor.htcondor.QueryOpts.DefaultMyJobsOnly,
+                    projection=[
+                        "ClusterId",
+                        "Cmd",
+                        "CurrentHosts",
+                        "HoldReason",
+                        "JobStatus",
+                        "DAG_Status",
+                        "JobBatchName",
+                        "DAGManJobId",
+                    ],
+                )
+                data += jobs
+            except:  # NoQA
+                pass
+
+            retdat = []
+            for datum in data:
+                if "ClusterId" in datum:
+                    job = dict(
+                        id=int(float(datum["ClusterId"])),
+                        command=datum["Cmd"],
+                        hosts=datum["CurrentHosts"],
+                        status=datum["JobStatus"],
+                    )
+                    if "HoldReason" in datum:
+                        job["hold"] = datum["HoldReason"]
+                    if "JobBatchName" in datum:
+                        job["name"] = datum["JobBatchName"]
+                    if "DAG_Status" not in datum and "DAGManJobID" in datum:
+                        job["dag id"] = int(float(datum["DAGManJobId"]))
+
+                retdat.append(CondorJob.from_dict(job))
+
+        for datum in retdat:
+            if not datum.dag:
+                self.jobs[datum.idno] = datum
+                # # Now search for subjobs
+        for datum in retdat:
+            if datum.dag:
+                if datum.dag in self.jobs:
+                    self.jobs[datum.dag].add_subjob(datum)
+                else:
+                    self.jobs[datum.idno] = datum.to_dict()
+
+        with open("_cache_jobs.yaml", "w") as f:
+            f.write(yaml.dump(self.jobs))

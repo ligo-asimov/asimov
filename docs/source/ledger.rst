@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 .. _ledger:
 
+=======
+>>>>>>> infrastructure-updates
 The Asimov Ledger
 =================
 
@@ -101,7 +104,7 @@ Examples
   Files should be provided for each detector, indexed by the detector abbreviation.
 
   For example
-  
+
   ::
      
      data:

@@ -1,6 +1,3 @@
-:page_template: homepage.html
-
-
 .. raw:: html
 	 
 	 <div class="px-4 py-5 my-5 text-center">
@@ -129,6 +126,7 @@ Users' guide
 
    getting-started
    installation
+
    user-guide/projects
    user-guide/events
    user-guide/productions
@@ -170,15 +168,10 @@ Developers' Guide
 
    contributing.rst
    code-of-conduct.rst
-
-   
    asimov-repository
-
    code-overview
-	     
    ledger   
    pipelines-dev
-
    building-docs
    
 Python API

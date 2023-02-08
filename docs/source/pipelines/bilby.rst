@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 .. _bilby-pipelines:
 
+=======
+>>>>>>> infrastructure-updates
 Bilby pipelines
 ===============
 
