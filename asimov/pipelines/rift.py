@@ -158,9 +158,10 @@ class Rift(Pipeline):
             try:
                 coinc_file = self.production.get_coincfile()
                 calibration = config.get("general", "calibration_directory")
-                coinc_file = os.path.join(
-                    self.production.event.repository.directory, calibration, coinc_file
-                )
+                # coinc_file = os.path.join(
+                #     self.production.event.repository.directory, calibration, coinc_file
+                # )
+                coinc_file = os.path.abspath(coinc_file)
             except HTTPError:
                 print(
                     "Unable to download the coinc file because it was not possible to connect to GraceDB"
