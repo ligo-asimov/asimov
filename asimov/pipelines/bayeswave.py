@@ -198,7 +198,7 @@ class BayesWave(Pipeline):
             command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
         )
         out, err = pipe.communicate()
-        self.logger.info(command, production=self.production)
+
         if err:
             self.production.status = "stuck"
             if hasattr(self.production.event, "issue_object"):
