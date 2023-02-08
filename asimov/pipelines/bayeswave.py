@@ -206,9 +206,8 @@ class BayesWave(Pipeline):
                     f"An XML format PSD could not be created.\n{command}\n{out}\n\n{err}",
                 )
             else:
-                raise Exception as e(
+                raise Exception(
                     f"An XML format PSD could not be created.\n{command}\n{out}\n\n{err} ",
-                    e
                 )
         else:
             asset = f"{ifo.upper()}-psd.xml.gz"
