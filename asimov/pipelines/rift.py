@@ -356,53 +356,49 @@ class Rift(Pipeline):
            This will be raised if the pipeline fails to submit the job.
         """
         self.before_submit()
-        with set_directory(self.production.rundir):
-            if not dryrun:
-                os.system("cat *_local.cache > local.cache")
+        for psdfile in self.production.get_psds("xml"):
+            ifo = psdfile.split("/")[-1].split("_")[1].split(".")[0]
+            os.system(f"cp {psdfile} {ifo}-psd.xml.gz")
 
-            for psdfile in self.production.get_psds("xml"):
-                ifo = psdfile.split("/")[-1].split("_")[1].split(".")[0]
-                os.system(f"cp {psdfile} {ifo}-psd.xml.gz")
+        command = [
+            "condor_submit_dag",
+            "-batch-name",
+            f"rift/{self.production.event.name}/{self.production.name}",
+            os.path.join(
+                self.production.rundir,
+                "marginalize_intrinsic_parameters_BasicIterationWorkflow.dag",
+            ),
+        ]
 
-            command = [
-                "condor_submit_dag",
-                "-batch-name",
-                f"rift/{self.production.event.name}/{self.production.name}",
-                os.path.join(
-                    self.production.rundir,
-                    "marginalize_intrinsic_parameters_BasicIterationWorkflow.dag",
-                ),
-            ]
+        if dryrun:
+            print(" ".join(command))
+        else:
+            try:
+                dagman = subprocess.Popen(
+                    command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+                )
+                self.logger.info(command, production=self.production)
+            except FileNotFoundError as exception:
+                raise PipelineException(
+                    "It looks like condor isn't installed on this system.\n"
+                    f"""I wanted to run {" ".join(command)}."""
+                ) from exception
 
-            if dryrun:
-                print(" ".join(command))
+            stdout, stderr = dagman.communicate()
+
+            if "submitted to cluster" in str(stdout):
+                cluster = re.search(
+                    r"submitted to cluster ([\d]+)", str(stdout)
+                ).groups()[0]
+                self.production.status = "running"
+                self.production.job_id = int(cluster)
+                return cluster, PipelineLogger(stdout)
             else:
-                try:
-                    dagman = subprocess.Popen(
-                        command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-                    )
-                    self.logger.info(command, production=self.production)
-                except FileNotFoundError as exception:
-                    raise PipelineException(
-                        "It looks like condor isn't installed on this system.\n"
-                        f"""I wanted to run {" ".join(command)}."""
-                    ) from exception
-
-                stdout, stderr = dagman.communicate()
-
-                if "submitted to cluster" in str(stdout):
-                    cluster = re.search(
-                        r"submitted to cluster ([\d]+)", str(stdout)
-                    ).groups()[0]
-                    self.production.status = "running"
-                    self.production.job_id = int(cluster)
-                    return cluster, PipelineLogger(stdout)
-                else:
-                    raise PipelineException(
-                        f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
-                        issue=self.production.event.issue_object,
-                        production=self.production.name,
-                    )
+                raise PipelineException(
+                    f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
+                    issue=self.production.event.issue_object,
+                    production=self.production.name,
+                )
 
     def resurrect(self):
         """
