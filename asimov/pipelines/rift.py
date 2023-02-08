@@ -296,23 +296,23 @@ class Rift(Pipeline):
                         )
                 else:
                     if self.production.event.repository:
-                        with set_directory(os.path.abspath(self.production.rundir)):
-                            for psdfile in self.production.get_psds("xml"):
-                                ifo = psdfile.split("/")[-1].split("_")[1].split(".")[0]
-                                os.system(f"cp {psdfile} {ifo}-psd.xml.gz")
+                        #with set_directory(os.path.abspath(self.production.rundir)):
+                        for psdfile in self.production.get_psds("xml"):
+                            ifo = psdfile.split("/")[-1].split("_")[1].split(".")[0]
+                            os.system(f"cp {psdfile} {ifo}-psd.xml.gz")
 
-                            # os.system("cat *_local.cache > local.cache")
+                        # os.system("cat *_local.cache > local.cache")
 
-                            if hasattr(self.production.event, "issue_object"):
-                                return PipelineLogger(
-                                    message=out,
-                                    issue=self.production.event.issue_object,
-                                    production=self.production.name,
-                                )
-                            else:
-                                return PipelineLogger(
-                                    message=out, production=self.production.name
-                                )
+                        if hasattr(self.production.event, "issue_object"):
+                            return PipelineLogger(
+                                message=out,
+                                issue=self.production.event.issue_object,
+                                production=self.production.name,
+                            )
+                        else:
+                            return PipelineLogger(
+                                message=out, production=self.production.name
+                            )
 
     def submit_dag(self, dryrun=False):
         """
