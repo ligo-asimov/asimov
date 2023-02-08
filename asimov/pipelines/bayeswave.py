@@ -211,13 +211,17 @@ class BayesWave(Pipeline):
                 )
         else:
             asset = f"{ifo.upper()}-psd.xml.gz"
-            git_location = os.path.join(self.production.category, "psds", f"{self.production.meta['likelihood']['sample rate']}")
+            git_location = os.path.join(
+                self.production.category,
+                "psds",
+                f"{self.production.meta['likelihood']['sample rate']}",
+            )
             self.production.event.repository.add_file(
                 asset,
-                os.path.join(git_location, str(sample), f"psd_{ifo}.xml.gz"),
+                os.path.join(git_location, f"psd_{ifo}.xml.gz"),
                 commit_message=f"Added the xml format PSD for {ifo}.",
             )
-        
+
     def after_completion(self):
 
         try:
@@ -226,7 +230,7 @@ class BayesWave(Pipeline):
         except Exception as e:
             self.logger.error("Failed to convert the PSDs to XML")
             self.logger.exception(e)
-        
+
         try:
             self.collect_pages()
         except FileNotFoundError:
@@ -430,9 +434,9 @@ class BayesWave(Pipeline):
             )
             if os.path.exists(asset):
                 xml_psds[det] = asset
-        
-        outputs['xml psds'] = xml_psds
-        
+
+        outputs["xml psds"] = xml_psds
+
         return outputs
 
     def supress_psd(self, ifo, fmin, fmax):
