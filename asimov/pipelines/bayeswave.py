@@ -210,7 +210,7 @@ class BayesWave(Pipeline):
                     f"An XML format PSD could not be created.\n{command}\n{out}\n\n{err} ",
                 )
         else:
-            asset = f"psd_{ifo.upper()}.xml.gz"
+            asset = f"{ifo.upper()}-psd.xml.gz"
             git_location = os.path.join(
                 self.production.category,
                 "psds",
