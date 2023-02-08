@@ -1,6 +1,13 @@
 kind: analysis
+name: Bayeswave
+event: GW150914_095045
+pipeline: bayeswave
+---
+kind: analysis
 name: Prod1
 event: GW150914_095045
 pipeline: rift
 waveform:
   approximant: SEOBNRv4PHM
+needs:
+  - Bayeswave
