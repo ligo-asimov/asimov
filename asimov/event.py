@@ -1016,16 +1016,22 @@ class Production:
     def __repr__(self):
         return f"<Production {self.name} for {self.event} | status: {self.status}>"
 
-    def _collect_psds(self):
+    def _collect_psds(self, format="ascii"):
         """
         Collect the required psds for this production.
         """
         psds = {}
         # If the PSDs are specifically provided in the ledger,
         # use those.
-        if "psds" in self.meta:
-            if self.meta["likelihood"]["sample rate"] in self.meta["psds"]:
-                psds = self.meta["psds"][self.meta["likelihood"]["sample rate"]]
+
+        if format=="ascii":
+            keyword = "psds"
+        elif format=="xml":
+            keyword = "xml psds"
+        
+        if keyword in self.meta:
+            if self.meta["likelihood"]["sample rate"] in self.meta[keyword]:
+                psds = self.meta[keyword][self.meta["likelihood"]["sample rate"]]
 
         # First look through the list of the job's dependencies
         # to see if they're provided by a job there.
@@ -1037,10 +1043,10 @@ class Production:
             for previous_job in self.dependencies:
                 try:
                     # Check if the job provides PSDs as an asset and were produced with compatible settings
-                    if "psds" in productions[previous_job].pipeline.collect_assets():
+                    if keyword in productions[previous_job].pipeline.collect_assets():
                         if self._check_compatible(productions[previous_job]):
                             psds = productions[previous_job].pipeline.collect_assets()[
-                                "psds"
+                                keyword
                             ]
                     else:
                         psds = {}
@@ -1082,7 +1088,7 @@ class Production:
         self.logger.info("Creating config file.")
 
         self.psds = self._collect_psds()
-        self.xml_psds = self.get_psds(format="xml", sample_rate=self.meta['likelihood']['sample rate'])
+        self.xml_psds = self._collect_psds(format="xml")
         if "template" in self.meta:
             template = f"{self.meta['template']}.ini"
         else:
