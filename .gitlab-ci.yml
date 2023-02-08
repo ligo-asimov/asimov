@@ -52,19 +52,6 @@ test-python-39:
     - python setup.py install
     - python -m unittest discover tests/
 #    - coverage report -m
-    
-# pages:
-#   stage: build
-#   script:
-#   - pip install -r docs-requirements.txt
-#   - pip install -r requirements.txt
-#   - pip install .
-#   - sphinx-build -b html docs/source public
-#   artifacts:
-#     paths:
-#     - public
-#   only:
-#   - master
 
 # Build docs for multiple code versions
 pages:
@@ -80,6 +67,7 @@ pages:
     - public
   only:
   - master
+  - /^preview-.*/
 
 wheel-36:
   image: python:3.6
