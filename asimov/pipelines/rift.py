@@ -355,7 +355,7 @@ class Rift(Pipeline):
             print(" ".join(command))
         else:
             try:
-                with set_directory(production.rundir): 
+                with set_directory(self.production.rundir): 
             
 
                     dagman = subprocess.Popen(
