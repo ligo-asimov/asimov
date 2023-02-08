@@ -193,7 +193,7 @@ class BayesWave(Pipeline):
             "--ifo",
             f"{ifo}",
         ]
-
+        self.logger.info(" ".join(command))
         pipe = subprocess.Popen(
             command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
         )
@@ -204,13 +204,11 @@ class BayesWave(Pipeline):
             if hasattr(self.production.event, "issue_object"):
                 raise Exception(
                     f"An XML format PSD could not be created.\n{command}\n{out}\n\n{err}",
-                    issue=self.production.event.issue_object,
-                    production=self.production.name,
                 )
             else:
-                raise Exception(
-                    f"An XML format PSD could not be created.\n{command}\n{out}\n\n{err}",
-                    production=self.production.name,
+                raise Exception as e(
+                    f"An XML format PSD could not be created.\n{command}\n{out}\n\n{err} ",
+                    e
                 )
         else:
             asset = f"{ifo.upper()}-psd.xml.gz"
