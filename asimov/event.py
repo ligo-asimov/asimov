@@ -950,7 +950,7 @@ class Production:
             self.event.get_gracedb(
                 "coinc.xml",
                 os.path.join(
-                    self.event.repository.directory, self.category, "coinc.xml"
+                    self.category, "coinc.xml"
                 ),
             )
             coinc = self.event.repository.find_coincfile(self.category)
