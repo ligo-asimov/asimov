@@ -355,9 +355,6 @@ class Rift(Pipeline):
         PipelineException
            This will be raised if the pipeline fails to submit the job.
         """
-        if not os.path.exists(self.production.rundir):
-            os.makedirs(self.production.rundir)
-
         self.before_submit()
         with set_directory(self.production.rundir):
             if not dryrun:
