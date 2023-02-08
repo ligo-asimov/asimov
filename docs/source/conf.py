@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'Asimov'
-copyright = '2022, Daniel Williams'
+copyright = '2020-2023, Daniel Williams'
 author = 'Daniel Williams'
 
 import kentigern
@@ -61,7 +61,9 @@ html_theme_options = {
 
 # Multiversion
 smv_tag_whitelist = r'^v\d+\.\d+\.?\d*$'
-smv_branch_whitelist = r'^(master|review)$'
+smv_branch_whitelist = r'^(master|review|v\d+\.\d+\.?\d?-preview)$'
 smv_remote_whitelist = r'^.*$'  
 smv_released_pattern = r'^refs/tags/v\d+\.\d+\.?\d*$'
 smv_latest_version = r'master'
+smv_outputdir_format = '{ref.name}'
+smv_remote_whitelist = None
