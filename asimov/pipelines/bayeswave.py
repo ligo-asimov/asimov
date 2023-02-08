@@ -211,7 +211,7 @@ class BayesWave(Pipeline):
                 )
         else:
             asset = f"{ifo.upper()}-psd.xml.gz"
-            git_location = os.path.join(category, "psds")
+            git_location = os.path.join(self.production.category, "psds", self.production.meta['likelihood']['sample rate'])
             self.production.event.repository.add_file(
                 asset,
                 os.path.join(git_location, str(sample), f"psd_{ifo}.xml.gz"),
