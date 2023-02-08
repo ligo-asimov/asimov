@@ -174,8 +174,62 @@ class BayesWave(Pipeline):
             self.logger.info("Bayeswave job completion was not detected.")
             return False
 
+    def _convert_psd(self, ascii_format, ifo):
+        """
+        Convert an ascii format PSD to XML.
+
+        Parameters
+        ----------
+        ascii_format : str
+           The location of the ascii format file.
+        ifo : str
+           The IFO which this PSD is for.
+        """
+        command = [
+            "convert_psd_ascii2xml",
+            "--fname-psd-ascii",
+            f"{ascii_format}",
+            "--conventional-postfix",
+            "--ifo",
+            f"{ifo}",
+        ]
+
+        pipe = subprocess.Popen(
+            command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
+        out, err = pipe.communicate()
+        self.logger.info(command, production=self.production)
+        if err:
+            self.production.status = "stuck"
+            if hasattr(self.production.event, "issue_object"):
+                raise Exception(
+                    f"An XML format PSD could not be created.\n{command}\n{out}\n\n{err}",
+                    issue=self.production.event.issue_object,
+                    production=self.production.name,
+                )
+            else:
+                raise Exception(
+                    f"An XML format PSD could not be created.\n{command}\n{out}\n\n{err}",
+                    production=self.production.name,
+                )
+        else:
+            asset = f"{ifo.upper()}-psd.xml.gz"
+            git_location = os.path.join(category, "psds")
+            self.production.event.repository.add_file(
+                asset,
+                os.path.join(git_location, str(sample), f"psd_{ifo}.xml.gz"),
+                commit_message=f"Added the xml format PSD for {ifo}.",
+            )
+        
     def after_completion(self):
 
+        try:
+            for ifo, psd in self.collect_assets()["psds"].items():
+                self._convert_psd(ascii_format=psd, ifo=ifo)
+        except Exception as e:
+            self.logger.error("Failed to convert the PSDs to XML")
+            self.logger.exception(e)
+        
         try:
             self.collect_pages()
         except FileNotFoundError:
@@ -371,6 +425,17 @@ class BayesWave(Pipeline):
 
         outputs = {}
         outputs["psds"] = psds
+
+        xml_psds = {}
+        for det in self.production.meta["interferometers"]:
+            asset = os.path.join(
+                f"{self.event.repository.directory}/{self.category}/psds/{self.meta['likelihood']['sample rate']}/{det.upper()}-psd.xml.gz"
+            )
+            if os.path.exists(asset):
+                xml_psds[det] = asset
+        
+        outputs['xml psds'] = xml_psds
+        
         return outputs
 
     def supress_psd(self, ifo, fmin, fmax):
