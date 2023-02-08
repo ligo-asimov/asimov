@@ -167,6 +167,7 @@ class Rift(Pipeline):
                     "Unable to download the coinc file because it was not possible to connect to GraceDB"
                 )
                 self.logger.warning("Could not download a coinc file for this event; could not connect to GraceDB.")
+                coinc_file = None
             except ValueError:
                 self.logger.warning("Could not download a coinc file for this event as no GraceDB ID was supplied.")
                 coinc_file = None
@@ -218,18 +219,6 @@ class Rift(Pipeline):
 
         # lmax = self.production.meta['priors']['amp order']
 
-        if "lmax" in self.production.meta:
-            lmax = self.production.meta["likelihood"]["lmax"]
-        elif "HM" in self.production.meta["waveform"]["approximant"]:
-            lmax = 4
-        else:
-            lmax = 2
-
-        if "cip jobs" in self.production.meta["sampler"]:
-            cip = self.production.meta["cip jobs"]
-        else:
-            cip = 3
-
         command = [
             os.path.join(
                 config.get("pipelines", "environment"),
@@ -241,15 +230,10 @@ class Rift(Pipeline):
             command += ["--use-coinc", coinc_file]
             
         command += [
-            "--l-max",
-            f"{lmax}",
             "--calibration",
             f"{calibration}",
-            "--add-extrinsic",
             "--approx",
             f"{approximant}",
-            "--cip-explode-jobs",
-            str(cip),
             "--use-rundir",
             rundir,
             "--ile-force-gpu",
