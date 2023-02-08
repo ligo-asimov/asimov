@@ -192,7 +192,7 @@ class Rift(Pipeline):
 
         if "non-spin" in self.production.meta['waveform']:
             if self.production.meta['waveform']['non-spin']:
-                command += ["--assume-no-spin"]
+                command += ["--assume-nospin"]
 
         command += [
             "--calibration",
@@ -317,12 +317,17 @@ class Rift(Pipeline):
         ]
 
         if dryrun:
+            for psdfile in self.production.get_psds("xml"):
+                print(f"cp {psdfile} {self.production.rundir}/{psdfile.split('/')[-1]}")
+            print("")
             print(" ".join(command))
         else:
-            try:
-                with set_directory(self.production.rundir): 
-            
+            for psdfile in self.production.get_psds("xml"):
+                os.system(f"cp {psdfile} {self.production.rundir}/{psdfile.split('/')[-1]}")
 
+            try:
+                with set_directory(self.production.rundir):
+                    
                     dagman = subprocess.Popen(
                         command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
                     )
