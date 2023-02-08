@@ -156,12 +156,12 @@ class Rift(Pipeline):
         cwd = os.getcwd()
         if self.production.event.repository:
             try:
-
                 coinc_file = self.production.get_coincfile()
                 calibration = config.get("general", "calibration_directory")
                 coinc_file = os.path.join(
                     self.production.event.repository.directory, calibration, coinc_file
                 )
+                coinc_file = os.path.abspath(coinc_file)
             except HTTPError:
                 print(
                     "Unable to download the coinc file because it was not possible to connect to GraceDB"
@@ -177,6 +177,7 @@ class Rift(Pipeline):
                 ini = os.path.join(
                     self.production.event.repository.directory, calibration, ini
                 )
+                ini = os.path.abspath(ini)
             except ValueError:
                 print(
                     "Unable to find the configuration file. Have you run `$ asimov manage build` yet?"
@@ -206,7 +207,7 @@ class Rift(Pipeline):
             self.logger.error("Could not find a waveform approximant specified for this job.")
 
         if self.production.rundir:
-            rundir = os.path.relpath(self.production.rundir, os.getcwd())
+            rundir = os.path.abspath(self.production.rundir)
         else:
             rundir = os.path.join(
                 os.path.expanduser("~"),
