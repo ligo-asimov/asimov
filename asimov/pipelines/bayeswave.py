@@ -210,7 +210,7 @@ class BayesWave(Pipeline):
                     f"An XML format PSD could not be created.\n{command}\n{out}\n\n{err} ",
                 )
         else:
-            asset = f"{ifo.upper()}-psd.xml.gz"
+            asset = f"psd_{ifo.upper()}.xml.gz"
             git_location = os.path.join(
                 self.production.category,
                 "psds",
@@ -218,7 +218,7 @@ class BayesWave(Pipeline):
             )
             self.production.event.repository.add_file(
                 asset,
-                os.path.join(git_location, f"psd_{ifo}.xml.gz"),
+                os.path.join(git_location, f"{ifo}-psd.xml.gz"),
                 commit_message=f"Added the xml format PSD for {ifo}.",
             )
 
