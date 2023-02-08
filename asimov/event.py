@@ -1082,7 +1082,7 @@ class Production:
         self.logger.info("Creating config file.")
 
         self.psds = self._collect_psds()
-
+        self.xml_psds = self.get_psds(format="xml", sample_rate=self.meta['likelihood']['sample rate'])
         if "template" in self.meta:
             template = f"{self.meta['template']}.ini"
         else:
