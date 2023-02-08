@@ -99,7 +99,7 @@ class Rift(Pipeline):
         if len(self.production.get_psds("xml")) == 0 and "psds" in self.production.meta:
             for ifo in self.production.meta["interferometers"]:
                 with set_directory(f"{event.work_dir}"):
-                    sample = self.production.meta["quality"]["sample-rate"]
+                    sample = self.production.meta["likelihood"]["sample rate"]
                     self._convert_psd(
                         self.production.meta["psds"][sample][ifo], ifo, dryrun=dryrun
                     )
