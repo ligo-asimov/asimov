@@ -348,20 +348,20 @@ class Rift(Pipeline):
             "condor_submit_dag",
             "-batch-name",
             f"rift/{self.production.event.name}/{self.production.name}",
-            os.path.join(
-                self.production.rundir,
-                "marginalize_intrinsic_parameters_BasicIterationWorkflow.dag",
-            ),
+            "marginalize_intrinsic_parameters_BasicIterationWorkflow.dag",
         ]
 
         if dryrun:
             print(" ".join(command))
         else:
             try:
-                dagman = subprocess.Popen(
-                    command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-                )
-                self.logger.info(command, production=self.production)
+                with set_directory(production.rundir): 
+            
+
+                    dagman = subprocess.Popen(
+                        command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+                    )
+                    self.logger.info(command, production=self.production)
             except FileNotFoundError as exception:
                 raise PipelineException(
                     "It looks like condor isn't installed on this system.\n"
