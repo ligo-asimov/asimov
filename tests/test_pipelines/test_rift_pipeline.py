@@ -37,39 +37,49 @@ class RiftTests(unittest.TestCase):
     def setUp(self):
         os.makedirs(f"{self.cwd}/tests/tmp/project")
         os.chdir(f"{self.cwd}/tests/tmp/project")
-        runner = CliRunner()
-        result = runner.invoke(project.init,
-                               ['Test Project', '--root', f"{self.cwd}/tests/tmp/project"])
-        assert result.exit_code == 0
-        assert result.output == '● New project created successfully!\n'
-        self.ledger = YAMLLedger(f"ledger.yml")
+
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):
+        
+            runner = CliRunner()
+            result = runner.invoke(project.init,
+                                   ['Test Project', '--root', f"{self.cwd}/tests/tmp/project"])
+            assert result.exit_code == 0
+            assert result.output == '● New project created successfully!\n'
+            self.ledger = YAMLLedger(f"ledger.yml")
 
     def tearDown(self):
         os.chdir(self.cwd)
         shutil.rmtree(f"{self.cwd}/tests/tmp/project/")
 
-    @unittest.skip("Skipped temporarily while RIFT is updated")
-    def test_build_cli(self):
+    # @unittest.skip("Skipped temporarily while RIFT is updated")
+    def test_submit_cli(self):
         """Check that a RIFT config file can be built."""
-        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
-        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml", event=None, ledger=self.ledger)
-        event = "GW150914_095045"
-        pipeline = "rift"
-        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
-        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{pipeline}.yaml", event=event, ledger=self.ledger)
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):
+            apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
+            apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml", event=None, ledger=self.ledger)
+            event = "GW150914_095045"
+            pipeline = "rift"
+            apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
+            apply_page(file = f"{self.cwd}/tests/test_data/test_{pipeline}.yaml", event=event, ledger=self.ledger)
 
         runner = CliRunner()
-        result = runner.invoke(manage.build, "--dryrun")
+        result = runner.invoke(manage.build)
+        result = runner.invoke(manage.submit, "--dryrun")
+        print("RESULT", result.output)
         self.assertTrue("util_RIFT_pseudo_pipe.py" in result.output)
 
     def test_build_api(self):
         """Check that a RIFT config file can be built."""
-        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
-        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml", event=None, ledger=self.ledger)
-        event = "GW150914_095045"
-        pipeline = "rift"
-        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
-        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{pipeline}.yaml", event=event, ledger=self.ledger)
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):
+            apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
+            apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml", event=None, ledger=self.ledger)
+            event = "GW150914_095045"
+            pipeline = "rift"
+            apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
+            apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{pipeline}.yaml", event=event, ledger=self.ledger)
 
         f = io.StringIO()
         with contextlib.redirect_stdout(f):
@@ -88,13 +98,14 @@ class RiftTests(unittest.TestCase):
                                ['--general/calibration', f"C00"])
         assert result.exit_code == 0
 
-        
-        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
-        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml", event=None, ledger=self.ledger)
-        event = "GW150914_095045"
-        pipeline = "rift"
-        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
-        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{pipeline}.yaml", event=event, ledger=self.ledger)
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):        
+            apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
+            apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml", event=None, ledger=self.ledger)
+            event = "GW150914_095045"
+            pipeline = "rift"
+            apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
+            apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{pipeline}.yaml", event=event, ledger=self.ledger)
 
         f = io.StringIO()
         with contextlib.redirect_stdout(f):

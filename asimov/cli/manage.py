@@ -210,11 +210,12 @@ def submit(event, update, dryrun):
                     logger.error(
                         f"The pipeline failed to submit the DAG file to the cluster. {e}",
                     )
-                # Refresh the job list
-                job_list = condor.CondorJobList()
-                job_list.refresh()
-                # Update the ledger
-                ledger.update_event(event)
+                if not dryrun:
+                    # Refresh the job list
+                    job_list = condor.CondorJobList()
+                    job_list.refresh()
+                    # Update the ledger
+                    ledger.update_event(event)
 
 
 @click.option(

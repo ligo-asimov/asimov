@@ -166,8 +166,10 @@ class Rift(Pipeline):
                 print(
                     "Unable to download the coinc file because it was not possible to connect to GraceDB"
                 )
-                coinc_file = "COINC MISSING"
-
+                self.logger.warning("Could not download a coinc file for this event; could not connect to GraceDB.")
+            except ValueError:
+                self.logger.warning("Could not download a coinc file for this event as no GraceDB ID was supplied.")
+                coinc_file = None
             try:
 
                 ini = self.production.get_configuration().ini_loc
@@ -198,7 +200,10 @@ class Rift(Pipeline):
         except configparser.NoOptionError:
             calibration = "C01"
 
-        approximant = self.production.meta["waveform"]["approximant"]
+        try:
+            approximant = self.production.meta["waveform"]["approximant"]
+        except KeyError:
+            self.logger.error("Could not find a waveform approximant specified for this job.")
 
         if self.production.rundir:
             rundir = os.path.relpath(self.production.rundir, os.getcwd())
@@ -230,8 +235,11 @@ class Rift(Pipeline):
                 "bin",
                 "util_RIFT_pseudo_pipe.py",
             ),
-            "--use-coinc",
-            coinc_file,
+            ]
+        if coinc_file:
+            command += ["--use-coinc", coinc_file]
+            
+        command += [
             "--l-max",
             f"{lmax}",
             "--calibration",
