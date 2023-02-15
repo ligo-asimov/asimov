@@ -15,8 +15,11 @@ sampler:
   cip sampler method: GMM
   cip explode jobs auto: True
   cip explode jobs: 3  
-  internal use aligned phase coordinates: False
-  internal correlate default: True
+  use aligned phase coordinates: False
+  correlate default: True
   ile jobs per worker: 200
+likelihood:
+  marginalization:
+    distance: True
 needs:
   - Bayeswave
