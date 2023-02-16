@@ -1,18 +1,20 @@
 """
 Handle run configuration files.
 
-This module is inteded to read and manipulate the run configuration files which are used by ``LALInferencePipe`` to design a parameter estimation run.
+This module is inteded to read and manipulate the run configuration
+files which are used by ``LALInferencePipe`` to design a parameter estimation run.
 
 
 """
-from configparser import ConfigParser, NoOptionError
-import os
-import getpass
 import ast
+import getpass
+import os
+from configparser import ConfigParser, NoOptionError
+
 
 class RunConfiguration(object):
     """A class to represent a run configuration."""
-    
+
     def __init__(self, path):
         """
         Open the run configuration file.
@@ -24,16 +26,15 @@ class RunConfiguration(object):
         """
         self.ini_loc = path
         ini = ConfigParser()
-        ini.optionxform=str
+        ini.optionxform = str
 
         if type(path) == dict:
             ini.read_dict(path)
         else:
 
-
-            try: 
+            try:
                 ini.read(path)
-            except:
+            except FileNotFoundError:
                 raise ValueError("Could not open the ini file")
 
         self.ini = ini
@@ -42,16 +43,16 @@ class RunConfiguration(object):
         """
         Check to see if this file contains a fake-cache.
 
-        This can be used to determine whether the ini file sets up a configuration which 
+        This can be used to determine whether the ini file sets up a configuration which
         uses e.g. deglitched frames.
 
         Returns
         -------
-        bool 
+        bool
            Returns true if a fake cache has been used for this file.
         """
         try:
-            if len(self.ini.get("lalinference", "fake-cache"))>0:
+            if len(self.ini.get("lalinference", "fake-cache")) > 0:
                 return True
             else:
                 return False
@@ -66,11 +67,10 @@ class RunConfiguration(object):
         ----------
         kwargs :
            Set a variety of parameters.
-           
+
         """
         for key, value in kwargs:
             self.ini.set("lalinference", key, value)
-
 
     def get_psds(self):
         """
@@ -81,7 +81,7 @@ class RunConfiguration(object):
         for det in self.get_ifos():
             try:
                 psds[det] = self.ini.get("engine", f"{det}-psd")
-            except:
+            except NoOptionError:
                 pass
         return psds
 
@@ -93,15 +93,14 @@ class RunConfiguration(object):
         for det in self.get_ifos():
             try:
                 calibration[det] = self.ini.get("engine", f"{det}-spcal-envelope")
-            except:
+            except NoOptionError:
                 pass
         return calibration
-
 
     def update_psds(self, psds, clobber=False):
         """
         Update the locations of the PSDs in the ini file.
-        
+
         Parameters
         ----------
         psds : dict
@@ -127,14 +126,16 @@ class RunConfiguration(object):
         Parameters
         ----------
         status : bool, optional
-           If set to true (the default) then a line will be added to ensure that Bayeswave is run to generate PSDs. If False then this line will be removed from the ini file if it exists.
+           If set to true (the default) then a line will be added to ensure that
+           Bayeswave is run to generate PSDs. If False then this line will be
+           removed from the ini file if it exists.
         """
         if status:
             self.ini.set("condor", "bayeswave", "%(lalsuite-install)s/bin/BayesWave")
         else:
             try:
                 self.ini.remove_option("condor", "bayeswave")
-            except:
+            except NoOptionError:
                 pass
 
     def get_engine(self):
@@ -142,7 +143,7 @@ class RunConfiguration(object):
         Fetch all of the Lalinference engine data.
         """
         return dict(self.ini.items("engine"))
-            
+
     def get_ifos(self):
         return ast.literal_eval(self.ini.get("analysis", "ifos"))
 
@@ -161,7 +162,7 @@ class RunConfiguration(object):
         """
         Update the accounting tag for this job.
         Defaults to the user account running the supervisor.
-        
+
         Parameters
         ----------
         user : str
@@ -176,8 +177,10 @@ class RunConfiguration(object):
         """
         Update the web directory in the ini file.
         """
-        
-        web_path = os.path.join(os.path.expanduser("~"), *rootdir.split("/"), event, prod) # TODO Make this generic
+
+        web_path = os.path.join(
+            os.path.expanduser("~"), *rootdir.split("/"), event, prod
+        )  # TODO Make this generic
         self.ini.set("paths", "webdir", web_path)
 
     def _get_user(self):
@@ -187,4 +190,3 @@ class RunConfiguration(object):
     def save(self):
         with open(self.ini_loc, "w") as fp:
             self.ini.write(fp)
-

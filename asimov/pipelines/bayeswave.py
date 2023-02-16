@@ -1,18 +1,21 @@
 """BayesWave Pipeline specification."""
 
-
+import configparser
+import glob
 import os
 import re
-import glob
 import subprocess
-from ..pipeline import Pipeline, PipelineException, PipelineLogger
-from ..ini import RunConfiguration
-from ..git import AsimovFileNotFound
-from ..storage import Store, AlreadyPresentException
-from asimov import logging
-from asimov import config
-from shutil import copyfile
+from shutil import copyfile, copytree
+
 import numpy as np
+
+from asimov import config
+from asimov.utils import set_directory
+
+from ..git import AsimovFileNotFound
+from ..pipeline import Pipeline, PipelineException
+from ..storage import AlreadyPresentException, Store
+
 
 class BayesWave(Pipeline):
     """
@@ -27,21 +30,22 @@ class BayesWave(Pipeline):
         Defaults to "C01_offline".
     """
 
+    name = "BayesWave"
     STATUS = {"wait", "stuck", "stopped", "running", "finished"}
 
     def __init__(self, production, category=None):
         super(BayesWave, self).__init__(production, category)
-        self.logger = logger = logging.AsimovLogger(event=production.event)
+        self.logger.info("Using the Bayeswave pipeline")
         if not production.pipeline.lower() == "bayeswave":
             raise PipelineException
 
         try:
-            self.category = config.get("general", "category")
-        except:
+            self.category = config.get("general", "calibration_directory")
+        except configparser.NoOptionError:
             self.category = "C01_offline"
             self.logger.info("Assuming C01_offline calibration.")
 
-    def build_dag(self, user=None):
+    def build_dag(self, user=None, dryrun=False):
         """
         Construct a DAG file in order to submit a production to the
         condor scheduler using bayeswave_pipe
@@ -59,17 +63,24 @@ class BayesWave(Pipeline):
            Raised if the construction of the DAG fails.
         """
         if self.production.event.repository:
-            os.chdir(os.path.join(self.production.event.repository.directory,
-                                  self.category))
             try:
                 gps_file = self.production.get_timefile()
             except AsimovFileNotFound:
                 if "event time" in self.production.meta:
                     gps_time = self.production.get_meta("event time")
-                    with open("gpstime.txt", "w") as f:
-                        f.write(str(gps_time))
-                    gps_file = os.path.join(f"{self.production.category}", f"gpstime.txt")
-                    self.production.event.repository.add_file(f"gpstime.txt", gps_file)
+                    with set_directory(
+                        os.path.join(
+                            self.production.event.repository.directory, self.category
+                        )
+                    ):
+                        with open("gpstime.txt", "w") as f:
+                            f.write(str(gps_time))
+                            gps_file = os.path.join(
+                                f"{self.production.category}", "gpstime.txt"
+                            )
+                            self.production.event.repository.add_file(
+                                "gpstime.txt", gps_file
+                            )
                 else:
                     raise PipelineException("Cannot find the event time.")
         else:
@@ -88,10 +99,10 @@ class BayesWave(Pipeline):
 
             ini.update_accounting(user)
 
-            if 'queue' in self.production.meta:
-                queue = self.production.meta['queue']
+            if "queue" in self.production.meta:
+                queue = self.production.meta["queue"]
             else:
-                queue = 'Priority_PE'
+                queue = "Priority_PE"
 
             ini.set_queue(queue)
 
@@ -102,100 +113,125 @@ class BayesWave(Pipeline):
         else:
             ini = f"{self.production.name}.ini"
 
-
-
         if self.production.rundir:
             rundir = self.production.rundir
         else:
-            rundir = os.path.join(os.path.expanduser("~"),
-                                  self.production.event.name,
-                                  self.production.name)
+            rundir = os.path.join(
+                config.get("general", "rundir_default"),
+                self.production.event.name,
+                self.production.name,
+            )
             self.production.rundir = rundir
 
-        try:
-            pathlib.Path(directory).mkdir(parents=True, exist_ok=False)
-        except:
-            pass
-
         gps_time = self.production.get_meta("event time")
-            
 
-        pipe_cmd = os.path.join(config.get("pipelines", "environment"), "bin", "bayeswave_pipe")
+        pipe_cmd = os.path.join(
+            config.get("pipelines", "environment"), "bin", "bayeswave_pipe"
+        )
 
-        command = [pipe_cmd,
-                   #"-l", f"{gps_file}",
-                   f"--trigger-time={gps_time}",
-                   "-r", self.production.rundir,
-                   ini
+        command = [
+            pipe_cmd,
+            # "-l", f"{gps_file}",
+            f"--trigger-time={gps_time}",
         ]
-            
+
+        if "osg" in self.production.meta["scheduler"]:
+            if self.production.meta["scheduler"]["osg"]:
+                command += ["--osg-deploy", "--transfer-files"]
+        command += [
+            "-r",
+            self.production.rundir,
+            ini,
+        ]
+
         self.logger.info(" ".join(command))
 
-        pipe = subprocess.Popen(command, 
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
-        out, err = pipe.communicate()
-        if "To submit:" not in str(out):
-            self.production.status = "stuck"
-
-            if "issue_object" in self.production.event:
-                raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
-                                        issue=self.production.event.issue_object,
-                                        production=self.production.name)
-            else:
-                raise PipelineException(f"DAG file could not be created.\n{command}\n{out}\n\n{err}",
-                                        production=self.production.name)
+        if dryrun:
+            print(" ".join(command))
+            self.logger.info(" ".join(command))
         else:
-            if hasattr(self.production.event, "issue_object"):
-                return PipelineLogger(message=out,
-                                      issue=self.production.event.issue_object,
-                                      production=self.production.name)
+
+            pipe = subprocess.Popen(
+                command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
+            out, err = pipe.communicate()
+            if "To submit:" not in str(out):
+                self.production.status = "stuck"
+                self.logger.error("Could not create a DAG file")
+                self.logger.info(f"{command}")
+                self.logger.debug(out)
+                self.logger.debug(err)
+                raise PipelineException("The DAG file could not be created.")
             else:
-                return PipelineLogger(message=out,
-                                      production=self.production.name)
+                self.logger.info("DAG file created")
+                self.logger.debug(out)
 
     def detect_completion(self):
-         results_dir = glob.glob(f"{self.production.rundir}/trigtime_*")
-         if len(results_dir)>0:
-             if len(glob.glob(os.path.join(results_dir[0], "post", "clean", f"glitch_median_PSD_forLI_*.dat"))) > 0:
-                 return True
-             else:
-                 return False
-         else:
+        self.logger.info("Checking for completion.")
+        psds = self.collect_assets()["psds"]
+        if len(list(psds.values())) > 0:
+            self.logger.info("PSDs detected, job complete.")
+            return True
+        else:
             self.logger.info("Bayeswave job completion was not detected.")
             return False
-            
+
     def after_completion(self):
+
+        try:
+            self.collect_pages()
+        except FileNotFoundError as e:
+            self.logger.error("Failed to copy the megaplot outputs.")
+            self.logger.exception(e)
+
         try:
             self.collect_assets()
+            self.store_assets()
         except Exception as e:
-            PipelineLogger(message=b"Failed to store PSDs.",
-                           issue=self.production.event.issue_object,
-                           production=self.production.name)
-            
-        if "supress" in self.production.meta['quality']:
-            for ifo in self.production.meta['quality']['supress']:
-                if ifo in self.production.meta['interferometers']:
-                    self.supress_psd(ifo, 
-                                     self.production.meta['quality']['supress'][ifo]['lower'],
-                                     self.production.meta['quality']['supress'][ifo]['upper'])
+            self.logger.error("Failed to store the PSDs")
+            self.logger.exception(e)
+
+        if "supress" in self.production.meta["quality"]:
+            for ifo in self.production.meta["quality"]["supress"]:
+                if ifo in self.production.meta["interferometers"]:
+                    self.supress_psd(
+                        ifo,
+                        self.production.meta["quality"]["supress"][ifo]["lower"],
+                        self.production.meta["quality"]["supress"][ifo]["upper"],
+                    )
         self.production.status = "uploaded"
-        
+
     def before_submit(self):
-        pass
+        """
+        Horribly hack the sub files to add `request_disk`
+        """
+        sub_files = glob.glob(f"{self.production.rundir}/*.sub")
+        for sub_file in sub_files:
+            with open(sub_file, "r") as f_handle:
+                original = f_handle.read()
+            with open(sub_file, "w") as f_handle:
+                self.logger.info(f"Adding request_disk = {64000} to {sub_file}")
+                f_handle.write(f"request_disk = {64000}\n" + original)
+        python_files = glob.glob(f"{self.production.rundir}/*.py")
+        for py_file in python_files:
+            with open(py_file, "r") as f_handle:
+                original = f_handle.read()
+            with open(py_file, "w") as f_handle:
+                self.logger.info("Fixing shebang")
+                path = os.path.join(
+                    config.get("pipelines", "environment"), "bin", "python"
+                )
+                f_handle.write(f"#! {path}\n" + original)
 
-
-    def submit_dag(self):
+    def submit_dag(self, dryrun=False):
         """
         Submit a DAG file to the condor cluster.
 
         Parameters
         ----------
-        category : str, optional
-           The category of the job.
-           Defaults to "C01_offline".
-        production : str
-           The production name.
+        dryrun: bool
+           If True then the DAG will not be submitted but all of the
+           commands will be printed to stdout.
 
         Returns
         -------
@@ -209,106 +245,133 @@ class BayesWave(Pipeline):
         PipelineException
            This will be raised if the pipeline fails to submit the job.
         """
-        os.chdir(self.production.rundir)
-
         self.before_submit()
-        
-        try:
-            command = ["condor_submit_dag",
-                       "-batch-name", f"bwave/{self.production.event.name}/{self.production.name}",
-                                   os.path.join(self.production.rundir, f"{self.production.name}.dag")]
-            dagman = subprocess.Popen(command,
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT)
-        except FileNotFoundError as error:
-            raise PipelineException("It looks like condor isn't installed on this system.\n"
-                                    f"""I wanted to run {" ".join(command)}.""")
 
-        stdout, stderr = dagman.communicate()
+        command = [
+            "condor_submit_dag",
+            "-batch-name",
+            f"bwave/{self.production.event.name}/{self.production.name}",
+            f"{self.production.name}.dag",
+        ]
 
-        if "submitted to cluster" in str(stdout):
-            cluster = re.search("submitted to cluster ([\d]+)", str(stdout)).groups()[0]
-            self.production.status = "running"
-            self.production.job_id = cluster
-            return cluster, PipelineLogger(stdout)
+        self.logger.info((" ".join(command)))
+
+        if dryrun:
+            print(" ".join(command))
+
         else:
-            raise PipelineException(f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
-                                    issue=self.production.event.issue_object,
-                                    production=self.production.name)
-    
+            with set_directory(self.production.rundir):
+                try:
+                    dagman = subprocess.Popen(
+                        command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+                    )
+                except FileNotFoundError as e:
+                    self.logger.exception(e)
+                    raise PipelineException(
+                        "It looks like condor isn't installed on this system.\n"
+                        f"""I wanted to run {" ".join(command)}."""
+                    ) from e
+
+                stdout, stderr = dagman.communicate()
+
+                if "submitted to cluster" in str(stdout):
+                    cluster = re.search(
+                        r"submitted to cluster ([\d]+)", str(stdout)
+                    ).groups()[0]
+                    self.production.status = "running"
+                    self.production.job_id = int(cluster)
+                    self.logger.info(
+                        f"Successfully submitted to cluster {self.production.job_id}"
+                    )
+                    self.logger.debug(stdout)
+                    return (int(cluster),)
+                else:
+                    self.logger.info(stdout)
+                    self.logger.error(stderr)
+                    raise PipelineException(
+                        f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
+                    )
+
     def upload_assets(self):
         """
         Upload the PSDs from this job.
         """
-        psds = {}
-        detectors = self.production.meta['interferometers']
-        sample = self.production.meta["quality"]["sample-rate"]
+        sample = self.production.meta["likelihood"]["sample rate"]
         git_location = os.path.join(self.category, "psds")
-        
-        for det in dets:
-            asset = f"{self.production.rundir}/ROQdata/0/BayesWave_PSD_{det}/post/clean/glitch_median_PSD_forLI_{det}.dat"
-            if os.path.exists(asset):
-                psds[det] = asset
-                self.production.event.repository.add_file(
-                    asset,
-                    os.path.join(git_location, str(sample), f"psd_{det}.dat"),
-                    commit_message = f"Added the PSD for {det}.")
+
+        for detector, asset in self.collect_assets()["psds"]:
+            self.production.event.repository.add_file(
+                asset,
+                os.path.join(git_location, str(sample), f"psd_{detector}.dat"),
+                commit_message=f"Added the PSD for {detector}.",
+            )
+
+    def store_assets(self):
+        """
+        Add the assets to the store.
+        """
+
+        sample_rate = self.production.meta["likelihood"]["sample rate"]
+        self.logger.info(self.collect_assets())
+        for detector, asset in self.collect_assets()["psds"].items():
+            store = Store(root=config.get("storage", "directory"))
+            try:
+                store.add_file(
+                    self.production.event.name,
+                    self.production.name,
+                    file=asset,
+                    new_name=f"{detector}-{sample_rate}-psd.dat",
+                )
+            except Exception as e:
+                self.logger.error(
+                    f"There was a problem committing the PSD for {detector} to the store."
+                )
+                self.logger.exception(e)
 
     def collect_logs(self):
         """
-        Collect all of the log files which have been produced by this production and 
+        Collect all of the log files which have been produced by this production and
         return their contents as a dictionary.
         """
-        logs = glob.glob(f"{self.production.rundir}/logs/*.err") + glob.glob(f"{self.production.rundir}/*.err")
         messages = {}
+
+        logfile = os.path.join(
+            config.get("logging", "directory"),
+            self.production.event.name,
+            self.production.name,
+            "asimov.log",
+        )
+        with open(logfile, "r") as log_f:
+            message = log_f.read()
+            messages["production"] = message
+
+        logs = glob.glob(f"{self.production.rundir}/logs/*.err") + glob.glob(
+            f"{self.production.rundir}/*.err"
+        )
         for log in logs:
             with open(log, "r") as log_f:
                 message = log_f.read()
                 messages[log.split("/")[-1]] = message
         return messages
-                
-        
+
     def collect_assets(self):
         """
         Collect the assets for this job and commit them to the event repository.
         Since this job also generates the PSDs these should be added to the production ledger.
         """
         results_dir = glob.glob(f"{self.production.rundir}/trigtime_*")[0]
-        sample_rate = self.production.meta['quality']['sample-rate']
+        psds = {}
+        for det in self.production.meta["interferometers"]:
+            asset = os.path.join(
+                results_dir, "post", "clean", f"glitch_median_PSD_forLI_{det}.dat"
+            )
+            if os.path.exists(asset):
+                psds[det] = asset
 
-        store = Store(root=config.get("storage", "directory"))
-        
-        for det in self.production.meta['interferometers']:
-            asset = os.path.join(results_dir, "post", "clean", f"glitch_median_PSD_forLI_{det}.dat")
-            destination = os.path.join(self.category, "psds", str(sample_rate), f"{det}-psd.dat")
+        outputs = {}
+        outputs["psds"] = psds
+        return outputs
 
-            try:
-                self.production.event.repository.add_file(asset, destination)
-            except Exception as e:
-                error = PipelineLogger(f"There was a problem committing the PSD for {det} to the repository.\n\n{e}",
-                                    issue=self.production.event.issue_object,
-                                    production=self.production.name)
-                error.submit_comment()
-
-            # Add to the event ledger
-            if "psds" not in self.production.event.meta:
-                self.production.event.meta['psds'] = {}
-            if sample_rate not in self.production.event.meta['psds']:
-                self.production.event.meta['psds'][sample_rate] = {}
-                
-            self.production.event.meta['psds'][sample_rate][det] = destination
-            # Let's have a better way of doing this
-            self.production.event.issue_object.update_data()
-            copyfile(asset, f"{det}-{sample_rate}-psd.dat")
-            try:
-                store.add_file(self.production.event.name, self.production.name,
-                               file = f"{det}-{sample_rate}-psd.dat")
-            except Exception as e:
-                error = PipelineLogger(f"There was a problem committing the PSD for {det} to the store.\n\n{e}",
-                                    issue=self.production.event.issue_object,
-                                    production=self.production.name)
-                error.submit_comment()
-            
     def supress_psd(self, ifo, fmin, fmax):
         """
         Suppress portions of a PSD.
@@ -316,46 +379,129 @@ class BayesWave(Pipeline):
         (Updated for asimov by Daniel Williams - November 2020
         """
         store = Store(root=config.get("storage", "directory"))
-        sample_rate = self.production.meta['quality']['sample-rate']
-        orig_PSD_file = np.genfromtxt(os.path.join(self.production.event.repository.directory, self.category, "psds", str(sample_rate), f"{ifo}-psd.dat"))
+        sample_rate = self.production.meta["quality"]["sample-rate"]
+        orig_PSD_file = np.genfromtxt(
+            os.path.join(
+                self.production.event.repository.directory,
+                self.category,
+                "psds",
+                str(sample_rate),
+                f"{ifo}-psd.dat",
+            )
+        )
 
-        freq = orig_PSD_file[:,0]
-        PSD = orig_PSD_file[:,1]
+        self.logger.info("PSD supression has been set")
+        self.logger.info(
+            f"{ifo}-psd.dat will be supressed between {fmin}-Hz and {fmax}-Hz"
+        )
 
-        suppression_region = np.logical_and(np.greater_equal(freq, fmin), np.less_equal(freq, fmax))
+        freq = orig_PSD_file[:, 0]
+        PSD = orig_PSD_file[:, 1]
 
-        #Suppress the PSD in this region
+        suppression_region = np.logical_and(
+            np.greater_equal(freq, fmin), np.less_equal(freq, fmax)
+        )
 
-        PSD[suppression_region] = 1.
+        # Suppress the PSD in this region
+
+        PSD[suppression_region] = 1.0
 
         new_PSD = np.vstack([freq, PSD]).T
 
         asset = f"{ifo}-psd.dat"
-        np.savetxt(asset, new_PSD, fmt='%+.5e')
-        
-        destination = os.path.join(self.category, "psds", str(sample_rate), f"{ifo}-psd.dat")
+        np.savetxt(asset, new_PSD, fmt="%+.5e")
+
+        destination = os.path.join(
+            self.category, "psds", str(sample_rate), f"{ifo}-psd.dat"
+        )
+
+        self.logger.info(
+            f"{ifo}-psd.dat has been supressed between {fmin}-Hz and {fmax}-Hz"
+        )
 
         try:
-            self.production.event.repository.add_file(asset, destination)#, message=f"Added the supresed {ifo} PSD")
+            self.production.event.repository.add_file(
+                asset, destination
+            )  # , message=f"Added the supresed {ifo} PSD")
         except Exception as e:
-            raise PipelineException(f"There was a problem committing the suppresed PSD for {ifo} to the repository.\n\n{e}",
-                                    issue=self.production.event.issue_object,
-                                    production=self.production.name)
+            self.logger.error(
+                "The supressed PSD could not be committed to the repository"
+            )
+            self.logger.exception(e)
+
         copyfile(asset, f"{ifo}-{sample_rate}-psd-suppresed.dat")
         try:
-            store.add_file(self.production.event.name, self.production.name,
-                       file = f"{ifo}-{sample_rate}-psd-suppresed.dat")
+            store.add_file(
+                self.production.event.name,
+                self.production.name,
+                file=f"{ifo}-{sample_rate}-psd-suppresed.dat",
+            )
         except AlreadyPresentException:
-            pass
-        self.logger.info(f"PSD supression applied to {ifo} between {fmin} and {fmax}")
+            self.logger.warning(
+                "Attempted to add a supressed PSD which already exists."
+            )
 
     def resurrect(self):
         """
         Attempt to ressurrect a failed job.
         """
-        count = len(glob.glob(os.path.join(self.production.rundir, ".dag.rescue*")))
+        count = len(glob.glob(os.path.join(self.production.rundir, "*.dag.rescue*")))
+
         if (count < 5) and (count > 0):
             self.submit_dag()
             self.logger.info(f"Bayeswave job was resurrected for the {count} time.")
         else:
-            self.logger.error("Bayeswave resurrection not completed as there have already been 5 attempts")
+            self.logger.error(
+                "Bayeswave resurrection not completed as there have already been 5 attempts"
+            )
+
+    def html(self):
+        """Return the HTML representation of this pipeline."""
+        pages_dir = os.path.join(self.production.event.name, self.production.name)
+        out = ""
+
+        image_card = """<div class="card" style="width: 18rem;">
+<img class="card-img-top" src="{0}" alt="Card image cap">
+  <div class="card-body">
+    <p class="card-text">{1}</p>
+  </div>
+</div>
+        """
+
+        if self.production.status in {"finished", "uploaded"}:
+            out += """<div class="asimov-pipeline bayeswave">"""
+            out += (
+                f"""<p><a href="{pages_dir}/index.html">Full Megaplot output</a></p>"""
+            )
+            out += image_card.format(
+                f"{pages_dir}/plots/clean_whitened_residual_histograms.png",
+                "Cleaned whitened residual histograms",
+            )
+
+            out += """</div>"""
+
+        return out
+
+    def collect_pages(self):
+        """Collect the HTML output of the pipeline."""
+        results_dir = glob.glob(f"{self.production.rundir}/trigtime_*")[0]
+        pages_dir = os.path.join(
+            config.get("general", "webroot"),
+            self.production.event.name,
+            self.production.name,
+        )
+        os.makedirs(pages_dir, exist_ok=True)
+        copyfile(
+            os.path.join(results_dir, "index.html"),
+            os.path.join(pages_dir, "index.html"),
+        )
+        copytree(
+            os.path.join(results_dir, "html"),
+            os.path.join(pages_dir, "html"),
+            dirs_exist_ok=True,
+        )
+        copytree(
+            os.path.join(results_dir, "plots"),
+            os.path.join(pages_dir, "plots"),
+            dirs_exist_ok=True,
+        )

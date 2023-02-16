@@ -1,16 +1,33 @@
 """
 This file contains code to allow unittests to be written with
 Asimov so that productions can be tested with minimal boilerplate.
+This module contains the factory classes for other asimov tests.
 """
-from asimov.gitlab import find_events
-from asimov import gitlab
-from asimov import config
-from asimov.cli import connect_gitlab
 
-
-_, repository = connect_gitlab()
-
+import os
 import unittest
+import shutil
+import git
+from asimov import current_ledger as ledger
+from asimov.cli.project import make_project
+from asimov.ledger import YAMLLedger
+
+
+class AsimovTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.cwd = os.getcwd()
+        git.Repo.init(cls.cwd + "/tests/test_data/s000000xx/")
+
+    def setUp(self):
+        os.makedirs(f"{self.cwd}/tests/tmp/project")
+        os.chdir(f"{self.cwd}/tests/tmp/project")
+        make_project(name="Test project", root=f"{self.cwd}/tests/tmp/project")
+        self.ledger = YAMLLedger("ledger.yml")
+
+    def tearDown(self):
+        os.chdir(self.cwd)
+        shutil.rmtree(f"{self.cwd}/tests/tmp/")
 
 
 class AsimovTest(unittest.TestCase):
@@ -18,7 +35,7 @@ class AsimovTest(unittest.TestCase):
     Overloads the unittest.TestCase code.
     Simply makes `self.events` available to the test case.
     """
+
     @classmethod
     def setUpClass(cls):
-        _, repository = connect_gitlab()
-        cls.events = gitlab.find_events(repository)
+        cls.events = ledger.get_event()
