@@ -6,4 +6,4 @@ docs/* @daniel-williams
 [Reviewers]
 asimov/* @patricia-schmidt @marialuisa.chiofalo @kent-blackburn
 
-asimov/pipelines/rift.py @richard.udall
+asimov/pipelines/rift.py @rhiannon.udall

@@ -1,0 +1,12 @@
+kind: analysis
+name: Prod0
+pipeline: bayeswave
+comment: Bayeswave on-source PSD estimation job
+---
+kind: analysis
+name: Prod1
+pipeline: bilby
+approximant: IMRPhenomXPHM
+comment: Bilby parameter estimation job
+needs:
+  - Prod0

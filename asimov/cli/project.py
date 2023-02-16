@@ -8,34 +8,33 @@ except ImportError:
     import configparser
 
 import os
-import yaml
+import shutil
+import getpass
 
 import click
 
-from asimov import config
-from asimov import storage
-from asimov import ledger
-from asimov import gitlab
+from asimov import config, storage, logger, LOGGER_LEVEL
+from asimov.ledger import Ledger
 
-from asimov.cli import connect_gitlab
+logger = logger.getChild("cli").getChild("project")
+logger.setLevel(LOGGER_LEVEL)
 
-@click.command()
-@click.argument("name")
-@click.option("--root", default=os.getcwd(),
-              help="Location to create the project, default is the current directory.")
-@click.option("--working", default="working",
-              help="The location to store working directories, default is a directory called 'working' inside the current directory.")
-@click.option("--checkouts", default="checkouts",
-              help="The location to store cloned git repositories.")
-@click.option("--results", default="results",
-              help="The location where the results store should be created.")
-def init(name, root, working="working", checkouts="checkouts", results="results"):
-    """Create a new project called NAME.
+
+def make_project(
+    name,
+    root,
+    working="working",
+    checkouts="checkouts",
+    results="results",
+    logs="logs",
+    user=None,
+):
+    """
+    Create a new project called NAME.
 
     This command creates a new asimov project, creating the appropriate
     directory structure, and creating a blank ledger.
     """
-    import venv
     import pathlib
 
     pathlib.Path(root).mkdir(parents=True, exist_ok=True)
@@ -47,14 +46,14 @@ def init(name, root, working="working", checkouts="checkouts", results="results"
     project_name = name
 
     # Make the virtual environment
-    builder = venv.EnvBuilder(system_site_packages=False,
-                              clear=False,
-                              symlinks=False,
-                              upgrade=False,
-                              with_pip=True,
-                              prompt=f"Asimov {project_name}")
+    # builder = venv.EnvBuilder(system_site_packages=False,
+    #                           clear=False,
+    #                           symlinks=False,
+    #                           upgrade=False,
+    #                           with_pip=True,
+    #                           prompt=f"Asimov {project_name}")
 
-    builder.create("environment")
+    # builder.create("environment")
 
     config.set("general", "environment", "environment")
 
@@ -66,79 +65,127 @@ def init(name, root, working="working", checkouts="checkouts", results="results"
     pathlib.Path(checkouts).mkdir(parents=True, exist_ok=True)
     config.set("general", "git_default", checkouts)
 
+    # Make the log directory
+    pathlib.Path(logs).mkdir(parents=True, exist_ok=True)
+    config.set("logging", "directory", logs)
+
     # Make the results store
     storage.Store.create(root=results, name=f"{project_name} storage")
-    config.set("storage", "results_store", results)
+    config.set("storage", "directory", results)
 
     # Make the ledger
-    ledger.Ledger.create()
     config.set("ledger", "engine", "yamlfile")
     config.set("ledger", "location", "ledger.yml")
+
+    # Set the default environment
+    python_loc = shutil.which("python").split("/")[:-2]
+    config.set("pipelines", "environment", os.path.join("/", *python_loc))
+
+    # Set the default condor user
+    if not user:
+        config.set("condor", "user", getpass.getuser())
+    else:
+        config.set("condor", "user", user)
+
+    Ledger.create(engine="yamlfile", name=project_name, location="ledger.yml")
 
     with open("asimov.conf", "w") as config_file:
         config.write(config_file)
 
 
 @click.command()
+@click.argument("name")
+@click.option(
+    "--root",
+    default=os.getcwd(),
+    help="Location to create the project, default is the current directory.",
+)
+@click.option(
+    "--working",
+    default="working",
+    help="""The location to store working directories,
+ default is a directory called 'working' inside the current directory.""",
+)
+@click.option(
+    "--checkouts",
+    default="checkouts",
+    help="The location to store cloned git repositories.",
+)
+@click.option(
+    "--results",
+    default="results",
+    help="The location where the results store should be created.",
+)
+@click.option(
+    "--user",
+    default=None,
+    help="The user account to be used for accounting purposes. Defaults to the current user if not set.",
+)
+def init(
+    name, root, working="working", checkouts="checkouts", results="results", user=None
+):
+    """
+    Roll-out a new project.
+    """
+    make_project(name, root, working=working, checkouts=checkouts, results=results)
+    click.echo(click.style("●", fg="green") + " New project created successfully!")
+    logger.info(f"A new project was created in {os.getcwd()}")
+
+
+@click.command()
 @click.argument("location")
 def clone(location):
-    import venv
     import pathlib
     import shutil
 
-    working = "working"
     results = "results"
-    
+
     remote_config = os.path.join(location, "asimov.conf")
     config = configparser.ConfigParser()
     config.read([remote_config])
     click.echo(f'Cloning {config.get("project", "name")}')
-    root = os.path.join(os.getcwd(), config.get("project", "name").lower().replace(" ", "-"))
+    root = os.path.join(
+        os.getcwd(), config.get("project", "name").lower().replace(" ", "-")
+    )
     pathlib.Path(root).mkdir(parents=True, exist_ok=True)
-    os.chdir(root)
+    # os.chdir(root)
     config.set("project", "root", root)
     # Make the virtual environment
-    #builder = venv.EnvBuilder(system_site_packages=False,
+    # builder = venv.EnvBuilder(system_site_packages=False,
     #                          clear=False,
     #                          symlinks=False,
     #                          upgrade=False,
     #                          with_pip=True,
     #                          prompt=f"Asimov {project_name}")
 
-    #builder.create("environment")
+    # builder.create("environment")
 
-    #config.set("general", "environment", "environment")
+    # config.set("general", "environment", "environment")
 
     # Make the working directory
-    #shutil.copytree(os.path.join(config.get("general", "rundir_default"), working)
-    #config.set("general", "rundir_default", working)
+    # shutil.copytree(os.path.join(config.get("general", "rundir_default"), working)
+    # config.set("general", "rundir_default", working)
 
     # Make the git directory
-    #pathlib.Path(checkouts).mkdir(parents=True, exist_ok=True)
-    #config.set("general", "git_default", checkouts)
+    # pathlib.Path(checkouts).mkdir(parents=True, exist_ok=True)
+    # config.set("general", "git_default", checkouts)
 
     # Copy the results store
-    #shutil.copyfile(os.path.join(location, config.get("storage", "results_store")), results)
-    shutil.copytree(os.path.join(location, config.get("storage", "results_store")), results)
+    # shutil.copyfile(os.path.join(location, config.get("storage", "results_store")), results)
+    shutil.copytree(
+        os.path.join(location, config.get("storage", "results_store")), results
+    )
     config.set("storage", "results_store", results)
 
     # Make the ledger
     if config.get("ledger", "engine") == "yamlfile":
-        shutil.copyfile(os.path.join(location, config.get("ledger", "location")), "ledger.yml")
+        shutil.copyfile(
+            os.path.join(location, config.get("ledger", "location")), "ledger.yml"
+        )
     elif config.get("ledger", "engine") == "gitlab":
-        _, repository = connect_gitlab(config)
-
-        events = gitlab.find_events(repository,
-                                update=False,
-                                subset=[None],
-                                label=config.get("gitlab", "event_label"),
-                                repo=False)
-
-        total = []
-        for event in events:
-            total.append(yaml.safe_load(event.event_object.to_yaml()))
-        with open("ledger.yml", "w") as f:
-            f.write(yaml.dump(total))
+        raise NotImplementedError(
+            "The gitlab interface has been removed from this version of asimov."
+        )
 
     config.set("ledger", "engine", "yamlfile")
     config.set("ledger", "location", "ledger.yml")
