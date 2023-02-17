@@ -24,29 +24,26 @@ Here we list some typical things to keep in mind ensuring the code review is as 
 
 .. code-block:: python
 		
-		def my_new_function(x, y, print=False):
-		    """
-		    A function to calculate the sum of two numbers
+      def my_new_function(x, y, print=False):
+	  """
+	  A function to calculate the sum of two numbers
 
-		    Parameters
-		    ----------
-		    x, y: float
-			Input numbers to sum
-		    print: bool
-			If true, print a message
-		    """
-		    if print:
-			print("Message!")
-		    return x + y
+	  Parameters
+	  ----------
+	  x, y: float
+	      Input numbers to sum
+	  print: bool
+	      If true, print a message
 
-    
-3. Avoid inline comments unless necessary. Ideally, the code should make it obvious what is going on, if not the docstring, only in subtle cases use comments
+	  """
+
+	  if print:
+	      print("Message!")
+	  return x + y
+
 4. Name variables sensibly. Avoid using single-letter variables, it is better to name something ``power_spectral_density_array`` than ``psda``.
 5. Don't repeat yourself. If code is repeated in multiple places, wrap it up into a function.
-6. Add tests. The C.I. is there to do the work of "checking" the code, both now and into the future. Use it.
-
-..
-
+6. Add tests. The CI is there to do the work of "checking" the code, both now and into the future. Use it.
 
 Merge requests
 --------------
@@ -243,20 +240,3 @@ Attribution
 -----------
 
 This contributing guide was heavily influenced (and borrows components from) the Bilby contributions guide.
-
-..
-   Code overview
-   -------------
-
-   Below, we give a schematic of how the code is structured. This is intended to
-   help orient users and make it easier to contribute. The layout is intended to
-   define the logic of the code and new merge requests should aim to fit within
-   this logic (unless there is a good argument to change it). For example, code
-   which adds a new sampler should not effect the gravitational-wave specific
-   parts of the code. Note that this document is not programatically generated and
-   so may get out of date with time. If you notice something wrong, please open an
-   issue.
-
-   ![bilby overview](docs/images/bilby_layout.png)
-
-   **Note** this layout is not comprehensive, for example only a few example "Priors" are shown.

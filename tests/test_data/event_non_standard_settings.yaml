@@ -1,0 +1,41 @@
+# This event is designed for testing the ability of a pipeline to
+# transfer non-standard settings into its configuration. It should not
+# be used for performing analysis.
+kind: event
+name: Nonstandard fmin
+quality:
+  minimum frequency:
+    H1: 62
+    L1: 92
+    V1: 62
+
+interferometers:
+  - H1
+  - L1
+  - V1
+    
+data:
+  calibration:
+    H1: /test/calibration/h1.dat
+    L1: /test/calibration/l1.dat
+    V1: /test/calibration-virgo/v1.dat
+  channels:
+    H1: H1:WeirdChannel
+    L1: L1:WeirdChannel
+    V1: V1:OddChannel
+  frame types:
+    H1: NonstandardFrame
+    L1: NonstandardFrameL1
+    V1: UnusualFrameType
+  segment length: 4
+
+likelihood:
+  sample rate: 4000
+  window length: 71
+  psd length: 108.6
+  segment start: 2
+
+priors:
+  mass ratio: [10, 78]
+  mass 1: [60, 70]
+  luminosity distance: 100

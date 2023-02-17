@@ -1,0 +1,7 @@
+kind: event
+name: Nonstandard fmin
+quality:
+  minimum frequency:
+    H1: 62
+    L1: 62
+    V1: 62

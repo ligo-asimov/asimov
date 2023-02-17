@@ -17,7 +17,7 @@ test_requirements = [
 
 setup(
     name='asimov',
-    use_scm_version=True,
+    use_scm_version={"local_scheme": "no-local-version"},
     setup_requires=['setuptools_scm'],
     description="""A Python package for managing and interacting with data analysis jobs.""",
     #long_description=readme + '\n\n' + history,
@@ -29,6 +29,7 @@ setup(
     entry_points={
         'console_scripts': [
             'olivaw=asimov.olivaw:olivaw',
+            'asimov=asimov.olivaw:olivaw',
             'locutus=asimov.locutus:cli'
         ]
     },
@@ -36,7 +37,7 @@ setup(
     install_requires=requirements,
     license="MIT license",
     zip_safe=True,
-    keywords='supervisor, pe, ligo, asimov',
+    keywords='pe, ligo, asimov',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
@@ -46,7 +47,6 @@ setup(
         'License :: OSI Approved :: ISC License (ISCL)',
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',

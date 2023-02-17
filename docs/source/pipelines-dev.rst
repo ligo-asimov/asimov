@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 .. _pipeline-dev:
 
+=======
+>>>>>>> v0.4-release
 Developing new pipelines
 ========================
 
@@ -147,7 +150,7 @@ There are a number of different python packaging technologies, so we will provid
 ``setup.cfg``
 ~~~~~~~~~~~~~~
 
-.. code-block:: ini
+.. code-block:: toml
 
    [options]
    install_requires =
