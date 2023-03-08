@@ -8,8 +8,12 @@ import git
 import io
 import contextlib
 
+from unittest.mock import patch
+from importlib import reload
+
 from click.testing import CliRunner
 
+import asimov
 from asimov.cli import project, manage
 from asimov.cli import configuration
 from asimov.cli.application import apply_page
@@ -22,10 +26,6 @@ from asimov.pipeline import PipelineException
 # @unittest.skip("Skipped until RIFT is added to the testing environment correctly.")
 class RiftTests(unittest.TestCase):
     """Test RIFT interface.
-
-    TODO
-    ----
-    Right now these feel a bit more like an expression of intention than actual tests, as we'll need to set the testing environment up better to make this work.
 
     The test_dag method will need to be updated.
 """
@@ -63,11 +63,12 @@ class RiftTests(unittest.TestCase):
             pipeline = "rift"
             apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
             apply_page(file = f"{self.cwd}/tests/test_data/test_{pipeline}.yaml", event=event, ledger=self.ledger)
-
-        runner = CliRunner()
-        result = runner.invoke(manage.build)
-        result = runner.invoke(manage.submit, "--dryrun")
-        print("RESULT", result.output)
+        with patch("asimov.current_ledger", new=YAMLLedger("ledger.yml")):
+            reload(asimov)
+            reload(manage)
+            runner = CliRunner()
+            result = runner.invoke(manage.manage, ['build'])
+            result = runner.invoke(manage.submit, "--dryrun")
         self.assertTrue("util_RIFT_pseudo_pipe.py" in result.output)
 
     def test_build_api(self):
@@ -79,12 +80,20 @@ class RiftTests(unittest.TestCase):
             event = "GW150914_095045"
             pipeline = "rift"
             apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
-            apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{pipeline}.yaml", event=event, ledger=self.ledger)
-
+            apply_page(file = f"{self.cwd}/tests/test_data/test_{pipeline}.yaml", event=event, ledger=self.ledger)
+        with patch("asimov.current_ledger", new=YAMLLedger("ledger.yml")):
+            reload(asimov)
+            reload(manage)
+            runner = CliRunner()
+            result = runner.invoke(manage.manage, ['build'])
+            result = runner.invoke(manage.submit, "--dryrun")
         f = io.StringIO()
         with contextlib.redirect_stdout(f):
-            self.ledger.get_event(event)[0].productions[0].pipeline.build_dag(dryrun=True)
-            self.assertTrue("util_RIFT_pseudo_pipe.py --use-coinc COINC MISSING --l-max 4 --calibration C01 --add-extrinsic --approx SEOBNRv4PHM --cip-explode-jobs 3 --use-rundir working/GW150914_095045/RIFT0 --ile-force-gpu --use-ini INI MISSING" in f.getvalue())
+            result = self.ledger.get_event(event)[0].productions[0].pipeline.build_dag(dryrun=True)
+            print("\n\nBUILDDAG ",f.getvalue())
+            print("RESULT", result)
+            self.assertTrue("/home/daniel/repositories/external/pyenv/versions/asimov-dev/bin/util_RIFT_pseudo_pipe.py --assume-nospin --calibration C01 --approx IMRPhenomD" in f.getvalue())
+            self.assertTrue("--ile-force-gpu " in f.getvalue())
         
 
     def test_build_api_non_default_calibration(self):
@@ -105,10 +114,18 @@ class RiftTests(unittest.TestCase):
             event = "GW150914_095045"
             pipeline = "rift"
             apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
-            apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{pipeline}.yaml", event=event, ledger=self.ledger)
+            apply_page(file = f"{self.cwd}/tests/test_data/test_{pipeline}.yaml", event=event, ledger=self.ledger)
 
+        with patch("asimov.current_ledger", new=YAMLLedger("ledger.yml")):
+            reload(asimov)
+            reload(manage)
+            runner = CliRunner()
+            result = runner.invoke(manage.manage, ['build'])
+            result = runner.invoke(manage.submit, "--dryrun")
         f = io.StringIO()
         with contextlib.redirect_stdout(f):
-            self.ledger.get_event(event)[0].productions[0].pipeline.build_dag(dryrun=True)
-            self.assertTrue("util_RIFT_pseudo_pipe.py --use-coinc COINC MISSING --l-max 4 --calibration C00 --add-extrinsic --approx SEOBNRv4PHM --cip-explode-jobs 3 --use-rundir working/GW150914_095045/RIFT0 --ile-force-gpu --use-ini INI MISSING" in f.getvalue())
-
+            result = self.ledger.get_event(event)[0].productions[0].pipeline.build_dag(dryrun=True)
+            print("\n\nBUILDDAG ",f.getvalue())
+            print("RESULT", result)
+            self.assertTrue("/home/daniel/repositories/external/pyenv/versions/asimov-dev/bin/util_RIFT_pseudo_pipe.py --assume-nospin --calibration C00 --approx IMRPhenomD" in f.getvalue())
+            self.assertTrue("--ile-force-gpu " in f.getvalue())

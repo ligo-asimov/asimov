@@ -42,6 +42,19 @@ class Rift(Pipeline):
         else:
             self.bootstrap = False
 
+        self._create_ledger_entries()
+            
+    def _create_ledger_entries(self):
+        """Create entries in the ledger which might be required in the templating."""
+        if "sampler" not in self.production.meta:
+            self.production.meta['sampler'] = {}
+        required_args = {"sampler": {"ile", "cip"}, "likelihood": {"marginalization", "assume"}}
+        for section in required_args.keys():
+            section_data = self.production.meta[section]
+            for section_arg in required_args[section]:
+                if section_arg not in section_data:
+                    section_data[section_arg] = {}
+
     def after_completion(self):
 
         self.logger.info("Job has completed. Running PE Summary.")
