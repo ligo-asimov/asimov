@@ -92,7 +92,7 @@ class RiftTests(unittest.TestCase):
             result = self.ledger.get_event(event)[0].productions[0].pipeline.build_dag(dryrun=True)
             print("\n\nBUILDDAG ",f.getvalue())
             print("RESULT", result)
-            self.assertTrue("/home/daniel/repositories/external/pyenv/versions/asimov-dev/bin/util_RIFT_pseudo_pipe.py --assume-nospin --calibration C01 --approx IMRPhenomD" in f.getvalue())
+            self.assertTrue("util_RIFT_pseudo_pipe.py --assume-nospin --calibration C01 --approx IMRPhenomD" in f.getvalue())
             self.assertTrue("--ile-force-gpu " in f.getvalue())
         
 
@@ -127,5 +127,5 @@ class RiftTests(unittest.TestCase):
             result = self.ledger.get_event(event)[0].productions[0].pipeline.build_dag(dryrun=True)
             print("\n\nBUILDDAG ",f.getvalue())
             print("RESULT", result)
-            self.assertTrue("/home/daniel/repositories/external/pyenv/versions/asimov-dev/bin/util_RIFT_pseudo_pipe.py --assume-nospin --calibration C00 --approx IMRPhenomD" in f.getvalue())
+            self.assertTrue("util_RIFT_pseudo_pipe.py --assume-nospin --calibration C00 --approx IMRPhenomD" in f.getvalue())
             self.assertTrue("--ile-force-gpu " in f.getvalue())
