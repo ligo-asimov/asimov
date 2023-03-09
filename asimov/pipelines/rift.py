@@ -286,7 +286,7 @@ class Rift(Pipeline):
                     if self.production.event.repository:
                         #with set_directory(os.path.abspath(self.production.rundir)):
                         for psdfile in self.production.get_psds("xml"):
-                            ifo = psdfile.split("/")[-1].split("_")[1].split(".")[0]
+                            ifo = psdfile.split("/")[-1].split("-")[1].split(".")[0]
                             os.system(f"cp {psdfile} {ifo}-psd.xml.gz")
 
                         # os.system("cat *_local.cache > local.cache")
@@ -329,7 +329,7 @@ class Rift(Pipeline):
         """
         self.before_submit()
         for psdfile in self.production.get_psds("xml"):
-            ifo = psdfile.split("/")[-1].split("_")[1].split(".")[0]
+            ifo = psdfile.split("/")[-1].split("-")[1].split(".")[0]
             os.system(f"cp {psdfile} {ifo}-psd.xml.gz")
 
         command = [
