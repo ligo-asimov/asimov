@@ -71,20 +71,26 @@ class Rift(Pipeline):
         """
         event = self.production.event
         category = config.get("general", "calibration_directory")
+        self.logger.info("Checking for XML format PSDs")
         if len(self.production.get_psds("xml")) == 0 and "psds" in self.production.meta:
+            self.logger.info("Did not find XML format PSDs")
             for ifo in self.production.meta["interferometers"]:
                 with set_directory(f"{event.work_dir}"):
                     sample = self.production.meta["likelihood"]["sample rate"]
+                    self.logger.info(f"Converting {ifo} {sample}-Hz PSD to XML")
                     self._convert_psd(
                         self.production.meta["psds"][sample][ifo], ifo, dryrun=dryrun
                     )
                     asset = f"{ifo.upper()}-psd.xml.gz"
+                    self.logger.info(f"Conversion complete as {asset}")
                     git_location = os.path.join(category, "psds")
+                    saveloc = os.path.join(git_location, str(sample), f"psd_{ifo}.xml.gz")
                     self.production.event.repository.add_file(
                         asset,
-                        os.path.join(git_location, str(sample), f"psd_{ifo}.xml.gz"),
+                        saveloc,
                         commit_message=f"Added the xml format PSD for {ifo}.",
                     )
+                    self.logger.info(f"Saved at {saveloc}")
 
     def build_dag(self, user=None, dryrun=False):
         """
