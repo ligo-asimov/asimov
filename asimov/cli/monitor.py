@@ -10,6 +10,13 @@ from asimov.cli import ACTIVE_STATES, manage, report
 logger = logger.getChild("cli").getChild("monitor")
 logger.setLevel(LOGGER_LEVEL)
 
+import sys
+
+if sys.version_info < (3, 10):
+    from importlib_metadata import entry_points
+else:
+    from importlib.metadata import entry_points
+
 
 @click.option("--dry-run", "-n", "dry_run", is_flag=True)
 @click.command()
@@ -321,6 +328,12 @@ def monitor(ctx, event, update, dry_run, chain):
             for production in others:
                 needs = ", ".join(production.meta["needs"])
                 click.echo(f"\t{production.name} which needs {needs}")
+
+        # Post-monitor hooks
+        discovered_hooks = entry_points(group="asimov.hooks.postmonitor")
+        for hook in discovered_hooks:
+            if hook.name in ledger.meta["hooks"]["postmonitor"]:
+                hook(ledger).run()
 
         if chain:
             ctx.invoke(report.html)
