@@ -136,13 +136,12 @@ class Rift(Pipeline):
         """
         cwd = os.getcwd()
         if self.production.event.repository:
+            self.logger.info("Checking for existence of coinc file in event repository")
             try:
                 coinc_file = self.production.get_coincfile()
                 calibration = config.get("general", "calibration_directory")
-                # coinc_file = os.path.join(
-                #     self.production.event.repository.directory, calibration, coinc_file
-                # )
                 coinc_file = os.path.abspath(coinc_file)
+                self.logger.info(f"Coinc found at {coinc_file}")
             except HTTPError:
                 print(
                     "Unable to download the coinc file because it was not possible to connect to GraceDB"
@@ -153,9 +152,9 @@ class Rift(Pipeline):
                 self.logger.warning("Could not download a coinc file for this event as no GraceDB ID was supplied.")
                 coinc_file = None
             try:
-
                 ini = self.production.get_configuration().ini_loc
                 calibration = config.get("general", "calibration_directory")
+                self.logger.info(f"Using the {calibration} calibration")
                 ini = os.path.join(
                     self.production.event.repository.directory, calibration, ini
                 )
