@@ -960,7 +960,7 @@ class Production:
                 "coinc.xml",
                 os.path.abspath(
                     os.path.join(
-                        self.event.repository.location, self.category, "coinc.xml"
+                        self.event.repository.directory, self.category, "coinc.xml"
                     ),
                 ),
             )
