@@ -956,13 +956,15 @@ class Production:
             return coinc
         except FileNotFoundError:
             self.logger.info("Could not find a coinc.xml file")
+            savepath = os.path.abspath(
+                os.path.join(
+                    self.event.repository.directory, self.category, "coinc.xml"
+                ),
+            )
+            print(savepath)
             self.event.get_gracedb(
                 "coinc.xml",
-                os.path.abspath(
-                    os.path.join(
-                        self.event.repository.directory, self.category, "coinc.xml"
-                    ),
-                ),
+                savepath,
             )
             coinc = self.event.repository.find_coincfile(self.category)
             return coinc
