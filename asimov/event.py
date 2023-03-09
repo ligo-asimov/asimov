@@ -402,7 +402,7 @@ class Event:
         destination : str
            The location in the repository for this file.
         """
-
+        
         if "gid" in self.meta:
             gid = self.meta["gid"]
         else:

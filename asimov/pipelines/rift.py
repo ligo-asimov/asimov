@@ -34,6 +34,7 @@ class Rift(Pipeline):
     def __init__(self, production, category=None):
         super(Rift, self).__init__(production, category)
         self.logger = logger
+        self.logger.info("Using the RIFT pipeline")
         if not production.pipeline.lower() == "rift":
             raise PipelineException
 
@@ -248,7 +249,7 @@ class Rift(Pipeline):
             print(" ".join(command))
 
         else:
-            self.logger.info(" ".join(command), production=self.production)
+            self.logger.info(" ".join(command))
 
             with set_directory(self.production.event.work_dir):
                 pipe = subprocess.Popen(
