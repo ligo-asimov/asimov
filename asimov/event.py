@@ -958,8 +958,10 @@ class Production:
             self.logger.info("Could not find a coinc.xml file")
             self.event.get_gracedb(
                 "coinc.xml",
-                os.path.join(
-                    self.category, "coinc.xml"
+                os.path.abspath(
+                    os.path.join(
+                        self.event.repository.location, self.category, "coinc.xml"
+                    ),
                 ),
             )
             coinc = self.event.repository.find_coincfile(self.category)
