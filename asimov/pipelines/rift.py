@@ -65,7 +65,10 @@ class Rift(Pipeline):
         self.production.meta["job id"] = int(cluster)
         self.production.status = "processing"
 
-    def before_submit(self, dryrun=False):
+    def before_submit(self):
+        pass
+        
+    def before_build(self, dryrun=False):
         """
         Convert the text-based PSD to an XML psd if the xml doesn't exist already.
         """
@@ -134,6 +137,7 @@ class Rift(Pipeline):
 
 
         """
+        self.before_build()
         cwd = os.getcwd()
         if self.production.event.repository:
             self.logger.info("Checking for existence of coinc file in event repository")
