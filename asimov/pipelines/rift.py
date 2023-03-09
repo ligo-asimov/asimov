@@ -68,7 +68,7 @@ class Rift(Pipeline):
     def before_submit(self):
         pass
         
-    def before_build(self, dryrun=False):
+    def before_config(self, dryrun=False):
         """
         Convert the text-based PSD to an XML psd if the xml doesn't exist already.
         """

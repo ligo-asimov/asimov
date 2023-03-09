@@ -257,6 +257,9 @@ class BayesWave(Pipeline):
                         self.production.meta["quality"]["supress"][ifo]["lower"],
                         self.production.meta["quality"]["supress"][ifo]["upper"],
                     )
+
+        self.production.meta.update(self.collect_assets())
+                    
         self.production.status = "uploaded"
 
     def before_submit(self):

@@ -109,6 +109,12 @@ class Pipeline:
         """
         pass
 
+    def before_config(self, dryrun=False):
+        """
+        Define a hook to run before the config file for the pipeline is generated.
+        """
+        pass
+    
     def before_submit(self, dryrun=False):
         """
         Define a hook to run before the DAG file is generated and submitted.

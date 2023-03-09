@@ -80,6 +80,7 @@ def build(event, dryrun):
                     else:
                         # path.mkdir(parents=True, exist_ok=True)
                         config_loc = os.path.join(f"{production.name}.ini")
+                        production.pipeline.before_config()
                         production.make_config(config_loc, dryrun=dryrun)
                         click.echo(f"Production config {production.name} created.")
                         try:
