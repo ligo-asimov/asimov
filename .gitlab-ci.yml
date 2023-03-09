@@ -101,28 +101,6 @@ test-python-310:
     - python setup.py install
     - python -m unittest discover tests/
 
-# GW150914 Real Data Test:
-#   stage: end-to-end testing
-#   image: python:3.10
-#   allow_failure: true
-#   script:
-#     - git config --global user.email "you@example.com"
-#     - git config --global user.name "Your Name"
-#     - pip install -r requirements.txt
-#     - pip install coverage
-#     - python setup.py install
-#     - pip install unittest-xml-reporting
-#     - pip install .
-#     - mkdir new-project
-#     - cd new-project
-#     - asimov init "new project"
-#     - asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/defaults/testing-pe.yaml
-#     - asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml
-#     - asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/events/gwtc-2-1/GW150914_095045.yaml
-#     - asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/analyses/production-default.yaml -e GW150914_095045
-#     - asimov manage build
-#     - asimov manage submit --dryrun
-
 # Build docs for multiple code versions
 pages:
   stage: build
@@ -140,8 +118,8 @@ pages:
     - public
   only:
   - master
-  - /^preview-.*/
-  - /^release-.*/
+  - /^v.*-preview/
+  - /^v.*-release/
 
 wheel-36:
   image: python:3.6
