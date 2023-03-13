@@ -331,9 +331,11 @@ def monitor(ctx, event, update, dry_run, chain):
 
         # Post-monitor hooks
         discovered_hooks = entry_points(group="asimov.hooks.postmonitor")
+        print("Checking for hooks")
         for hook in discovered_hooks:
-            if hook.name in ledger.meta["hooks"]["postmonitor"]:
-                hook(ledger).run()
+            print("Running hooks!")
+            if hook.name in ledger.data["hooks"]["postmonitor"]:
+                hook.load()(ledger).run()
 
         if chain:
             ctx.invoke(report.html)
