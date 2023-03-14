@@ -100,11 +100,8 @@ def apply_page(file, event, ledger=ledger):
 
 def apply_via_plugin(event, hookname, **kwargs):
     discovered_hooks = entry_points(group="asimov.hooks.applicator")
-    print("Checking for hooks")
     for hook in discovered_hooks:
-        print("Running hooks!")
         if hook.name in hookname:
-            print(f"Found {hookname}!")
             hook.load()(ledger).run(event)
 
 
@@ -116,7 +113,7 @@ def apply_via_plugin(event, hookname, **kwargs):
     help="The event which the ledger items should be applied to (e.g. for analyses)",
     default=None,
 )
-@click.option("--plugin", "-p", help="The plugin to use to apply this data")
+@click.option("--plugin", "-p", help="The plugin to use to apply this data", default=None)
 def apply(file, event, plugin):
     if plugin:
         apply_via_plugin(event, hookname=plugin)
