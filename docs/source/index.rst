@@ -177,6 +177,7 @@ Developers' Guide
 	     
    ledger   
    pipelines-dev
+   hooks
 
    building-docs
    
