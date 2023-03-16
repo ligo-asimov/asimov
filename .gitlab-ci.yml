@@ -171,14 +171,13 @@ include:
 include:
 - template: Security/Secret-Detection.gitlab-ci.yml
 
-# deploy:wheel:
-#   stage: deploy
-#   script:
-#     - pip install twine
-#     - twine upload dist/*
-#   only:
-#     #- master@daniel-williams/minke
-#     - tags
-#   # except:
-#   #   - pushes
-#   #   - web
+deploy:wheel:
+  stage: deploy
+  script:
+    - pip install twine
+    - twine upload --non-interactive --skip-existing dist/*
+  rules:
+    - if: $CI_COMMIT_TAG
+  release:
+    tag_name: '$CI_COMMIT_TAG'
+    description: '$CI_COMMIT_TAG'
