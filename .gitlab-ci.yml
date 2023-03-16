@@ -73,7 +73,7 @@ test-python-38:
 
 test-python-39:
   stage: test
-  image: python:3.10
+  image: python:3.9
   script:
     - git config --global user.email "you@example.com"
     - git config --global user.name "Your Name"
