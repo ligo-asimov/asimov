@@ -259,7 +259,7 @@ class Event:
 
         self.productions.append(production)
         self.graph.add_node(production)
-
+        
         if production.dependencies:
             dependencies = production.dependencies
             dependencies = [
@@ -605,7 +605,7 @@ class Production:
             )
 
         # Update with the event and project defaults
-        self.meta = update(self.meta, self.event.meta)
+        self.meta = update(self.meta, deepcopy(self.event.meta))
         if "productions" in self.meta:
             self.meta.pop("productions")
 
@@ -828,7 +828,7 @@ class Production:
             dictionary["priors"] = self.meta["priors"]
         if "waveform" in self.meta:
             dictionary["waveform"] = self.meta["waveform"]
-
+        dictionary['needs'] = self.dependencies
             
         for key, value in self.meta.items():
             if key == "operations":

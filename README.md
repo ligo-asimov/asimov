@@ -27,20 +27,6 @@ export FLASK_APP=server
 flask run
 ```
 
-## Branch notes
-
-These notes relate to in-development features on this branch, and what's described here is only expected to be relevant during development.
-More generally useful documentation will move to the main documentation before moving to production.
-
-### Starting the logging server
-
-Run in ``asimov`` directory:
-
-```
-export FLASK_APP=server
-flask run
-```
-
 ## Features
 
 ### Job monitoring and management
@@ -77,7 +63,6 @@ It can be installed by running
 ```
 $ pip install asimov
 ```
-
 It is also available on conda, and can be installed by running
 ```
 $ conda install -c conda-forge ligo-asimov
@@ -115,6 +100,7 @@ We'll download the default configurations for jobs which are going to be run on 
 We do this using the `asimov apply` command, which pulls-in data from a file either locally or online.
 
 ```
+
 $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml
 ```
 and the load default priors the same way:

@@ -55,5 +55,4 @@ class DAGTests(unittest.TestCase):
 
         apply_page(file = f"{self.cwd}/tests/test_data/test_complex_dag.yaml", event='GW150914_095045', ledger=self.ledger)
         event = self.ledger.get_event('GW150914_095045')[0]
-
         self.assertEqual(len(event.get_all_latest()), 2)
