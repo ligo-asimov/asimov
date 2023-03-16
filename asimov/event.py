@@ -826,6 +826,10 @@ class Production:
             dictionary["quality"] = self.meta["quality"]
         if "priors" in self.meta:
             dictionary["priors"] = self.meta["priors"]
+        if "waveform" in self.meta:
+            dictionary["waveform"] = self.meta["waveform"]
+
+            
         for key, value in self.meta.items():
             if key == "operations":
                 continue
