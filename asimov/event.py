@@ -829,6 +829,7 @@ class Production:
         if "waveform" in self.meta:
             dictionary["waveform"] = self.meta["waveform"]
         dictionary['needs'] = self.dependencies
+        dictionary['job id'] = self.job_id
             
         for key, value in self.meta.items():
             if key == "operations":
