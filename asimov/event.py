@@ -829,7 +829,6 @@ class Production:
         for key, value in self.meta.items():
             if key == "operations":
                 continue
-            output[self.name][key] = value
         if "repository" in self.meta:
             dictionary["repository"] = self.repository.url
         if "ledger" in dictionary:
