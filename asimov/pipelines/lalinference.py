@@ -191,6 +191,8 @@ class LALInference(Pipeline):
         PipelineException
            This will be raised if the pipeline fails to submit the job.
         """
+        if not dryrun:
+            os.chdir(self.production.rundir)
 
         with set_directory(self.production.rundir):
 

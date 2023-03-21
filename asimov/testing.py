@@ -6,6 +6,10 @@ This module contains the factory classes for other asimov tests.
 import unittest
 from asimov import current_ledger as ledger
 
+    def tearDown(self):
+        os.chdir(self.cwd)
+        shutil.rmtree(f"{self.cwd}/tests/tmp/")
+
 
 class AsimovTest(unittest.TestCase):
     """

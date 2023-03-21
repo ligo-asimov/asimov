@@ -109,7 +109,7 @@ class BayesWave(Pipeline):
             ini.save()
 
             ini = ini.ini_loc
-
+            
         else:
             ini = f"{self.production.name}.ini"
 
@@ -145,12 +145,10 @@ class BayesWave(Pipeline):
         ]
 
         self.logger.info(" ".join(command))
-
         if dryrun:
             print(" ".join(command))
             self.logger.info(" ".join(command))
         else:
-
             pipe = subprocess.Popen(
                 command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
             )
@@ -314,6 +312,8 @@ class BayesWave(Pipeline):
             f"bwave/{self.production.event.name}/{self.production.name}",
             f"{self.production.name}.dag",
         ]
+        
+        self.logger.info((" ".join(command)))
 
         if dryrun:
             print(" ".join(command))
@@ -380,6 +380,27 @@ class BayesWave(Pipeline):
                     self.production.name,
                     file=asset,
                     new_name=f"{detector}-{sample_rate}-psd.dat",
+                )
+            except Exception as e:
+                self.logger.error(
+                    f"There was a problem committing the PSD for {detector} to the store."
+                )
+                self.logger.exception(e)
+
+    def store_assets(self):
+        """
+        Add the assets to the store.
+        """
+
+        sample_rate = self.production.meta["quality"]["sample-rate"]
+        for detector, asset in self.collect_assets()["psds"]:
+            store = Store(root=config.get("storage", "directory"))
+            try:
+                store.add_file(
+                    self.production.event.name,
+                    self.production.name,
+                    file=asset,
+                    new_name=f"{detector}-{sample_rate}-psd.dat"
                 )
             except Exception as e:
                 self.logger.error(

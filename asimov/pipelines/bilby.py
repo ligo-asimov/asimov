@@ -99,9 +99,6 @@ class Bilby(Pipeline):
                 event_type = "bbh"
                 self.production.meta["event type"] = event_type
 
-                if self.production.event.issue_object:
-                    self.production.event.issue_object.update_data()
-
             if template is None:
                 template_filename = f"{event_type}.prior.template"
                 self.logger.info(
@@ -117,6 +114,11 @@ class Bilby(Pipeline):
                     template = resource_filename(
                         "asimov", f"priors/{template_filename}"
                     )
+
+            priors = {}
+            priors = update(priors, self.production.event.ledger.data["priors"])
+            priors = update(priors, self.production.event.meta["priors"])
+            priors = update(priors, self.production.meta["priors"])
 
             priors = {}
             priors = update(priors, self.production.event.ledger.data["priors"])
@@ -177,6 +179,8 @@ class Bilby(Pipeline):
         cwd = os.getcwd()
 
         self.logger.info(f"Working in {cwd}")
+
+        self._determine_prior()  # Build the prior file
 
         self._determine_prior()  # Build the prior file
 
@@ -296,28 +300,34 @@ class Bilby(Pipeline):
                     command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
                 )
 
-                self.logger.info(" ".join(command))
+                with set_directory(self.rundir):
 
-                stdout, stderr = dagman.communicate()
-
-                if "submitted to cluster" in str(stdout):
-                    cluster = re.search(
-                        r"submitted to cluster ([\d]+)", str(stdout)
-                    ).groups()[0]
-                    self.logger.info(
-                        f"Submitted successfully. Running with job id {int(cluster)}"
+                    dagman = subprocess.Popen(
+                        command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
                     )
-                    self.production.status = "running"
-                    self.production.job_id = int(cluster)
-                    return cluster, PipelineLogger(stdout)
-                else:
-                    self.logger.error("Could not submit the job to the cluster")
-                    self.logger.info(stdout)
-                    self.logger.error(stderr)
 
-                    raise PipelineException(
-                        "The DAG file could not be submitted.",
-                    )
+                    self.logger.info(" ".join(command))
+
+                    stdout, stderr = dagman.communicate()
+
+                    if "submitted to cluster" in str(stdout):
+                        cluster = re.search(
+                            r"submitted to cluster ([\d]+)", str(stdout)
+                        ).groups()[0]
+                        self.logger.info(
+                            f"Submitted successfully. Running with job id {int(cluster)}"
+                        )
+                        self.production.status = "running"
+                        self.production.job_id = int(cluster)
+                        return cluster, PipelineLogger(stdout)
+                    else:
+                        self.logger.error("Could not submit the job to the cluster")
+                        self.logger.info(stdout)
+                        self.logger.error(stderr)
+
+                        raise PipelineException(
+                            "The DAG file could not be submitted.",
+                        )
 
         except FileNotFoundError as error:
             self.logger.exception(error)
