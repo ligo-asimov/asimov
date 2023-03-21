@@ -644,7 +644,53 @@ class GravitationalWaveTransient(SimpleAnalysis):
         self._checks()
         
         self.psds = self._set_psds()
+        self.xml_psds = self._collect_psds(format="xml")
 
+    def _collect_psds(self, format="ascii"):
+        """
+        Collect the required psds for this production.
+        """
+        psds = {}
+        # If the PSDs are specifically provided in the ledger,
+        # use those.
+
+        if format=="ascii":
+            keyword = "psds"
+        elif format=="xml":
+            keyword = "xml psds"
+        
+        if keyword in self.meta:
+            if self.meta["likelihood"]["sample rate"] in self.meta[keyword]:
+                psds = self.meta[keyword][self.meta["likelihood"]["sample rate"]]
+
+        # First look through the list of the job's dependencies
+        # to see if they're provided by a job there.
+        elif self.dependencies:
+            productions = {}
+            for production in self.event.productions:
+                productions[production.name] = production
+
+            for previous_job in self.dependencies:
+                try:
+                    # Check if the job provides PSDs as an asset and were produced with compatible settings
+                    if keyword in productions[previous_job].pipeline.collect_assets():
+                        if self._check_compatible(productions[previous_job]):
+                            psds = productions[previous_job].pipeline.collect_assets()[
+                                keyword
+                            ]
+                    else:
+                        psds = {}
+                except Exception:
+                    psds = {}
+        # Otherwise return no PSDs
+        else:
+            psds = {}
+
+        for ifo, psd in psds.items():
+            self.logger.debug(f"PSD-{ifo}: {psd}")
+
+        return psds
+        
     def _add_missing_parameters(self):
         for parameter in {"quality", "waveform", "likelihood"}:
             if not parameter in self.meta:

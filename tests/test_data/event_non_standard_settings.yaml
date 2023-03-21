@@ -8,6 +8,10 @@ quality:
     H1: 62
     L1: 92
     V1: 62
+  state vector:
+    H1: Test
+    L1: Test
+    V1: Test
 
 interferometers:
   - H1

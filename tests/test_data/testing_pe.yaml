@@ -11,7 +11,10 @@ quality:
     H1: 20
     L1: 20
     V1: 20
-
+  state vector:
+    H1: Test
+    L1: Test
+    V1: Test
 # Pipeline settings
 
 pipelines:
