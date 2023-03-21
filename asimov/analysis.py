@@ -804,19 +804,26 @@ class GravitationalWaveTransient(SimpleAnalysis):
         super().__init__(subject, name, pipeline, **kwargs)
         self._add_missing_parameters()
         self._checks()
+        
+        self.psds = self._set_psds()
+        self.xml_psds = self._collect_psds(format="xml")
 
-        self.psds = self._collect_psds()
-
-    def _collect_psds(self):
+    def _collect_psds(self, format="ascii"):
         """
         Collect the required psds for this production.
         """
         psds = {}
         # If the PSDs are specifically provided in the ledger,
         # use those.
-        if "psds" in self.meta:
-            if self.meta["likelihood"]["sample rate"] in self.meta["psds"]:
-                psds = self.meta["psds"][self.meta["likelihood"]["sample rate"]]
+
+        if format=="ascii":
+            keyword = "psds"
+        elif format=="xml":
+            keyword = "xml psds"
+        
+        if keyword in self.meta:
+            if self.meta["likelihood"]["sample rate"] in self.meta[keyword]:
+                psds = self.meta[keyword][self.meta["likelihood"]["sample rate"]]
 
         # First look through the list of the job's dependencies
         # to see if they're provided by a job there.
@@ -828,9 +835,11 @@ class GravitationalWaveTransient(SimpleAnalysis):
             for previous_job in self.dependencies:
                 try:
                     # Check if the job provides PSDs as an asset and were produced with compatible settings
-                    if "psds" in previous_job.pipeline.collect_assets():
-                        if self._check_compatible(previous_job):
-                            psds = previous_job.pipeline.collect_assets()["psds"]
+                    if keyword in productions[previous_job].pipeline.collect_assets():
+                        if self._check_compatible(productions[previous_job]):
+                            psds = productions[previous_job].pipeline.collect_assets()[
+                                keyword
+                            ]
                     else:
                         psds = {}
                 except Exception:
