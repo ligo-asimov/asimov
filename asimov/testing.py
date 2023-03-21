@@ -12,7 +12,6 @@ from asimov import current_ledger as ledger
 from asimov.cli.project import make_project
 from asimov.ledger import YAMLLedger
 
-
 class AsimovTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -32,7 +31,6 @@ class AsimovTestCase(unittest.TestCase):
     def tearDown(self):
         os.chdir(self.cwd)
         shutil.rmtree(f"{self.cwd}/tests/tmp/")
-
 
 class AsimovTest(unittest.TestCase):
     """
