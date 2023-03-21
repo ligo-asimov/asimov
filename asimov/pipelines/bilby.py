@@ -302,32 +302,32 @@ class Bilby(Pipeline):
 
                 with set_directory(self.rundir):
 
-                dagman = subprocess.Popen(
-                    command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-                )
-
-                self.logger.info(" ".join(command))
-
-                stdout, stderr = dagman.communicate()
-
-                if "submitted to cluster" in str(stdout):
-                    cluster = re.search(
-                        r"submitted to cluster ([\d]+)", str(stdout)
-                    ).groups()[0]
-                    self.logger.info(
-                        f"Submitted successfully. Running with job id {int(cluster)}"
+                    dagman = subprocess.Popen(
+                        command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
                     )
-                    self.production.status = "running"
-                    self.production.job_id = int(cluster)
-                    return cluster, PipelineLogger(stdout)
-                else:
-                    self.logger.error("Could not submit the job to the cluster")
-                    self.logger.info(stdout)
-                    self.logger.error(stderr)
 
-                    raise PipelineException(
-                        "The DAG file could not be submitted.",
-                    )
+                    self.logger.info(" ".join(command))
+
+                    stdout, stderr = dagman.communicate()
+
+                    if "submitted to cluster" in str(stdout):
+                        cluster = re.search(
+                            r"submitted to cluster ([\d]+)", str(stdout)
+                        ).groups()[0]
+                        self.logger.info(
+                            f"Submitted successfully. Running with job id {int(cluster)}"
+                        )
+                        self.production.status = "running"
+                        self.production.job_id = int(cluster)
+                        return cluster, PipelineLogger(stdout)
+                    else:
+                        self.logger.error("Could not submit the job to the cluster")
+                        self.logger.info(stdout)
+                        self.logger.error(stderr)
+
+                        raise PipelineException(
+                            "The DAG file could not be submitted.",
+                        )
 
         except FileNotFoundError as error:
             self.logger.exception(error)
