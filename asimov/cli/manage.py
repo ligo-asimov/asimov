@@ -9,6 +9,7 @@ import click
 from asimov import current_ledger as ledger
 import asimov
 from asimov import LOGGER_LEVEL
+from asimov import condor
 from asimov.event import DescriptionException
 from asimov.pipeline import PipelineException
 
