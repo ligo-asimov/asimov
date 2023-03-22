@@ -420,9 +420,9 @@ class BayesWave(Pipeline):
         """
         psds = {}
         for det in self.production.meta["interferometers"]:
-            asset = os.path.join(
-                self.production.rundir, "post", "clean", f"glitch_median_PSD_forLI_{det}.dat"
-            )
+            asset = glob.glob(os.path.join(
+                results_dir, "trigtime*", "post", "clean", f"glitch_median_PSD_forLI_{det}.dat"
+            ))
             if os.path.exists(asset):
                 psds[det] = asset
 
