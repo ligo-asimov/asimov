@@ -32,7 +32,7 @@ from asimov.cli import (  # NoQA
 @click.pass_context
 def olivaw(ctx):
     """
-    This is the main program which runs the DAGs for each event issue.
+    This is the main olivaw program which runs the DAGs for each event issue.
     """
 
     # Check that we're running in an actual asimov project
