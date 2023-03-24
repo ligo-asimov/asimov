@@ -1,13 +1,5 @@
-.. _installation-guide:
-
 Installing Asimov
 =================
-
-There are lots of ways of installing ``asimov``, and the best way of getting access to it depends both on your local setup, and on whether you have access to IGWN computing resources.
-``asimov`` was initially designed for use in analysing gravitational wave detector data, and so some of the information in this manual will be aimed directly at users from that background.
-
-Installation using ``pip``
---------------------------
 
 There are lots of ways of installing ``asimov``, and the best way of getting access to it depends both on your local setup, and on whether you have access to IGWN computing resources.
 ``asimov`` was initially designed for use in analysing gravitational wave detector data, and so some of the information in this manual will be aimed directly at users from that background.

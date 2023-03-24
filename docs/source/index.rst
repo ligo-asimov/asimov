@@ -1,6 +1,3 @@
-:page_template: homepage.html
-
-
 .. raw:: html
 	 
 	 <div class="px-4 py-5 my-5 text-center">
@@ -125,16 +122,16 @@ Users' guide
 
 .. toctree::
    :maxdepth: 2
-   :caption: 📚 Users' guide
+   :caption: Users' guide
 
    getting-started
    installation
-   user-guide/projects
-   user-guide/events
-   user-guide/productions
-   user-guide/running
-   user-guide/monitoring
-   user-guide/reporting
+   olivaw/projects
+   olivaw/events
+   olivaw/productions
+   olivaw/running
+   olivaw/monitoring
+   olivaw/reporting
    storage
    olivaw/review
    
@@ -154,10 +151,7 @@ Advanced topics
 .. toctree::
    :maxdepth: 2
    :caption: Advanced topics
-
-   analyses
-   build-process
-   
+	     
    configuration
    test-interface
    clusters
@@ -171,35 +165,21 @@ Developers' Guide
    contributing.rst
    code-of-conduct.rst
 
-   
    asimov-repository
-
-   code-overview
-	     
+   
    ledger   
    pipelines-dev
-
-   building-docs
    
-Python API
-----------
+Module documentation
+--------------------
 
 .. toctree::
    :maxdepth: 1
-   :caption: Python API
+   :caption: Modules
 
-   api/asimov
-   api/condor
-   api/event
    api/git
-   api/gitlab
-   api/ini
-   api/ledger
-   api/locutus
-   api/logging
-   api/mattermost
-   api/olivaw
-   api/pipeline
+   state
+   pipelines
    config
 	     
 Indices and tables

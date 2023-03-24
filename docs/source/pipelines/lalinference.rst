@@ -1,5 +1,3 @@
-.. _lalinference-pipelines:
-
 LALInference Pipelines
 ======================
 
@@ -9,11 +7,8 @@ While LALInference has been largely superseded by newer sampling techniques it c
 Review status
 -------------
 
-.. warning::
-
-   **v0.4.0**
-     The integration with LALInference has been deprecated.
-     It *must not* be used for collaboration parameter estimation analyses.
+.. note::
+   The current integration with LALInference is fully reviewed and is suitable for use in collaboration analyses. 
 
 Examples
 --------
