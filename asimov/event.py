@@ -822,6 +822,10 @@ class Production:
 
         dictionary["review"] = self.review.to_dicts()
 
+        if "data" in self.meta:
+            dictionary["data"] = self.meta["data"]
+        if "likelihood" in self.meta:
+            dictionary["likelihood"] = self.meta["likelihood"]
         if "quality" in self.meta:
             dictionary["quality"] = self.meta["quality"]
         if "priors" in self.meta:
