@@ -1,5 +1,3 @@
-.. _storage:
-
 =================
 Storage Interface
 =================
