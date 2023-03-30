@@ -41,20 +41,6 @@ export FLASK_APP=server
 flask run
 ```
 
-## Branch notes
-
-These notes relate to in-development features on this branch, and what's described here is only expected to be relevant during development.
-More generally useful documentation will move to the main documentation before moving to production.
-
-### Starting the logging server
-
-Run in ``asimov`` directory:
-
-```
-export FLASK_APP=server
-flask run
-```
-
 ## Features
 
 ### Job monitoring and management
@@ -101,12 +87,6 @@ Asimov also requires that you have `git` installed on your machine, and that you
   git config --global user.email "you@example.com"
   git config --global user.name "Your Name"
 ```
-
-It is also available on conda, and can be installed by running
-```
-$ conda install -c conda-forge ligo-asimov
-```
-
 
 ## Get started
 
@@ -158,34 +138,6 @@ $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/analyses/productio
 ```
 Note that if you omit the `-e` argument asimov will ask which event the analyses should be applied to.
 
-
-You can now build and submit your jobs to the cluster.
-First use `asimov manage build` to create the configuration files for each analysis:
-```
-$ asimov manage build
-```
-These will be added to the git repositories in the `checkouts` directory inside the project directory.
-You then submit the jobs to the cluster by running
-```
-$ asimov manage submit
-```
-
-It will normally take a long time for a parameter estimation job to finish, but you can get asimov to check up on it by running
-```
-$ asimov monitor
-```
-If the job is finished `asimov` will start post-processing using `PESummary`, and if it's fallen over it will attempt to fix the problem and resubmit it to the cluster.
-If the post-processing has finished it will move the results to a read-only directory.
-
-You can also set the asimov monitor to automatically check the status of the job every 15 minutes by running 
-```
-$ asimov start
-```
-which will automatically start any post-processing, and start any jobs once their dependencies are met.
-You can stop this automatic monitoring process any time by running
-```
-$ asimov stop
-```
 
 You can now build and submit your jobs to the cluster.
 First use `asimov manage build` to create the configuration files for each analysis:
