@@ -11,7 +11,11 @@ quality:
     H1: 20
     L1: 20
     V1: 20
-
+  quality:
+    state vector:
+      L1: L1:DCS-CALIB_STATE_VECTOR_C01
+      H1: H1:DCS-CALIB_STATE_VECTOR_C01
+      V1: V1:DQ_ANALYSIS_STATE_VECTOR
 # Pipeline settings
 
 pipelines:
