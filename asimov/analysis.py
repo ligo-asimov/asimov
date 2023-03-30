@@ -404,6 +404,7 @@ class SimpleAnalysis(Analysis):
            The event name is not included in the representation, and the production name is provided as a key.
         """
         dictionary = {}
+        dictionary = update(dictionary, self.meta)
         if not event:
             dictionary["event"] = self.event.name
             dictionary["name"] = self.name
@@ -508,6 +509,8 @@ class SubjectAnalysis(Analysis):
            The event name is not included in the representation, and the production name is provided as a key.
         """
         dictionary = {}
+        dictionary = update(dictionary, self.meta)
+
         if not event:
             dictionary["event"] = self.event.name
             dictionary["name"] = self.name
@@ -662,6 +665,8 @@ class ProjectAnalysis(Analysis):
            The event name is not included in the representation, and the production name is provided as a key.
         """
         dictionary = {}
+        dictionary = update(dictionary, self.meta)
+
         dictionary['name'] = self.name
         dictionary["status"] = self.status
         if isinstance(self.pipeline, str):
