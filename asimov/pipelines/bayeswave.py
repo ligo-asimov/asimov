@@ -403,7 +403,7 @@ class BayesWave(Pipeline):
         Add the assets to the store.
         """
 
-        sample_rate = self.production.meta["quality"]["sample-rate"]
+        sample_rate = self.production.meta["likelihood"]["sample rate"]
         for detector, asset in self.collect_assets()["psds"]:
             store = Store(root=config.get("storage", "directory"))
             try:
@@ -481,7 +481,7 @@ class BayesWave(Pipeline):
         (Updated for asimov by Daniel Williams - November 2020
         """
         store = Store(root=config.get("storage", "directory"))
-        sample_rate = self.production.meta["quality"]["sample-rate"]
+        sample_rate = self.production.meta["likelihood"]["sample rate"]
         orig_PSD_file = np.genfromtxt(
             os.path.join(
                 self.production.event.repository.directory,
