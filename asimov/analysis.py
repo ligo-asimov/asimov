@@ -376,11 +376,20 @@ class SimpleAnalysis(Analysis):
             self.status_str = "none"
 
         self.meta = deepcopy(self.meta_defaults)
+
+        # Start by adding pipeline defaults
+        if "pipelines" in self.event.ledger.data:
+            if pipeline in self.event.ledger.data["pipelines"]:
+                self.meta = update(self.meta, deepcopy(self.event.ledger.data["pipelines"][pipeline]))
+
+        if "postprocessing" in self.event.ledger.data:
+            self.meta["postprocessing"] = deepcopy(
+                self.event.ledger.data["postprocessing"]
+            )
+
         self.meta = update(self.meta, deepcopy(self.subject.meta))
         if "productions" in self.meta:
-           self.meta.pop("productions")
-        # if "needs" in self.meta:
-        #    self.meta.pop("needs")
+            self.meta.pop("productions")
 
         self.meta = update(self.meta, deepcopy(kwargs))
         self.pipeline = pipeline.lower()
@@ -758,13 +767,7 @@ class ProjectAnalysis(Analysis):
             dictionary["review"] = self.review.to_dicts()
 
         dictionary['needs'] = self.dependencies
-            
-        if "quality" in self.meta:
-            dictionary["quality"] = self.meta["quality"]
-        if "priors" in self.meta:
-            dictionary["priors"] = self.meta["priors"]
-        for key, value in self.meta.items():
-            dictionary[key] = value
+
         if "repository" in self.meta:
             dictionary["repository"] = self.repository.url
         if "ledger" in dictionary:
