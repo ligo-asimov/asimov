@@ -843,6 +843,17 @@ class GravitationalWaveTransient(SimpleAnalysis):
 
         return psds
 
+    def _check_compatible(self, other_production):
+        """
+        Check that the data settings in two productions are sufficiently compatible
+        that one can be used as a dependency of the other.
+        """
+        compatible = True
+
+        #compatible = self.meta["likelihood"] == other_production.meta["likelihood"]
+        #compatible = self.meta["data"] == other_production.meta["data"]
+        return compatible
+    
     def _add_missing_parameters(self):
         for parameter in {"quality", "waveform", "likelihood"}:
             if parameter not in self.meta:
