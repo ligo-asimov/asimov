@@ -727,11 +727,9 @@ class GravitationalWaveTransient(SimpleAnalysis):
             for previous_job in self.dependencies:
                 try:
                     # Check if the job provides PSDs as an asset and were produced with compatible settings
-                    if "psds" in productions[previous_job].pipeline.collect_assets():
+                    if "psds" in previous_job.pipeline.collect_assets():
                         if self._check_compatible(productions[previous_job]):
-                            psds = productions[previous_job].pipeline.collect_assets()[
-                                "psds"
-                            ]
+                            psds = previous_job.pipeline.collect_assets()["psds"]
                     else:
                         psds = {}
                 except Exception:
@@ -745,6 +743,17 @@ class GravitationalWaveTransient(SimpleAnalysis):
 
         return psds
 
+    def _check_compatible(self, other_production):
+        """
+        Check that the data settings in two productions are sufficiently compatible
+        that one can be used as a dependency of the other.
+        """
+        compatible = True
+
+        #compatible = self.meta["likelihood"] == other_production.meta["likelihood"]
+        #compatible = self.meta["data"] == other_production.meta["data"]
+        return compatible
+    
     def _add_missing_parameters(self):
         for parameter in {"quality", "waveform", "likelihood"}:
             if not parameter in self.meta:
