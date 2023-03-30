@@ -40,6 +40,21 @@ from asimov.storage import Store
 from .review import Review
 from .ini import RunConfiguration
 
+status_map = {
+    "cancelled": "light",
+    "finished": "success",
+    "uploaded": "success",
+    "processing": "primary",
+    "running": "primary",
+    "stuck": "warning",
+    "restart": "secondary",
+    "ready": "secondary",
+    "wait": "light",
+    "stop": "danger",
+    "manual": "light",
+    "stopped": "light",
+}
+
 class Analysis:
     """
     The base class for all other types of analysis.
@@ -287,6 +302,57 @@ class Analysis:
 
         with open(filename, "w") as output_file:
             output_file.write(rendered)
+
+    def build_report(self):
+        if self.pipeline:
+            self.pipeline.build_report()
+
+    def html(self):
+        """
+        An HTML representation of this production.
+        """
+        production = self
+
+        card = ""
+
+        card += f"<div class='asimov-analysis asimov-analysis-{self.status}'>"
+        card += f"<h4>{self.name}"
+
+        if self.comment:
+            card += (
+                f"""  <small class="asimov-comment text-muted">{self.comment}</small>"""
+            )
+        card += "</h4>"
+        if self.status:
+            card += f"""<p class="asimov-status">
+  <span class="badge badge-pill badge-{status_map[self.status]}">{self.status}</span>
+</p>"""
+
+        if self.pipeline:
+            card += f"""<p class="asimov-pipeline-name">{self.pipeline.name}</p>"""
+
+        if self.pipeline:
+            # self.pipeline.collect_pages()
+            card += self.pipeline.html()
+
+        if self.rundir:
+            card += f"""<p class="asimov-rundir"><code>{production.rundir}</code></p>"""
+        else:
+            card += """&nbsp;"""
+
+        if "approximant" in production.meta:
+            card += f"""<p class="asimov-attribute">Waveform approximant:
+   <span class="asimov-approximant">{production.meta['approximant']}</span>
+</p>"""
+
+        card += """&nbsp;"""
+        card += """</div>"""
+
+        if len(self.review) > 0:
+            for review in self.review:
+                card += review.html()
+
+        return card
 
 
 class SimpleAnalysis(Analysis):
@@ -628,7 +694,6 @@ class ProjectAnalysis(Analysis):
         output = dictionary
         
         return output
-
     
 class GravitationalWaveTransient(SimpleAnalysis):
     """
