@@ -118,8 +118,6 @@ pages:
     - public
   only:
   - master
-  - /^v.*-preview/
-  - /^v.*-release/
 
 wheel-36:
   image: python:3.6
