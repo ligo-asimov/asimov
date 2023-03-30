@@ -224,7 +224,7 @@ class Bilby(Pipeline):
                     command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
                 )
 
-                with set_directory(self.rundir):
+                with set_directory(self.production.rundir):
 
                     dagman = subprocess.Popen(
                         command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
