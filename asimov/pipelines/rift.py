@@ -12,7 +12,7 @@ from asimov import config, logger
 from asimov.utils import set_directory
 
 from asimov.pipeline import Pipeline, PipelineException, PipelineLogger
-from asimov.pipeline import PESummaryPipeline
+from asimov.pipelines.pesummary import PESummary
 
 
 class Rift(Pipeline):
@@ -59,7 +59,7 @@ class Rift(Pipeline):
     def after_completion(self):
 
         self.logger.info("Job has completed. Running PE Summary.")
-        post_pipeline = PESummaryPipeline(production=self.production)
+        post_pipeline = PESummary(production=self.production)
         cluster = post_pipeline.submit_dag()
 
         self.production.meta["job id"] = int(cluster)
