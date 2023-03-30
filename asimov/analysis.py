@@ -804,20 +804,15 @@ class GravitationalWaveTransient(SimpleAnalysis):
         """
         # Check that the upper frequency is included, otherwise calculate it
         
-        if self.quality:
-            if ("high-frequency" not in self.quality) and (
-                "sample-rate" in self.quality
+        if "quality" in self.meta:
+            if ("maximum frequency" not in self.meta["quality"]) and (
+                "sample rate" in self.meta["likelihood"]
             ):
+                self.meta["quality"]["maximum frequency"] = {}
                 # Account for the PSD roll-off with the 0.875 factor
-                self.meta["quality"]["high-frequency"] = int(
-                    0.875 * self.meta["quality"]["sample-rate"] / 2
-                )
-            elif ("high-frequency" in self.quality) and ("sample-rate" in self.quality):
-                if self.meta["quality"]["high-frequency"] != int(
-                    0.875 * self.meta["quality"]["sample-rate"] / 2
-                ):
-                    warn(
-                        "The upper-cutoff frequency is not equal to 0.875 times the Nyquist frequency."
+                for ifo in self.meta["interferometers"]:
+                    self.meta["quality"]["maximum frequency"][ifo] = int(
+                        0.875 * self.meta["likelihood"]["sample rate"] / 2
                     )
 
     @property
@@ -837,24 +832,6 @@ class GravitationalWaveTransient(SimpleAnalysis):
             return ifos[0]
         else:
             return "".join(ifos[:2])
-
-    def _set_psds(self):
-        """
-        Return the PSDs stored for this transient event.
-        """
-        if "psds" in self.meta and self.quality:
-            if self.quality["sample-rate"] in self.meta["psds"]:
-                self.psds = self.meta["psds"][self.quality["sample-rate"]]
-            else:
-                self.psds = {}
-        else:
-            self.psds = {}
-
-        for ifo, psd in self.psds.items():
-            if self.subject.repository:
-                self.psds[ifo] = os.path.join(self.subject.repository.directory, psd)
-            else:
-                self.psds[ifo] = psd
 
     def get_timefile(self):
         """
