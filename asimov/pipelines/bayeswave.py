@@ -398,27 +398,6 @@ class BayesWave(Pipeline):
                 )
                 self.logger.exception(e)
 
-    def store_assets(self):
-        """
-        Add the assets to the store.
-        """
-
-        sample_rate = self.production.meta["likelihood"]["sample rate"]
-        for detector, asset in self.collect_assets()["psds"]:
-            store = Store(root=config.get("storage", "directory"))
-            try:
-                store.add_file(
-                    self.production.event.name,
-                    self.production.name,
-                    file=asset,
-                    new_name=f"{detector}-{sample_rate}-psd.dat"
-                )
-            except Exception as e:
-                self.logger.error(
-                    f"There was a problem committing the PSD for {detector} to the store."
-                )
-                self.logger.exception(e)
-
     def collect_logs(self):
         """
         Collect all of the log files which have been produced by this production and
