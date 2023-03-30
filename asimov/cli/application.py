@@ -11,6 +11,7 @@ from asimov import LOGGER_LEVEL, logger
 import asimov.event
 from asimov.analysis import ProjectAnalysis
 from asimov import current_ledger as ledger
+from asimov.ledger import Ledger
 from asimov.utils import update
 
 import sys
@@ -87,6 +88,51 @@ def apply_page(file, event=None, ledger=ledger):
                 )
                 logger.exception(e)
 
+        elif document['kind'].lower() == "postprocessing":
+            # Handle a project analysis
+            logger.info("Found a postprocessing description")
+            document.pop("kind")
+            if event:
+                event_s = event
+
+            if event:
+                try:
+                    event_o = ledger.get_event(event_s)[0]
+                    level = event_o
+                except KeyError as e:
+                    click.echo(
+                        click.style("●", fg="red")
+                        + f" Could not apply postprocessing, couldn't find the event {event}"
+                    )
+                    logger.exception(e)
+            else:
+                level = ledger
+            try:
+                if document['name'] in level.postprocessing:
+                    click.echo(
+                        click.style("●", fg="red")
+                        + f" Could not apply postprocessing, as {document['name']} is already in the ledger."
+                )
+                    logger.error(f" Could not apply postprocessing, as {document['name']} is already in the ledger.")
+                else:
+                    if isinstance(level, asimov.event.Event):
+                        level.meta['postprocessing'][document['name']] = document
+                    elif isinstance(level, Ledger):
+                        level.data['postprocessing'][document['name']] = document
+                        level.name = "the project"
+                    click.echo(
+                        click.style("●", fg="green")
+                        + f" Successfully added {document['name']} to {level.name}."
+                    )
+                    logger.info(f"Added {document['name']}")
+            except ValueError as e:
+                click.echo(
+                    click.style("●", fg="red")
+                    + f" Could not apply {document['name']} to project as "
+                    + "a post-process already exists with this name"
+                )
+                logger.exception(e)
+                
         elif document['kind'].lower() == "projectanalysis":
             # Handle a project analysis
             logger.info("Found a project analysis")

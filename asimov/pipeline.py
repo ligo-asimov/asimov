@@ -486,3 +486,152 @@ class PESummaryPipeline(PostPipeline):
             cluster_id = 0
 
         return cluster_id
+
+class PostPipeline:
+    """This class describes post processing pipelines which are a
+    class of pipelines which can be run on multiple analyses for a
+    subject.
+
+    Postprocessing pipelines take the results of analyses and run
+    additional steps on them, and unlike a normal analysis they are
+    not immutable, and can be re-run each time a new analyis is
+    completed which satisfies the conditions of the postprocessing
+    job.
+
+    """
+    style = "multiplex"
+    def __init__(self, subject, **kwargs):
+        """
+        Post processing pipeline factory class.
+        
+        """
+        self.subject = subject
+        #self.category = category if category else production.category
+        self.logger = logger
+        #self.meta = self.production.meta["postprocessing"][self.name.lower()]
+        self.meta = kwargs
+
+
+        self.outputs = os.path.join(
+            config.get("project", "root"),
+            config.get("general", "webroot"),
+            self.subject.name,
+        )
+        if self.style == "simplex":
+            self.outputs = os.path.join(self.outputs, self.analyses[0].name)
+        
+    def _process_analyses(self):
+        """
+        Process the analysis list for this production.
+
+        The dependencies can be provided either as the name of an analysis,
+        or a query against the analysis's attributes.
+
+        Parameters
+        ----------
+        needs : list
+           A list of all the analyses which this should be applied to
+
+        Returns
+        -------
+        list
+           A list of all the analysis specifiations processed for evaluation.
+        """
+        all_requirements = []
+        for need in self.meta['analyses']:
+            try:
+                requirement = need.split(":")
+                requirement = [requirement[0].split("."), requirement[1]]
+            except IndexError:
+                requirement = [["name"], need]
+            all_requirements.append(requirement)
+            
+        analyses = []
+        if self.meta['analyses']:
+            matches = set(self.subject.analyses)
+            for attribute, match in all_requirements:
+                filtered_analyses = list(filter(lambda x: x.matches_filter(attribute, match), self.subject.analyses))
+                matches = set.intersection(matches, set(filtered_analyses))
+                for analysis in matches:
+                    analyses.append(analysis)
+        return analyses
+
+    @property
+    def current_list(self):
+        """
+        Return the list of analyses which are included in the current results.
+        """
+        if "current list" in self.meta:
+            return self.meta['current list']
+        else:
+            return []
+
+    @current_list.setter
+    def current_list(self, data):
+        """
+        Return the list of analyses which are included in the current results.
+        """
+        self.meta['current list'] = data
+        self.ledger.save()
+        
+    @property
+    def fresh(self):
+        """
+        Check if the post-processing job is fresh.
+        
+        Tries to work out if any of the samples which should have been
+        included for post-processing are newer than the most recent
+        files produced by this job.  If they are all older then the
+        results are fresh, otherwise they are stale, and the
+        post-processing will need to run again.
+
+        Returns
+        -------
+        bool
+           If the job is fresh True is returned.
+           Otherwise False.
+        """
+        analysis_status = 0
+        # Check if there are any finished analyses
+        finished = []
+        for analysis in self.analyses:
+            if analysis.finished:
+                finished.append(analysis)
+        if len(finished) > 0:
+            try:
+                for analysis in self.analyses:
+                    self._check_ages(
+                        analysis.pipeline.samples(),
+                        self.results().values(),
+                    )
+            except AssertionError:
+                return False
+            return True
+        else:
+            return True
+
+    def _check_ages(self, listA, listB):
+        """
+        Check that the ages of all the samples from listA are younger than all the files from listB.
+        """
+        
+        for sample in listA:
+            for comparison in listB:
+                assert os.stat(sample).st_mtime < os.stat(comparison).st_mtime
+        
+    @property
+    def analyses(self):
+        """
+        Return a list of productions which this pipeline should apply to.
+
+        Post-processing pipelines can either apply to individual
+        analyses, or to a subset of all the analyses on a given
+        subject.  This property returns a list of all the productions
+        which this pipeline will be applied to.
+
+        Returns
+        -------
+        list
+           A list of all analyses which the pipeline will be applied to.
+        """
+        return self._process_analyses()
