@@ -641,8 +641,47 @@ class GravitationalWaveTransient(SimpleAnalysis):
         super().__init__(subject, name, pipeline, **kwargs)
         self._add_missing_parameters()
         self._checks()
-        
-        self.psds = self._set_psds()
+
+        self.psds = self._collect_psds()
+
+    def _collect_psds(self):
+        """
+        Collect the required psds for this production.
+        """
+        psds = {}
+        # If the PSDs are specifically provided in the ledger,
+        # use those.
+        if "psds" in self.meta:
+            if self.meta["likelihood"]["sample rate"] in self.meta["psds"]:
+                psds = self.meta["psds"][self.meta["likelihood"]["sample rate"]]
+
+        # First look through the list of the job's dependencies
+        # to see if they're provided by a job there.
+        elif self.dependencies:
+            productions = {}
+            for production in self.event.productions:
+                productions[production.name] = production
+
+            for previous_job in self.dependencies:
+                try:
+                    # Check if the job provides PSDs as an asset and were produced with compatible settings
+                    if "psds" in productions[previous_job].pipeline.collect_assets():
+                        if self._check_compatible(productions[previous_job]):
+                            psds = productions[previous_job].pipeline.collect_assets()[
+                                "psds"
+                            ]
+                    else:
+                        psds = {}
+                except Exception:
+                    psds = {}
+        # Otherwise return no PSDs
+        else:
+            psds = {}
+
+        for ifo, psd in psds.items():
+            self.logger.debug(f"PSD-{ifo}: {psd}")
+
+        return psds
 
     def _add_missing_parameters(self):
         for parameter in {"quality", "waveform", "likelihood"}:
@@ -663,20 +702,15 @@ class GravitationalWaveTransient(SimpleAnalysis):
         """
         # Check that the upper frequency is included, otherwise calculate it
         
-        if self.quality:
-            if ("high-frequency" not in self.quality) and (
-                "sample-rate" in self.quality
+        if "quality" in self.meta:
+            if ("maximum frequency" not in self.meta["quality"]) and (
+                "sample rate" in self.meta["likelihood"]
             ):
+                self.meta["quality"]["maximum frequency"] = {}
                 # Account for the PSD roll-off with the 0.875 factor
-                self.meta["quality"]["high-frequency"] = int(
-                    0.875 * self.meta["quality"]["sample-rate"] / 2
-                )
-            elif ("high-frequency" in self.quality) and ("sample-rate" in self.quality):
-                if self.meta["quality"]["high-frequency"] != int(
-                    0.875 * self.meta["quality"]["sample-rate"] / 2
-                ):
-                    warn(
-                        "The upper-cutoff frequency is not equal to 0.875 times the Nyquist frequency."
+                for ifo in self.meta["interferometers"]:
+                    self.meta["quality"]["maximum frequency"][ifo] = int(
+                        0.875 * self.meta["likelihood"]["sample rate"] / 2
                     )
 
     @property
@@ -696,24 +730,6 @@ class GravitationalWaveTransient(SimpleAnalysis):
             return ifos[0]
         else:
             return "".join(ifos[:2])
-
-    def _set_psds(self):
-        """
-        Return the PSDs stored for this transient event.
-        """
-        if "psds" in self.meta and self.quality:
-            if self.quality["sample-rate"] in self.meta["psds"]:
-                self.psds = self.meta["psds"][self.quality["sample-rate"]]
-            else:
-                self.psds = {}
-        else:
-            self.psds = {}
-
-        for ifo, psd in self.psds.items():
-            if self.subject.repository:
-                self.psds[ifo] = os.path.join(self.subject.repository.directory, psd)
-            else:
-                self.psds[ifo] = psd
 
     def get_timefile(self):
         """
