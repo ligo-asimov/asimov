@@ -142,7 +142,7 @@ class Pipeline:
         specific pipeline implementation if required.
         """
         self.production.status = "finished"
-        self.production.meta.pop("job id")
+        #self.production.meta.pop("job id")
 
         for pipeline in self.production.meta['postprocessing']:
             print(pipeline)
