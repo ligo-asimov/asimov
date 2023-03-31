@@ -421,7 +421,7 @@ def monitor(ctx, event, update, dry_run, chain):
                 "The event also has these analyses which are waiting on other analyses to complete:"
             )
             for production in others:
-                needs = ", ".join(production.meta["needs"])
+                needs = ", ".join(production.dependencies)
                 click.echo(f"\t{production.name} which needs {needs}")
 
         # Post-monitor hooks
