@@ -728,7 +728,7 @@ class GravitationalWaveTransient(SimpleAnalysis):
                 try:
                     # Check if the job provides PSDs as an asset and were produced with compatible settings
                     if "psds" in previous_job.pipeline.collect_assets():
-                        if self._check_compatible(productions[previous_job]):
+                        if self._check_compatible(previous_job):
                             psds = previous_job.pipeline.collect_assets()["psds"]
                     else:
                         psds = {}
@@ -762,10 +762,6 @@ class GravitationalWaveTransient(SimpleAnalysis):
         for parameter in {"marginalization"}:
             if not parameter in self.meta['likelihood']:
                 self.meta['likelihood'][parameter] = {}
-
-        for parameter in {"maximum frequency"}:
-            if not parameter in self.meta['quality']:
-                self.meta['quality'][parameter] = {}
         
     def _checks(self):
         """
