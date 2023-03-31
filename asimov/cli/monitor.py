@@ -375,5 +375,8 @@ def monitor(ctx, event, update, dry_run, chain):
                 needs = ", ".join(production.meta["needs"])
                 click.echo(f"\t{production.name} which needs {needs}")
 
+        for postprocess in event.postprocesses:
+            pass
+                
         if chain:
             ctx.invoke(report.html)

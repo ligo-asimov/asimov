@@ -132,6 +132,14 @@ class Pipeline:
         self.production.status = "finished"
         self.production.meta.pop("job id")
 
+        for pipeline in self.production.meta['postprocessing']:
+            print(pipeline)
+        
+        #post_pipeline = PESummary(production=self.production, subject=self.production.subject)
+        # cluster = post_pipeline.submit_dag()
+        # self.production.meta["job id"] = int(cluster)
+
+
     def collect_assets(self):
         """
         Add the various analysis assets from the run directory to the git repository.
