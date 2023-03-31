@@ -9,6 +9,7 @@ import logging
 from asimov import condor, config, logger, LOGGER_LEVEL
 from asimov import current_ledger as ledger
 from asimov.cli import ACTIVE_STATES, manage, report
+from asimov.pipelines import known_pipelines
 
 logger = logger.getChild("cli").getChild("monitor")
 logger.setLevel(LOGGER_LEVEL)
