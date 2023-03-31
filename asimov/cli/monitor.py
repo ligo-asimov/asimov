@@ -6,6 +6,7 @@ import click
 from asimov import condor, config, logger, LOGGER_LEVEL
 from asimov import current_ledger as ledger
 from asimov.cli import ACTIVE_STATES, manage, report
+from asimov.pipelines import known_pipelines
 
 logger = logger.getChild("cli").getChild("monitor")
 logger.setLevel(LOGGER_LEVEL)
@@ -375,8 +376,11 @@ def monitor(ctx, event, update, dry_run, chain):
                 needs = ", ".join(production.meta["needs"])
                 click.echo(f"\t{production.name} which needs {needs}")
 
-        for postprocess in event.postprocesses:
-            pass
+        for name, settings in production.meta['postprocessing']:
+            print(known_pipelines[name](production,
+                                        event,
+                                        settings))
+
                 
         if chain:
             ctx.invoke(report.html)
