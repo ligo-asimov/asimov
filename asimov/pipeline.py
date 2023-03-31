@@ -13,6 +13,8 @@ import htcondor  # NoQA
 from asimov import utils  # NoQA
 from asimov import config, logger, logging, LOGGER_LEVEL  # NoQA
 
+from asimov.pipelines import known_pipelines # NoQA
+
 import otter  # NoQA
 from .storage import Store  # NoQA
 
@@ -133,8 +135,8 @@ class Pipeline:
         #self.production.meta.pop("job id")
 
         for name, settings in self.production.meta['postprocessing']:
-            print(known_pipelines[name](production=self.production,
-                                        subject=self.production.subject,
+            print(known_pipelines[name](self.production,
+                                        self.production.subject,
                                         settings))
         
         #post_pipeline = PESummary(production=self.production, subject=self.production.subject)
