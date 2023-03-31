@@ -343,7 +343,7 @@ def monitor(ctx, event, update, dry_run, chain):
                                 + f" {production.name} has finished and post-processing"
                                 + f" is stuck ({production.job_id})"
                             )
-                            production.meta["postprocessing"]["status"] = "stuck"
+                            #production.meta["postprocessing"]["status"] = "stuck"
                     elif (
                         pipe.detect_completion()
                         and production.status.lower() == "processing"
@@ -421,7 +421,7 @@ def monitor(ctx, event, update, dry_run, chain):
                 "The event also has these analyses which are waiting on other analyses to complete:"
             )
             for production in others:
-                needs = ", ".join(production.dependencies)
+                needs = ", ".join(production._needs)
                 click.echo(f"\t{production.name} which needs {needs}")
 
         # Post-monitor hooks
