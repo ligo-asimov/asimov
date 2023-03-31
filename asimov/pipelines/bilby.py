@@ -352,6 +352,7 @@ class Bilby(Pipeline):
         ) + glob.glob(os.path.join(rundir, "result", "*_merge*_result.json"))
 
     def after_completion(self):
+        super().after_completion()
         #post_pipeline = PESummary(production=self.production, subject=self.production.subject)
         self.logger.info("Job has completed. Running PE Summary.")
         # cluster = post_pipeline.submit_dag()
