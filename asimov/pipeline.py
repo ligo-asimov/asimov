@@ -144,8 +144,10 @@ class Pipeline:
         self.production.status = "finished"
         #self.production.meta.pop("job id")
 
-        for pipeline in self.production.meta['postprocessing']:
-            print(pipeline)
+        for name, settings in self.production.meta['postprocessing']:
+            print(known_pipelines[name](production=self.production,
+                                        subject=self.production.subject,
+                                        settings))
         
         #post_pipeline = PESummary(production=self.production, subject=self.production.subject)
         # cluster = post_pipeline.submit_dag()
