@@ -216,7 +216,7 @@ def monitor(ctx, event, update, dry_run, chain):
                             + click.style("●", "green")
                             + f" {production.name} is postprocessing (condor id: {production.job_id})"
                         )
-                        production.meta["postprocessing"]["status"] = "running"
+                        #production.meta["postprocessing"]["status"] = "running"
 
                     elif job.status.lower() == "running":
                         click.echo(
@@ -300,7 +300,7 @@ def monitor(ctx, event, update, dry_run, chain):
                                 + f" {production.name} has finished and post-processing"
                                 + f" is stuck ({production.job_id})"
                             )
-                            production.meta["postprocessing"]["status"] = "stuck"
+                            #production.meta["postprocessing"]["status"] = "stuck"
                     elif (
                         pipe.detect_completion()
                         and production.status.lower() == "processing"
@@ -373,13 +373,11 @@ def monitor(ctx, event, update, dry_run, chain):
                 "The event also has these analyses which are waiting on other analyses to complete:"
             )
             for production in others:
-                needs = ", ".join(production.dependencies)
+                needs = ", ".join(production._needs)
                 click.echo(f"\t{production.name} which needs {needs}")
 
-        for name, settings in production.meta['postprocessing']:
-            print(known_pipelines[name](production,
-                                        event,
-                                        settings))
+        for name, settings in production.meta['postprocessing'].items():
+            print(known_pipelines[name](event, **settings))
 
                 
         if chain:
