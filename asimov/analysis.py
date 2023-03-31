@@ -782,6 +782,7 @@ class GravitationalWaveTransient(SimpleAnalysis):
                     self.meta["quality"]["maximum frequency"][ifo] = int(
                         0.875 * self.meta["likelihood"]["sample rate"] / 2
                     )
+                self.event.ledger.update_event(self.event)
 
     @property
     def quality(self):
