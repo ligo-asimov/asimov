@@ -62,32 +62,45 @@ class PESummary(PostPipeline):
         Run PESummary on the results of this job.
         """
 
-        psds = {ifo: os.path.abspath(psd) for ifo, psd in self.production.psds.items()}
+        command = []
+        analyses = self.analyses
+        
+        for production in self.analyses:
 
-        calibration = [
-            os.path.abspath(os.path.join(self.production.repository.directory, cal))
-            if not cal[0] == "/"
-            else cal
-            for cal in self.production.meta["data"]["calibration"].values()
-        ]
+            label = str(production.name)
+            
+            psds = {ifo: os.path.abspath(psd) for ifo, psd in self.production.psds.items()}
+            
+            # PSDs
+            command += [f"--{label}_psd"]
+            for key, value in psds.items():
+                command += [f"{key}:{value}"]
+
+            # Calibration
+            calibration = [
+                os.path.abspath(os.path.join(self.production.repository.directory, cal))
+                if not cal[0] == "/"
+                else cal
+                for cal in self.production.meta["data"]["calibration"].values()
+            ]
+            command += [f"--{label}_calibration"]
+            command += calibration
+
+            
         configfile = self.production.event.repository.find_prods(
             self.production.name, self.category
         )[0]
         if os.path.exists(self.outputs):
-            command = ["--add_to_existing", self.outputs]
+            command += ["--add_to_existing", self.outputs]
         else:
-            command = ["--webdir", self.outputs]
+            command += ["--webdir", self.outputs]
 
         command += [
-            "--labels",
-            self.production.name,
             "--gw",
-            "--approximant",
-            self.production.meta["waveform"]["approximant"],
-            "--f_low",
-            str(min(self.production.meta["quality"]["minimum frequency"].values())),
-            "--f_ref",
-            str(self.production.meta["waveform"]["reference frequency"]),
+            "--labels", " ".join([analysis.name for analysis in analyses]),
+            "--approximant", " ".join([analysis.meta["waveform"]["approximant"] for analysis in analyses]),
+            "--f_low", " ".join([min(analysis.meta["quality"]["minimum frequency"].values()), for analysis in analyses]),
+            "--f_ref", " ".join([min(analysis.meta["waveform"]["reference frequency"].values()), for analysis in analyses]),
         ]
 
         if "cosmology" in self.meta:
@@ -129,17 +142,10 @@ class PESummary(PostPipeline):
         ]
         # Samples
         command += ["--samples"]
-        command += self.production.pipeline.samples(absolute=True)
-        # Calibration information
-        command += ["--calibration"]
-        command += calibration
-        # PSDs
-        command += ["--psd"]
-        for key, value in psds.items():
-            command += [f"{key}:{value}"]
+        command += " ".join([analysis.pipeline.samples(absolute=True) for analysis in self.analyses])
 
-        with utils.set_directory(self.production.rundir):
-            with open(f"{self.production.name}_pesummary.sh", "w") as bash_file:
+        with utils.set_directory(self.subject.work_dir):
+            with open("pesummary.sh", "w") as bash_file:
                 bash_file.write(
                     f"{config.get('pesummary', 'executable')} " + " ".join(command)
                 )
