@@ -347,6 +347,14 @@ class PostPipeline:
         )
         if self.style == "simplex":
             self.outputs = os.path.join(self.outputs, self.analyses[0].name)
+
+    def __repr__(self):
+        output = """"""
+        output +=  "Asimov postprocessing pipeline"
+        output += f"{self.name}"
+        output += f"""Currently contains: {" ,".join(self.current_list)}"""
+        output += f"""Designed to contain: {" ,".join(self.analyses)}"""
+        output += f"""Is fresh?: {self.fresh}"""
         
     def _process_analyses(self):
         """
