@@ -376,7 +376,7 @@ def monitor(ctx, event, update, dry_run, chain):
                 needs = ", ".join(production._needs)
                 click.echo(f"\t{production.name} which needs {needs}")
 
-        for name, settings in production.meta['postprocessing'].items():
+        for name, settings in ledger.data['postprocessing'].items():
             print(known_pipelines[name](event, **settings))
 
                 
