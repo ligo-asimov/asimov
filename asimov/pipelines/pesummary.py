@@ -21,7 +21,7 @@ class PESummary(PostPipeline):
     """
     A postprocessing pipeline add-in using PESummary.
     """
-    executable = "summarypages"
+    executable = os.path.join(config.get("pipelines", "environment"), "bin", "summarypages")
     name = "PESummary"
     style = "multiplex"
     
