@@ -477,8 +477,8 @@ class PostPipeline:
         """
         return self._process_analyses()
 
-    def run(self):
+    def run(self, dryrun=False):
         """
         Run all of the steps required to build and submit this pipeline.
         """
-        self.submit_dag()
+        self.submit_dag(dryrun=dryrun)
