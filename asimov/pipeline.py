@@ -349,6 +349,7 @@ class PostPipeline:
             self.outputs = os.path.join(self.outputs, self.analyses[0].name)
 
     def __repr__(self):
+        output += ""
         output +=  "-------------------------------------------------------" + "\n"
         output +=  "Asimov postprocessing pipeline" + "\n"
         output += f"{self.name}" + "\n"
@@ -436,7 +437,7 @@ class PostPipeline:
             if analysis.finished:
                 finished.append(analysis)
         if len(finished) > 0:
-            if not os.path.exists(self.results()):
+            if not all([os.path.exists(result) for result in self.results()]):
                 return False
             try:
                 for analysis in self.analyses:
