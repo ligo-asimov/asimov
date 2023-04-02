@@ -493,4 +493,16 @@ class PostPipeline:
         """
         Run all of the steps required to build and submit this pipeline.
         """
-        self.submit_dag(dryrun=dryrun)
+        cluster = self.submit_dag(dryrun=dryrun)
+        
+        self.meta['job id'] = cluster
+        self.meta['status'] = "running"
+        self.ledger.save()
+
+    @property
+    def status(self):
+        return self.meta['status']
+
+    @property
+    def job_id(self):
+        return self.meta['job id']
