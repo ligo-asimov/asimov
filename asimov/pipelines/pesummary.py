@@ -87,9 +87,8 @@ class PESummary(PostPipeline):
             command += calibration
 
         if os.path.exists(self.outputs):
-            command += ["--add_to_existing", self.outputs]
-        else:
-            command += ["--webdir", self.outputs]
+            command += ["--add_to_existing"]
+        command += ["--webdir", self.outputs]
 
         command += [
             "--gw",
