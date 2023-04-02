@@ -349,7 +349,7 @@ class PostPipeline:
             self.outputs = os.path.join(self.outputs, self.analyses[0].name)
 
     def __repr__(self):
-        output += ""
+        output = ""
         output +=  "-------------------------------------------------------" + "\n"
         output +=  "Asimov postprocessing pipeline" + "\n"
         output += f"{self.name}" + "\n"
