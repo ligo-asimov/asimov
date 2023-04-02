@@ -367,6 +367,7 @@ class PostPipeline:
         output += f"""Currently contains: {" ,".join(self.current_list)}"""
         output += f"""Designed to contain: {" ,".join(self.analyses)}"""
         output += f"""Is fresh?: {self.fresh}"""
+        return output
         
     def _process_analyses(self):
         """
