@@ -493,4 +493,7 @@ class PostPipeline:
 
     @property
     def job_id(self):
-        return self.meta['job id']
+        if "job id" in self.meta:
+            return self.meta['job id']
+        else:
+            return None
