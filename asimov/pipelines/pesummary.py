@@ -21,7 +21,7 @@ class PESummary(PostPipeline):
     """
     A postprocessing pipeline add-in using PESummary.
     """
-
+    executable = "summarypages"
     name = "PESummary"
     style = "multiplex"
     
@@ -95,8 +95,8 @@ class PESummary(PostPipeline):
             "--gw",
             "--labels", " ".join([analysis.name for analysis in analyses]),
             "--approximant", " ".join([analysis.meta["waveform"]["approximant"] for analysis in analyses]),
-            "--f_low", " ".join([min(analysis.meta["quality"]["minimum frequency"].values()) for analysis in analyses]),
-            "--f_ref", " ".join([min(analysis.meta["waveform"]["reference frequency"].values()) for analysis in analyses]),
+            "--f_low", " ".join([str(min(analysis.meta["quality"]["minimum frequency"].values())) for analysis in analyses]),
+            "--f_ref", " ".join([str(analysis.meta["waveform"]["reference frequency"].values()) for analysis in analyses]),
         ]
 
         if "cosmology" in self.meta:
@@ -120,7 +120,7 @@ class PESummary(PostPipeline):
             if "backwards" in self.meta["evolve spins"]:
                 command += ["--evolve_spins_backwards", "precession_averaged"]
 
-        if "nrsur" in self.production.meta["waveform"]["approximant"].lower():
+        if any(["nrsur" in production.meta["waveform"]["approximant"].lower() for production in analyses]):
             command += ["--NRSur_fits"]
 
         if "multiprocess" in self.meta:
@@ -140,18 +140,17 @@ class PESummary(PostPipeline):
             )]
         # Samples
         command += ["--samples"]
-        command += " ".join([analysis.pipeline.samples(absolute=True) for analysis in self.analyses])
+        samples = [analysis.pipeline.samples(absolute=True)[0] for analysis in self.analyses]
+        command += samples
 
         with utils.set_directory(self.subject.work_dir):
             with open("pesummary.sh", "w") as bash_file:
                 bash_file.write(
-                    f"{config.get('pesummary', 'executable')} " + " ".join(command)
+                    f"{self.executable} " + " ".join(command)
                 )
 
         self.logger.info(
-            f"PE summary command: {config.get('pesummary', 'executable')} {' '.join(command)}",
-            production=self.production,
-            channels=["file"],
+            f"PE summary command: {self.executable} {' '.join(command)}",
         )
 
         if dryrun:
@@ -160,15 +159,15 @@ class PESummary(PostPipeline):
             print(command)
 
         submit_description = {
-            "executable": config.get("pesummary", "executable"),
+            "executable": self.executable,
             "arguments": " ".join(command),
             "accounting_group": self.meta["accounting group"],
-            "output": f"{self.production.rundir}/pesummary.out",
-            "error": f"{self.production.rundir}/pesummary.err",
-            "log": f"{self.production.rundir}/pesummary.log",
+            "output": f"{self.subject.work_dir}/pesummary.out",
+            "error": f"{self.subject.work_dir}/pesummary.err",
+            "log": f"{self.subject.work_dir}/pesummary.log",
             "request_cpus": self.meta["multiprocess"],
             "getenv": "true",
-            "batch_name": f"PESummary/{self.production.event.name}/{self.production.name}",
+            "batch_name": f"Summary Pages/{self.subject.name}",
             "request_memory": "8192MB",
             "should_transfer_files": "YES",
             "request_disk": "8192MB",
