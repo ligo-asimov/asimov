@@ -362,11 +362,13 @@ class PostPipeline:
 
     def __repr__(self):
         output = """"""
-        output +=  "Asimov postprocessing pipeline"
-        output += f"{self.name}"
-        output += f"""Currently contains: {" ,".join(self.current_list)}"""
-        output += f"""Designed to contain: {" ,".join(self.analyses)}"""
-        output += f"""Is fresh?: {self.fresh}"""
+        output +=  "-------------------------------------------------------"
+        output +=  "Asimov postprocessing pipeline\n"
+        output += f"{self.name}\n"
+        output += f"""Currently contains: {" ,\n             ".join(self.current_list)}\n"""
+        output += f"""Designed to contain: {" ,              ".join(self.analyses)}\n"""
+        output += f"""Is fresh?: {self.fresh}\n"""
+        output +=  "-------------------------------------------------------"
         return output
         
     def _process_analyses(self):
@@ -447,6 +449,8 @@ class PostPipeline:
             if analysis.finished:
                 finished.append(analysis)
         if len(finished) > 0:
+            if not os.path.exists(self.results()):
+                return False
             try:
                 for analysis in self.analyses:
                     self._check_ages(
