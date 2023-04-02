@@ -96,7 +96,7 @@ class PESummary(PostPipeline):
             "--labels", " ".join([analysis.name for analysis in analyses]),
             "--approximant", " ".join([analysis.meta["waveform"]["approximant"] for analysis in analyses]),
             "--f_low", " ".join([str(min(analysis.meta["quality"]["minimum frequency"].values())) for analysis in analyses]),
-            "--f_ref", " ".join([str(analysis.meta["waveform"]["reference frequency"].values()) for analysis in analyses]),
+            "--f_ref", " ".join([str(analysis.meta["waveform"]["reference frequency"]) for analysis in analyses]),
         ]
 
         if "cosmology" in self.meta:
