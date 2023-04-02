@@ -349,16 +349,15 @@ class PostPipeline:
             self.outputs = os.path.join(self.outputs, self.analyses[0].name)
 
     def __repr__(self):
-        output = """"""
-        output +=  "-------------------------------------------------------"
-        output +=  "Asimov postprocessing pipeline\n"
-        output += f"{self.name}\n"
-        output += f"""Currently contains: {" ,\n             ".join(self.current_list)}\n"""
-        output += f"""Designed to contain: {" ,              ".join(self.analyses)}\n"""
-        output += f"""Is fresh?: {self.fresh}\n"""
-        output +=  "-------------------------------------------------------"
+        output +=  "-------------------------------------------------------" + "\n"
+        output +=  "Asimov postprocessing pipeline" + "\n"
+        output += f"{self.name}" + "\n"
+        output += f"""Currently contains: {(chr(10)+"                    ").join(self.current_list)}""" + "\n"
+        output += f"""Designed to contain: {(chr(10)+"                     ").join([analysis.name for analysis in self.analyses])}""" + "\n"
+        output += f"""Is fresh?: {self.fresh}""" + "\n"
+        output +=  "-------------------------------------------------------" + "\n"
         return output
-        
+
     def _process_analyses(self):
         """
         Process the analysis list for this production.
@@ -476,3 +475,9 @@ class PostPipeline:
            A list of all analyses which the pipeline will be applied to.
         """
         return self._process_analyses()
+
+    def run(self):
+        """
+        Run all of the steps required to build and submit this pipeline.
+        """
+        self.submit_dag()

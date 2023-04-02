@@ -377,8 +377,10 @@ def monitor(ctx, event, update, dry_run, chain):
                 click.echo(f"\t{production.name} which needs {needs}")
 
         for name, settings in ledger.data['postprocessing'].items():
-            print(known_pipelines[name](event, **settings))
-
+           pipe = known_pipelines[name](event, **settings)
+           print(pipe)
+           if not pipe.fresh:
+               pipe.run()
                 
         if chain:
             ctx.invoke(report.html)
