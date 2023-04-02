@@ -69,7 +69,7 @@ class PESummary(PostPipeline):
 
             label = str(production.name)
             
-            psds = {ifo: os.path.abspath(psd) for ifo, psd in self.production.psds.items()}
+            psds = {ifo: os.path.abspath(psd) for ifo, psd in production.psds.items()}
             
             # PSDs
             command += [f"--{label}_psd"]
@@ -78,18 +78,14 @@ class PESummary(PostPipeline):
 
             # Calibration
             calibration = [
-                os.path.abspath(os.path.join(self.production.repository.directory, cal))
+                os.path.abspath(os.path.join(production.repository.directory, cal))
                 if not cal[0] == "/"
                 else cal
-                for cal in self.production.meta["data"]["calibration"].values()
+                for cal in production.meta["data"]["calibration"].values()
             ]
             command += [f"--{label}_calibration"]
             command += calibration
 
-            
-        configfile = self.production.event.repository.find_prods(
-            self.production.name, self.category
-        )[0]
         if os.path.exists(self.outputs):
             command += ["--add_to_existing", self.outputs]
         else:
@@ -99,8 +95,8 @@ class PESummary(PostPipeline):
             "--gw",
             "--labels", " ".join([analysis.name for analysis in analyses]),
             "--approximant", " ".join([analysis.meta["waveform"]["approximant"] for analysis in analyses]),
-            "--f_low", " ".join([min(analysis.meta["quality"]["minimum frequency"].values()), for analysis in analyses]),
-            "--f_ref", " ".join([min(analysis.meta["waveform"]["reference frequency"].values()), for analysis in analyses]),
+            "--f_low", " ".join([min(analysis.meta["quality"]["minimum frequency"].values()) for analysis in analyses]),
+            "--f_ref", " ".join([min(analysis.meta["waveform"]["reference frequency"].values()) for analysis in analyses]),
         ]
 
         if "cosmology" in self.meta:
@@ -134,12 +130,14 @@ class PESummary(PostPipeline):
             command += ["--regenerate", " ".join(self.meta["regenerate posteriors"])]
 
         # Config file
-        command += [
-            "--config",
-            os.path.join(
-                self.production.event.repository.directory, self.category, configfile
-            ),
-        ]
+        command += ["--config"]
+        for production in analyses:
+            configfile = production.event.repository.find_prods(
+                production.name, production.category
+            )[0]
+            command += [os.path.join(
+                production.event.repository.directory, production.category, configfile
+            )]
         # Samples
         command += ["--samples"]
         command += " ".join([analysis.pipeline.samples(absolute=True) for analysis in self.analyses])
