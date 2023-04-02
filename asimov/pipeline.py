@@ -423,7 +423,7 @@ class PostPipeline:
         Return the list of analyses which are included in the current results.
         """
         self.meta['current list'] = data
-        self.ledger.save()
+        ledger.save()
         
     @property
     def fresh(self):
@@ -494,10 +494,10 @@ class PostPipeline:
         Run all of the steps required to build and submit this pipeline.
         """
         cluster = self.submit_dag(dryrun=dryrun)
-        
+        self.current_list = [analysis for analysis in self.analyses if analysis.finished]
         self.meta['job id'] = cluster
         self.meta['status'] = "running"
-        self.ledger.save()
+        ledger.save()
 
     @property
     def status(self):
