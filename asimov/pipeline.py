@@ -12,6 +12,7 @@ import htcondor  # NoQA
 
 from asimov import utils  # NoQA
 from asimov import config, logger, logging, LOGGER_LEVEL  # NoQA
+from asimov import current_ledger as ledger
 
 import otter  # NoQA
 from .storage import Store  # NoQA
