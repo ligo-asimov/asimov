@@ -435,5 +435,11 @@ def monitor(ctx, event, update, dry_run, chain):
                         except Exception:
                             pass
 
+        for name, settings in ledger.data['postprocessing'].items():
+           pipe = known_pipelines[name](event, **settings)
+           print(pipe)
+           if not pipe.fresh:
+               pipe.run()
+
         if chain:
             ctx.invoke(report.html)
