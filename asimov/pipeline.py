@@ -416,7 +416,7 @@ class PostPipeline:
         """
         Return the list of analyses which are included in the current results.
         """
-        self.meta['current list'] = data
+        self.meta['current list'] = [analysis.name for analysis in data]
         if self.ledger:
             self.ledger.save()
         
