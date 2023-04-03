@@ -444,7 +444,7 @@ class PostPipeline:
             if analysis.finished:
                 finished.append(analysis)
         if len(finished) > 0:
-            if not all([os.path.exists(result) for result in self.results()]):
+            if not all([os.path.exists(result) for result in self.results().values()]):
                 return False
             try:
                 for analysis in self.analyses:
