@@ -502,7 +502,7 @@ class PostPipeline:
         output = {}
         output.update(deepcopy(self.meta))
         output.pop("ledger")
-        output['pipeline'] = output['pipeline'].name
+        output['pipeline'] = self.name
         return output
             
     @property
