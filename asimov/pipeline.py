@@ -12,7 +12,6 @@ import htcondor  # NoQA
 
 from asimov import utils  # NoQA
 from asimov import config, logger, logging, LOGGER_LEVEL  # NoQA
-from asimov import current_ledger as ledger
 
 import otter  # NoQA
 from .storage import Store  # NoQA
@@ -424,7 +423,6 @@ class PostPipeline:
         Return the list of analyses which are included in the current results.
         """
         self.meta['current list'] = data
-        ledger.save()
         
     @property
     def fresh(self):
@@ -498,7 +496,6 @@ class PostPipeline:
         self.current_list = [analysis for analysis in self.analyses if analysis.finished]
         self.meta['job id'] = cluster
         self.meta['status'] = "running"
-        ledger.save()
 
     @property
     def status(self):
