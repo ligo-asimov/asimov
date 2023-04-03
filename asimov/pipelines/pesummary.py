@@ -76,7 +76,7 @@ class PESummary(PostPipeline):
             for key, value in psds.items():
                 command += [f"{key}:{value}"]
 
-            cals = {ifo: os.path.abspath(os.path.join(production.repository.directory, cal))
+            cals = {ifo: os.path.abspath(os.path.join(production.subject.repository.directory, cal))
                     for ifo, cal in production.meta['data']['calibration'].items()}
             # Calibration
             command += [f"--{label}_calibration"]
