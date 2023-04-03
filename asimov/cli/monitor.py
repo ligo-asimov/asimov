@@ -447,9 +447,7 @@ def monitor(ctx, event, update, dry_run, chain):
                     ledger.save()
                 elif pipe.fresh and not pipe.job_id in job_list.jobs and pipe.status == "running":
                     pipe.meta['status'] = 'finished'
-                    ledger.save()
-
-                    
+                    ledger.save()                    
                 click.echo(f"""\t{name} ({pipe.name}) - {"fresh" if pipe.fresh else "stale"} - {pipe.status}""")
                 
         if chain:
