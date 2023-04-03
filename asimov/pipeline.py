@@ -501,6 +501,7 @@ class PostPipeline:
         """
         output = {}
         output.update(deepcopy(self.meta))
+        output.pop("ledger")
         return output
             
     @property
