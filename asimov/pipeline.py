@@ -495,6 +495,14 @@ class PostPipeline:
         if self.ledger:
             self.ledger.save()
 
+    def to_dict(self):
+        """
+        Convert this pipeline into a dictionary.
+        """
+        output = {}
+        output.update(deepcopy(self.meta))
+        return output
+            
     @property
     def status(self):
         return self.meta['status']
