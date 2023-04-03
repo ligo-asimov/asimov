@@ -333,6 +333,12 @@ class PostPipeline:
         Post processing pipeline factory class.
         
         """
+
+        if "ledger" in kwargs:
+            self.ledger = kwargs['ledger']
+        else:
+            self.ledger = None
+        
         self.subject = subject
         #self.category = category if category else production.category
         self.logger = logger
@@ -411,6 +417,8 @@ class PostPipeline:
         Return the list of analyses which are included in the current results.
         """
         self.meta['current list'] = data
+        if self.ledger:
+            self.ledger.save()
         
     @property
     def fresh(self):
@@ -484,6 +492,8 @@ class PostPipeline:
         self.current_list = [analysis for analysis in self.analyses if analysis.finished]
         self.meta['job id'] = cluster
         self.meta['status'] = "running"
+        if self.ledger:
+            self.ledger.save()
 
     @property
     def status(self):
