@@ -381,10 +381,10 @@ class SimpleAnalysis(Analysis):
             if pipeline in self.event.ledger.data["pipelines"]:
                 self.meta = update(self.meta, deepcopy(self.event.ledger.data["pipelines"][pipeline]))
 
-        if "postprocessing" in self.event.ledger.data:
-            self.meta["postprocessing"] = deepcopy(
-                self.event.ledger.data["postprocessing"]
-            )
+        # if "postprocessing" in self.event.ledger.data:
+        #     self.meta["postprocessing"] = deepcopy(
+        #         self.event.ledger.data["postprocessing"]
+        #     )
 
         self.meta = update(self.meta, deepcopy(self.subject.meta))
         if "productions" in self.meta:
