@@ -440,6 +440,7 @@ def monitor(ctx, event, update, dry_run, chain):
            # If the pipeline's not fresh and not currently running, then run it.
            if not pipe.fresh and not pipe.job_id in job_list.jobs:
                pipe.run()
+               ledger.data['postprocessing'][name] = pipe.to_dict()
                ledger.save()
                 
         if chain:
