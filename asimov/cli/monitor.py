@@ -377,7 +377,7 @@ def monitor(ctx, event, update, dry_run, chain):
                 click.echo(f"\t{production.name} which needs {needs}")
 
         for name, settings in ledger.data['postprocessing'].items():
-           pipe = known_pipelines[name](event, **settings)
+           pipe = known_pipelines[name](event, ledger=ledger, **settings)
            # If the pipeline's not fresh and not currently running, then run it.
            if not pipe.fresh and not pipe.job_id in job_list.jobs:
                pipe.run()
