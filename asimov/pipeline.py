@@ -4,7 +4,7 @@ import os
 import subprocess
 import time
 import warnings
-
+from copy import deepcopy
 warnings.filterwarnings("ignore", module="htcondor")
 
 
