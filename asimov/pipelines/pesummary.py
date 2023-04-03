@@ -76,15 +76,12 @@ class PESummary(PostPipeline):
             for key, value in psds.items():
                 command += [f"{key}:{value}"]
 
+            cals = {ifo: os.path.abspath(os.path.join(production.repository.directory, cal))
+                    for ifo, cal in production.meta['data']['calibration'].items()}
             # Calibration
-            calibration = [
-                os.path.abspath(os.path.join(production.repository.directory, cal))
-                if not cal[0] == "/"
-                else cal
-                for cal in production.meta["data"]["calibration"].values()
-            ]
             command += [f"--{label}_calibration"]
-            command += calibration
+            for key, value in cals.items():
+                command += [f"{key}:{value}"]
 
         if os.path.exists(self.outputs):
             command += ["--add_to_existing"]
