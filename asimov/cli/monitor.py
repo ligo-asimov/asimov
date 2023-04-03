@@ -380,13 +380,18 @@ def monitor(ctx, event, update, dry_run, chain):
             if len(ledger.data['postprocessing'])>0:
                 click.echo("The following post-processing jobs are defined on the project")
             for name, settings in ledger.data['postprocessing'].items():
-               pipe = known_pipelines[name](event, ledger=ledger, **settings)
-               # If the pipeline's not fresh and not currently running, then run it.
-               if not pipe.fresh and not pipe.job_id in job_list.jobs:
-                   pipe.run()
-                   ledger.data['postprocessing'][name] = pipe.to_dict()
-                   ledger.save()
-               click.echo(f"""{name} ({pipe.name}) - {"fresh" if pipe.fresh else "stale"} - {pipe.status}""")
+                pipe = known_pipelines[name](event, ledger=ledger, **settings)
+                # If the pipeline's not fresh and not currently running, then run it.
+                if not pipe.fresh and not pipe.job_id in job_list.jobs and not pipe.status == "running":
+                    pipe.run()
+                    ledger.data['postprocessing'][name] = pipe.to_dict()
+                    ledger.save()
+                elif pipe.fresh and not pipe.job_id in job_list.jobs and pipe.status == "running":
+                    pipe.meta['status'] = 'finished'
+                    ledger.save()
+
+                    
+                click.echo(f"""\t{name} ({pipe.name}) - {"fresh" if pipe.fresh else "stale"} - {pipe.status}""")
                 
         if chain:
             ctx.invoke(report.html)
