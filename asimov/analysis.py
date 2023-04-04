@@ -354,6 +354,102 @@ class Analysis:
 
         return card
 
+class PostAnalysis(Analysis):
+    """
+    A post-processing analysis
+    """
+
+    def __init__(self, subject, name, pipeline, **kwargs):
+
+        self.event = self.subject = subject
+        self.name = name
+
+        self.logger = logger.getChild("postprocessing").getChild(f"{self.name}")
+        self.logger.setLevel(LOGGER_LEVEL)
+
+
+        if "status" in kwargs:
+            self.status_str = kwargs['status'].lower()
+        else:
+            self.status_str = "none"
+
+        self.meta = deepcopy(self.meta_defaults)
+
+        # Start by adding pipeline defaults
+        if "pipelines" in self.event.ledger.data:
+            if pipeline in self.event.ledger.data["pipelines"]:
+                self.meta = update(self.meta, deepcopy(self.event.ledger.data["pipelines"][pipeline]))
+
+        self.meta = update(self.meta, deepcopy(self.subject.meta))
+
+        self.meta = update(self.meta, deepcopy(kwargs))
+        self.meta['pipeline'] = pipeline.lower()
+        self.pipeline = pipeline.lower()
+        self.pipeline = known_pipelines[pipeline.lower()](self)
+        # if "needs" in self.meta:
+        #     self._needs = self.meta.pop("needs")
+        # else:
+        #     self._needs = []
+        if "comment" in kwargs:
+            self.comment = kwargs['comment']
+        else:
+            self.comment = None
+
+    def to_dict(self):
+        """
+        Return this project production as a dictionary.
+
+        Parameters
+        ----------
+        event : bool
+           If set to True the output is designed to be included nested within an event.
+           The event name is not included in the representation, and the production name is provided as a key.
+        """
+        dictionary = {}
+        dictionary = update(dictionary, self.meta)
+        dictionary['name'] = self.name
+        dictionary["status"] = self.status
+        if isinstance(self.pipeline, str):
+            dictionary['pipeline'] = self.pipeline
+        else:
+            dictionary["pipeline"] = self.pipeline.name.lower()
+        dictionary["comment"] = self.comment
+
+        if self.review:
+            dictionary["review"] = self.review.to_dicts()
+
+        dictionary['needs'] = self.dependencies
+
+        if "ledger" in dictionary:
+            dictionary.pop("ledger")
+
+        # dictionary['subjects'] = self.subjects
+        # dictionary['analyses'] = self._analysis_spec
+
+        output = dictionary
+
+        return output
+
+    @classmethod
+    def from_dict(cls, parameters, subject):
+        parameters = deepcopy(parameters)
+        # Check that pars is a dictionary
+        if not {"pipeline", "name"} <= parameters.keys():
+            raise ValueError(
+                f"Some of the required parameters are missing."
+                f"Found {parameters.keys()}"
+            )
+        if "status" not in parameters:
+            parameters['status'] = "ready"
+        if "event" in parameters:
+            parameters.pop("event")
+        pipeline = parameters.pop("pipeline")
+        name = parameters.pop("name")
+        if "comment" not in parameters:
+            parameters['comment'] = None
+
+        return cls(subject, name, pipeline,  **parameters)
+
 
 class SimpleAnalysis(Analysis):
     """
