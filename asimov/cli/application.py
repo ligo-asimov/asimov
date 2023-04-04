@@ -112,6 +112,7 @@ def apply_page(file, event=None, ledger=ledger):
                     elif isinstance(level, Ledger):
                         level.data['postprocessing'][document['name']] = document
                         level.name = "the project"
+                    ledger.save()
                     click.echo(
                         click.style("●", fg="green")
                         + f" Successfully added {document['name']} to {level.name}."
@@ -137,6 +138,7 @@ def apply_page(file, event=None, ledger=ledger):
                     click.style("●", fg="green")
                     + f" Successfully added {analysis.name} to this project."
                 )
+                ledger.save()
                 logger.info(f"Added {analysis.name}")
             except ValueError as e:
                 click.echo(
