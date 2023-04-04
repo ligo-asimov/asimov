@@ -399,10 +399,10 @@ class PostPipeline:
         for need in self.meta['analyses']:
             try:
                 #requirement = need.split(":")
-                requirement = [list(requirement).keys()[0].split("."), list(requirement).values()[0]]
+                requirement = [list(need).keys()[0].split("."), list(need).values()[0]]
             except IndexError:
                 requirement = [["name"], need]
-            if requirement[0][0] == "postprocessing" and requirement[0][1] == "pipeline":
+            if requirement[0][0] == "postprocessing" and requirement[0][1] == "name":
                 post_requirements.append(requirement)
             else:
                 all_requirements.append(requirement)
@@ -418,8 +418,8 @@ class PostPipeline:
 
             matches = set(self.ledger.postprocessing)
             for attribute, match in post_requirements:
-                filtered_posts = list(filter(lambda x: x['pipeline'] == match, self.ledger.postprocessing))
-                matches = set.intersection(matches, set(filtered_analyses))
+                filtered_posts = list(filter(lambda x: x == match, self.ledger.postprocessing.keys()))
+                matches = set.intersection(self.ledger.postprocessing, set(filtered_posts))
                 for analysis in matches:
                     analyses.append(analysis)
         return analyses
