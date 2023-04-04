@@ -10,7 +10,7 @@ from asimov.pipelines.bilby import Bilby
 from asimov.pipelines.lalinference import LALInference
 from asimov.pipelines.rift import Rift
 
-from asimov.pipelines.pesummary import PESummary
+from asimov.pipelines.pesummary import PESummary, SummaryCombinePosteriors
 
 discovered_pipelines = entry_points(group="asimov.pipelines")
 
@@ -21,6 +21,7 @@ known_pipelines = {
     "rift": Rift,
     "lalinference": LALInference,
     "pesummary": PESummary,
+    "summarycombineposteriors": SummaryCombinePosteriors,
 }
 
 
