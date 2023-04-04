@@ -8,7 +8,7 @@ import yaml
 import asimov
 import asimov.database
 from asimov import config
-from asimov.analysis import ProjectAnalysis
+from asimov.analysis import ProjectAnalysis, PostAnalysis
 from asimov.event import Event, Production
 from asimov.utils import update
 
@@ -192,15 +192,14 @@ class YAMLLedger(Ledger):
     def project_analyses(self):
         return [ProjectAnalysis.from_dict(analysis, ledger=self) for analysis in self.data['project analyses']]
 
-    @property
-    def postprocessing(self):
+    def postprocessing(self, subject):
         """
         Return a list of all postprocessing jobs defined in this project.
         """
         if "postprocessing" in self.data:
-            return self.data['postprocessing']
+            return [PostAnalysis.from_dict(analysis, subject=subject, ledger=self) for analysis in self.data['postprocessing']]
         else:
-            return None
+            return []
 
     
     def get_event(self, event=None):
