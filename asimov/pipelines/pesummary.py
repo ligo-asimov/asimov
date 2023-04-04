@@ -192,3 +192,115 @@ class PESummary(PostPipeline):
             cluster_id = 0
 
         return cluster_id
+
+class SummaryCombinePosteriors(PostPipeline):
+    """
+    A postprocessing pipeline for producing combined posteriors.
+    """
+    executable = os.path.join(config.get("pipelines", "environment"), "bin", "summarycombine_posteriors")
+    name = "SummaryCombinePosteriors"
+    style = "multiplex"
+    
+    def results(self):
+        """
+        Fetch the results file from this post-processing step.
+
+        A dictionary of results will be returned with the description
+        of each results file as the key.  These may be nested if it
+        makes sense for the output, for example skymaps.
+
+        For example
+
+        {'metafile': '/home/asimov/working/samples/metafile.hd5',
+         'skymaps': {'H1': '/another/file/path', ...}
+        }
+
+        Returns
+        -------
+        dict
+           A dictionary of the results.
+        """
+        self.outputs = os.path.join(
+            config.get("project", "root"),
+            config.get("general", "webroot"),
+            self.subject.name,
+        )
+        self.outputs = os.path.join(self.outputs, self.name.lower())
+
+        metafile = os.path.join(self.outputs, "samples", "mixed_posterior.h5")
+
+        return dict(metafile=metafile)
+
+    def submit_dag(self, dryrun=False):
+        """
+        Run PESummary on the results of this job.
+        """
+
+        self.outputs = os.path.join(
+            config.get("project", "root"),
+            config.get("general", "webroot"),
+            self.subject.name,
+        )
+
+        
+        command = []
+        command += ["--labels"]
+        command += [analysis.name for analysis in self.analyses]
+        command += ["--samples"]
+        command += [os.path.join(self.outputs, "pesummary", "samples", "posterior_samples.h5")]
+        command += ["--add_to_existing"]
+
+        with utils.set_directory(self.subject.work_dir):
+            with open(f"{self.name}.sh", "w") as bash_file:
+                bash_file.write(
+                    f"{self.executable} " + " ".join(command)
+                )
+
+        self.logger.info(
+            f"{self.name} command: {self.executable} {' '.join(command)}",
+        )
+
+        if dryrun:
+            print(f"{self.name.upper()} COMMAND")
+            print("-----------------")
+            print(command)
+
+        submit_description = {
+            "executable": self.executable,
+            "arguments": " ".join(command),
+            "accounting_group": self.meta["accounting group"],
+            "output": f"{self.subject.work_dir}/{self.name}.out",
+            "error": f"{self.subject.work_dir}/{self.name}.err",
+            "log": f"{self.subject.work_dir}/{self.name}.log",
+            "request_cpus": self.meta["multiprocess"],
+            "getenv": "true",
+            "batch_name": f"{self.name}/{self.subject.name}",
+            "request_memory": "8192MB",
+            "should_transfer_files": "YES",
+            "request_disk": "8192MB",
+        }
+
+        if dryrun:
+            print("SUBMIT DESCRIPTION")
+            print("------------------")
+            print(submit_description)
+
+        if not dryrun:
+            hostname_job = htcondor.Submit(submit_description)
+
+            try:
+                # There should really be a specified submit node, and if there is, use it.
+                schedulers = htcondor.Collector().locate(
+                    htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler")
+                )
+                schedd = htcondor.Schedd(schedulers)
+            except:  # NoQA
+                # If you can't find a specified scheduler, use the first one you find
+                schedd = htcondor.Schedd()
+            with schedd.transaction() as txn:
+                cluster_id = hostname_job.queue(txn)
+
+        else:
+            cluster_id = 0
+
+        return cluster_id
