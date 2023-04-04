@@ -238,6 +238,17 @@ class YAMLLedger(Ledger):
     @property
     def project_analyses(self):
         return [ProjectAnalysis.from_dict(analysis, ledger=self) for analysis in self.data['project analyses']]
+
+    @property
+    def postprocessing(self):
+        """
+        Return a list of all postprocessing jobs defined in this project.
+        """
+        if "postprocessing" in self.data:
+            return self.data['postprocessing']
+        else:
+            return None
+
     
     def get_event(self, event=None):
         if event:

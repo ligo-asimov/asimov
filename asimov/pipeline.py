@@ -395,19 +395,30 @@ class PostPipeline:
            A list of all the analysis specifiations processed for evaluation.
         """
         all_requirements = []
+        post_requirements = []
         for need in self.meta['analyses']:
             try:
                 requirement = need.split(":")
                 requirement = [requirement[0].split("."), requirement[1]]
             except IndexError:
                 requirement = [["name"], need]
-            all_requirements.append(requirement)
+            if requirement[0][0] == "postprocessing" and requirement[0][1] == "pipeline":
+                post_requirements.append(requirement)
+            else:
+                all_requirements.append(requirement)
             
         analyses = []
         if self.meta['analyses']:
             matches = set(self.subject.analyses)
             for attribute, match in all_requirements:
                 filtered_analyses = list(filter(lambda x: x.matches_filter(attribute, match), self.subject.analyses))
+                matches = set.intersection(matches, set(filtered_analyses))
+                for analysis in matches:
+                    analyses.append(analysis)
+
+            matches = set(self.ledger.postprocessing)
+            for attribute, match in post_requirements:
+                filtered_posts = list(filter(lambda x: x['pipeline'] == match, self.ledger.postprocessing))
                 matches = set.intersection(matches, set(filtered_analyses))
                 for analysis in matches:
                     analyses.append(analysis)
