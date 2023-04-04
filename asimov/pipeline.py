@@ -386,15 +386,15 @@ class PostPipeline:
         post_requirements = []
         for need in self.meta['analyses']:
             try:
-                requirement = need.split(":")
-                requirement = [requirement[0].split("."), requirement[1]]
+                #requirement = need.split(":")
+                requirement = [list(requirement).keys()[0].split("."), list(requirement).values()[0]]
             except IndexError:
                 requirement = [["name"], need]
             if requirement[0][0] == "postprocessing" and requirement[0][1] == "pipeline":
                 post_requirements.append(requirement)
             else:
                 all_requirements.append(requirement)
-            
+
         analyses = []
         if self.meta['analyses']:
             matches = set(self.subject.analyses)
@@ -518,7 +518,10 @@ class PostPipeline:
             
     @property
     def status(self):
-        return self.meta['status']
+        if "status" in self.meta:
+            return self.meta['status']
+        else:
+            return None
 
     @property
     def job_id(self):

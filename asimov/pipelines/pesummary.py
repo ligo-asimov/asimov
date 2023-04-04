@@ -24,7 +24,7 @@ class PESummary(PostPipeline):
     executable = os.path.join(config.get("pipelines", "environment"), "bin", "summarypages")
     name = "PESummary"
     style = "multiplex"
-    
+
     def results(self):
         """
         Fetch the results file from this post-processing step.
@@ -272,7 +272,7 @@ class SummaryCombinePosteriors(PostPipeline):
             "output": f"{self.subject.work_dir}/{self.name}.out",
             "error": f"{self.subject.work_dir}/{self.name}.err",
             "log": f"{self.subject.work_dir}/{self.name}.log",
-            "request_cpus": self.meta["multiprocess"],
+            "request_cpus": "1",
             "getenv": "true",
             "batch_name": f"{self.name}/{self.subject.name}",
             "request_memory": "8192MB",
