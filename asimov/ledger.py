@@ -107,7 +107,7 @@ class YAMLLedger(Ledger):
         with open(self.location+"_tmp", "w") as ledger_file:
             ledger_file.write(yaml.dump(self.data, default_flow_style=False))
             ledger_file.flush()
-            os.fsync(ledger_file.fileno())
+            #os.fsync(ledger_file.fileno())
         os.replace(self.location+"_tmp", self.location)
 
     def add_event(self, event):
