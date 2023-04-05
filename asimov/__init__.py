@@ -31,7 +31,7 @@ config = configparser.ConfigParser()
 
 config.read_string(default_config.decode("utf8"))
 config_locations = [
-    os.path.join(os.curdir, "{}.conf".format(__packagename__)),
+    os.path.join(os.curdir, ".asimov", "{}.conf".format(__packagename__)),
     os.path.join(
         os.path.expanduser("~"),
         ".config",
@@ -78,7 +78,7 @@ print_formatter = logging.Formatter("[%(levelname)s] %(message)s", "%Y-%m-%d %H:
 ch.setFormatter(print_formatter)
 ch.setLevel(PRINT_LEVEL)
 
-logfile = "asimov.log"
+logfile = os.path.join("asimov.log")
 fh = logging.FileHandler(logfile)
 formatter = logging.Formatter(
     "%(asctime)s [%(name)s][%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S"
