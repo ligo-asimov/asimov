@@ -31,6 +31,7 @@ def start(dry_run):
         "accounting_group": config.get("pipelines", "accounting"),
         "output": "asimov_cron.out",
         "on_exit_remove": "false",
+        "universe": "local",
         "error": "asimov_cron.err",
         "log": "asimov_cron.log",
         "request_cpus": "1",
