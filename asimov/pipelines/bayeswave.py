@@ -333,23 +333,23 @@ class BayesWave(Pipeline):
 
                 stdout, stderr = dagman.communicate()
 
-                if "submitted to cluster" in str(stdout):
-                    cluster = re.search(
-                        r"submitted to cluster ([\d]+)", str(stdout)
-                    ).groups()[0]
-                    self.production.status = "running"
-                    self.production.job_id = int(cluster)
-                    self.logger.info(
-                        f"Successfully submitted to cluster {self.production.job_id}"
-                    )
-                    self.logger.debug(stdout)
-                    return (int(cluster),)
-                else:
-                    self.logger.info(stdout)
-                    self.logger.error(stderr)
-                    raise PipelineException(
-                        f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
-                    )
+            if "submitted to cluster" in str(stdout):
+                cluster = re.search(
+                    r"submitted to cluster ([\d]+)", str(stdout)
+                ).groups()[0]
+                self.production.status = "running"
+                self.production.job_id = int(cluster)
+                self.logger.info(
+                    f"Successfully submitted to cluster {self.production.job_id}"
+                )
+                self.logger.debug(stdout)
+                return (int(cluster),)
+            else:
+                self.logger.info(stdout)
+                self.logger.error(stderr)
+                raise PipelineException(
+                    f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
+                )
 
     def upload_assets(self):
         """

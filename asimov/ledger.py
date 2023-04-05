@@ -12,7 +12,7 @@ import asimov
 import asimov.database
 from asimov import config
 from asimov.event import Event, Production
-from asimov.utils import update
+from asimov.utils import update, use_directory
 
 
 class Ledger:
@@ -42,7 +42,7 @@ class Ledger:
 
 
 class YAMLLedger(Ledger):
-    def __init__(self, location="ledger.yml"):
+    def __init__(self, location=".asimov/ledger.yml"):
         self.location = location
         with open(location, "r") as ledger_file:
             self.data = yaml.safe_load(ledger_file)
@@ -102,13 +102,14 @@ class YAMLLedger(Ledger):
 
         """
         self.data["events"] = list(self.events.values())
-        # First produce a backup of the ledger
-        shutil.copy(self.location, self.location+".bak")
-        with open(self.location+"_tmp", "w") as ledger_file:
-            ledger_file.write(yaml.dump(self.data, default_flow_style=False))
-            ledger_file.flush()
-            #os.fsync(ledger_file.fileno())
-        os.replace(self.location+"_tmp", self.location)
+        with use_directory(config.get("project", "root")):
+            # First produce a backup of the ledger
+            shutil.copy(self.location, self.location+".bak")
+            with open(self.location+"_tmp", "w") as ledger_file:
+                ledger_file.write(yaml.dump(self.data, default_flow_style=False))
+                ledger_file.flush()
+                #os.fsync(ledger_file.fileno())
+            os.replace(self.location+"_tmp", self.location)
 
     def add_event(self, event):
         if "events" not in self.data:

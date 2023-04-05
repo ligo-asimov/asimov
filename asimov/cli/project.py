@@ -76,7 +76,7 @@ def make_project(
     # Make the ledger and operative files
     pathlib.Path('.asimov').mkdir(parents=True, exist_ok=True)
     config.set("ledger", "engine", "yamlfile")
-    config.set("ledger", "location", ".asimov/ledger.yml")
+    config.set("ledger", "location", os.path.join(".asimov", "ledger.yml"))
 
     # Set the default environment
     python_loc = shutil.which("python").split("/")[:-2]
