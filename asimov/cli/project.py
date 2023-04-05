@@ -73,9 +73,10 @@ def make_project(
     storage.Store.create(root=results, name=f"{project_name} storage")
     config.set("storage", "directory", results)
 
-    # Make the ledger
+    # Make the ledger and operative files
+    pathlib.Path('.asimov').mkdir(parents=True, exist_ok=True)
     config.set("ledger", "engine", "yamlfile")
-    config.set("ledger", "location", "ledger.yml")
+    config.set("ledger", "location", ".asimov/ledger.yml")
 
     # Set the default environment
     python_loc = shutil.which("python").split("/")[:-2]
@@ -87,9 +88,11 @@ def make_project(
     else:
         config.set("condor", "user", user)
 
-    Ledger.create(engine="yamlfile", name=project_name, location="ledger.yml")
+    Ledger.create(engine="yamlfile",
+                  name=project_name,
+                  location=os.path.join(".asimov", "ledger.yml"))
 
-    with open("asimov.conf", "w") as config_file:
+    with open(os.path.join(".asimov", "asimov.conf"), "w") as config_file:
         config.write(config_file)
 
 
