@@ -12,7 +12,7 @@ import asimov
 import asimov.database
 from asimov import config
 from asimov.event import Event, Production
-from asimov.utils import update, use_directory
+from asimov.utils import update, set_directory
 
 
 class Ledger:
@@ -102,7 +102,7 @@ class YAMLLedger(Ledger):
 
         """
         self.data["events"] = list(self.events.values())
-        with use_directory(config.get("project", "root")):
+        with set_directory(config.get("project", "root")):
             # First produce a backup of the ledger
             shutil.copy(self.location, self.location+".bak")
             with open(self.location+"_tmp", "w") as ledger_file:
