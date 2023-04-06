@@ -42,7 +42,7 @@ class Ledger:
 
 
 class YAMLLedger(Ledger):
-    def __init__(self, location="ledger.yml"):
+    def __init__(self, location=".asimov/ledger.yml"):
         self.location = location
         with open(location, "r") as ledger_file:
             self.data = yaml.safe_load(ledger_file)
@@ -55,7 +55,7 @@ class YAMLLedger(Ledger):
         self.data.pop("events")
 
     @classmethod
-    def create(cls, name, location="ledger.yml"):
+    def create(cls, name, location=".asimov/ledger.yml"):
 
         data = {}
         data["asimov"] = {}
