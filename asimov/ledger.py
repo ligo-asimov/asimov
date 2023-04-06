@@ -55,7 +55,7 @@ class YAMLLedger(Ledger):
         self.data.pop("events")
 
     @classmethod
-    def create(cls, name, location="ledger.yml"):
+    def create(cls, name, location=".asimov/ledger.yml"):
 
         data = {}
         data["asimov"] = {}
