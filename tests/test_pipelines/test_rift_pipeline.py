@@ -45,7 +45,7 @@ class RiftTests(unittest.TestCase):
                                    ['Test Project', '--root', f"{self.cwd}/tests/tmp/project"])
             assert result.exit_code == 0
             assert result.output == '● New project created successfully!\n'
-            self.ledger = YAMLLedger(f".asimov/ledger.yml")
+            self.ledger = YAMLLedger()
 
     def tearDown(self):
         os.chdir(self.cwd)
@@ -62,7 +62,7 @@ class RiftTests(unittest.TestCase):
             pipeline = "rift"
             apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
             apply_page(file = f"{self.cwd}/tests/test_data/test_{pipeline}.yaml", event=event, ledger=self.ledger)
-        with patch("asimov.current_ledger", new=YAMLLedger("ledger.yml")):
+        with patch("asimov.current_ledger", new=YAMLLedger()):
             reload(asimov)
             reload(manage)
             runner = CliRunner()
@@ -80,7 +80,7 @@ class RiftTests(unittest.TestCase):
             pipeline = "rift"
             apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
             apply_page(file = f"{self.cwd}/tests/test_data/test_{pipeline}.yaml", event=event, ledger=self.ledger)
-        with patch("asimov.current_ledger", new=YAMLLedger("ledger.yml")):
+        with patch("asimov.current_ledger", new=YAMLLedger()):
             reload(asimov)
             reload(manage)
             runner = CliRunner()
@@ -115,7 +115,7 @@ class RiftTests(unittest.TestCase):
             apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
             apply_page(file = f"{self.cwd}/tests/test_data/test_{pipeline}.yaml", event=event, ledger=self.ledger)
 
-        with patch("asimov.current_ledger", new=YAMLLedger("ledger.yml")):
+        with patch("asimov.current_ledger", new=YAMLLedger()):
             reload(asimov)
             reload(manage)
             runner = CliRunner()
