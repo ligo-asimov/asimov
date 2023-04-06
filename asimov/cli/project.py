@@ -90,7 +90,7 @@ def make_project(
 
     Ledger.create(engine="yamlfile",
                   name=project_name,
-                  location=os.path.join(".asimov", ".asimov/ledger.yml"))
+                  location=os.path.join(".asimov", "ledger.yml"))
 
     with open(os.path.join(".asimov", "asimov.conf"), "w") as config_file:
         config.write(config_file)
