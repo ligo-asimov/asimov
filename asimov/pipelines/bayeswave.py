@@ -109,7 +109,7 @@ class BayesWave(Pipeline):
             ini.save()
 
             ini = ini.ini_loc
-            
+
         else:
             ini = f"{self.production.name}.ini"
 
@@ -231,21 +231,16 @@ class BayesWave(Pipeline):
 
         try:
             self.collect_pages()
-        except FileNotFoundError:
-            PipelineLogger(
-                message=b"Failed to copy megaplot pages.",
-                production=self.production.name,
-            )
+        except FileNotFoundError as e:
+            self.logger.error("Failed to copy the megaplot output")
+            self.logger.exception(e)
 
         try:
             self.collect_assets()
             self.store_assets()
-        except Exception:
-            PipelineLogger(
-                message=b"Failed to store PSDs.",
-                issue=self.production.event.issue_object,
-                production=self.production.name,
-            )
+        except Exception as e:
+            self.logger.error("Failed to store the PSDs")
+            self.logger.exception(e)
 
         if "supress" in self.production.meta["quality"]:
             for ifo in self.production.meta["quality"]["supress"]:
@@ -257,7 +252,7 @@ class BayesWave(Pipeline):
                     )
 
         self.production.meta.update(self.collect_assets())
-                    
+
         self.production.status = "uploaded"
 
     def before_submit(self):
@@ -276,7 +271,7 @@ class BayesWave(Pipeline):
             with open(py_file, "r") as f_handle:
                 original = f_handle.read()
             with open(py_file, "w") as f_handle:
-                self.logger.info(f"Fixing shebang")
+                self.logger.info("Fixing shebang")
                 path = os.path.join(
                     config.get("pipelines", "environment"), "bin", "python"
                 )
@@ -312,7 +307,7 @@ class BayesWave(Pipeline):
             f"bwave/{self.production.event.name}/{self.production.name}",
             f"{self.production.name}.dag",
         ]
-        
+
         self.logger.info((" ".join(command)))
 
         if dryrun:
@@ -387,27 +382,6 @@ class BayesWave(Pipeline):
                 )
                 self.logger.exception(e)
 
-    def store_assets(self):
-        """
-        Add the assets to the store.
-        """
-
-        sample_rate = self.production.meta["quality"]["sample-rate"]
-        for detector, asset in self.collect_assets()["psds"]:
-            store = Store(root=config.get("storage", "directory"))
-            try:
-                store.add_file(
-                    self.production.event.name,
-                    self.production.name,
-                    file=asset,
-                    new_name=f"{detector}-{sample_rate}-psd.dat"
-                )
-            except Exception as e:
-                self.logger.error(
-                    f"There was a problem committing the PSD for {detector} to the store."
-                )
-                self.logger.exception(e)
-
     def collect_logs(self):
         """
         Collect all of the log files which have been produced by this production and
@@ -454,7 +428,11 @@ class BayesWave(Pipeline):
         xml_psds = {}
         for det in self.production.meta["interferometers"]:
             asset = os.path.join(
-                f"{self.production.event.repository.directory}/{self.production.category}/psds/{self.production.meta['likelihood']['sample rate']}/{det.upper()}-psd.xml.gz"
+                f"{self.production.event.repository.directory}",
+                f"{self.production.category}",
+                "psds",
+                f"{self.production.meta['likelihood']['sample rate']}",
+                f"{det.upper()}-psd.xml.gz",
             )
             if os.path.exists(asset):
                 xml_psds[det] = os.path.abspath(asset)

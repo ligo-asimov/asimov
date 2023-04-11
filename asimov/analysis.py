@@ -40,23 +40,25 @@ from asimov.storage import Store
 from .review import Review
 from .ini import RunConfiguration
 
+
 class Analysis:
     """
     The base class for all other types of analysis.
 
     TODO: Add a check to make sure names cannot conflict
     """
+
     meta = {}
     meta_defaults = {"scheduler": {}, "sampler": {}, "review": {}}
     _reviews = Review()
-    
+
     @property
     def review(self):
         """
         Return the review information attached to the analysis.
         """
         if "review" in self.meta:
-            if len(self.meta['review']) > 0:
+            if len(self.meta["review"]) > 0:
                 self._reviews = Review.from_dict(self.meta["review"], production=self)
                 self.meta.pop("review")
         return self._reviews
@@ -94,15 +96,15 @@ class Analysis:
         Get the ID number of this job as it resides in the scheduler.
         """
         if "scheduler" in self.meta:
-            if "job id" in self.meta['scheduler']:
-                return self.meta['scheduler']["job id"]
+            if "job id" in self.meta["scheduler"]:
+                return self.meta["scheduler"]["job id"]
             else:
                 return None
 
     @job_id.setter
     def job_id(self, value):
         if "scheduler" not in self.meta:
-            self.meta['scheduler'] = {}
+            self.meta["scheduler"] = {}
         self.meta["scheduler"]["job id"] = value
 
     @property
@@ -112,11 +114,16 @@ class Analysis:
         if len(self._needs) == 0:
             return []
         else:
-            matches = set({})# set(self.event.analyses)
-            #matches.remove(self)
+            matches = set({})  # set(self.event.analyses)
+            # matches.remove(self)
             requirements = self._process_dependencies(self._needs)
             for attribute, match in requirements:
-                filtered_analyses = list(filter(lambda x: x.matches_filter(attribute, match), self.event.analyses))
+                filtered_analyses = list(
+                    filter(
+                        lambda x: x.matches_filter(attribute, match),
+                        self.event.analyses,
+                    )
+                )
                 matches = set.union(matches, set(filtered_analyses))
             for analysis in matches:
                 all_matches.append(analysis)
@@ -138,7 +145,7 @@ class Analysis:
     @property
     def status(self):
         return self.status_str.lower()
-    
+
     @status.setter
     def status(self, value):
         self.status_str = value.lower()
@@ -191,7 +198,7 @@ class Analysis:
             in_meta = False
 
         return is_name | in_meta | is_status | is_review
-        
+
     def results(self, filename=None, handle=False, hash=None):
         store = Store(root=config.get("storage", "results_store"))
         if not filename:
@@ -241,7 +248,6 @@ class Analysis:
         else:
             return None
 
-        
     def set_meta(self, key, value):
         """
         Set a metadata attribute which doesn't currently exist.
@@ -302,21 +308,20 @@ class SimpleAnalysis(Analysis):
         self.logger = logger.getChild("event").getChild(f"{self.name}")
         self.logger.setLevel(LOGGER_LEVEL)
 
-
         if "status" in kwargs:
-            self.status_str = kwargs['status'].lower()
+            self.status_str = kwargs["status"].lower()
         else:
             self.status_str = "none"
 
         self.meta = deepcopy(self.meta_defaults)
         self.meta = update(self.meta, deepcopy(self.subject.meta))
         if "productions" in self.meta:
-           self.meta.pop("productions")
+            self.meta.pop("productions")
         # if "needs" in self.meta:
         #    self.meta.pop("needs")
 
         self.meta = update(self.meta, deepcopy(kwargs))
-        self.meta['pipeline'] = pipeline.lower()
+        self.meta["pipeline"] = pipeline.lower()
         self.pipeline = pipeline.lower()
         self.pipeline = known_pipelines[pipeline.lower()](self)
         if "needs" in self.meta:
@@ -324,7 +329,7 @@ class SimpleAnalysis(Analysis):
         else:
             self._needs = []
         if "comment" in kwargs:
-            self.comment = kwargs['comment']
+            self.comment = kwargs["comment"]
         else:
             self.comment = None
 
@@ -345,7 +350,7 @@ class SimpleAnalysis(Analysis):
 
         dictionary["status"] = self.status
         if isinstance(self.pipeline, str):
-            dictionary['pipeline'] = self.pipeline
+            dictionary["pipeline"] = self.pipeline
         else:
             dictionary["pipeline"] = self.pipeline.name.lower()
         dictionary["comment"] = self.comment
@@ -353,8 +358,8 @@ class SimpleAnalysis(Analysis):
         if self.review:
             dictionary["review"] = self.review.to_dicts()
 
-        dictionary['needs'] = self._needs #self.dependencies
-            
+        dictionary["needs"] = self._needs  # self.dependencies
+
         if "quality" in self.meta:
             dictionary["quality"] = self.meta["quality"]
         if "priors" in self.meta:
@@ -384,15 +389,15 @@ class SimpleAnalysis(Analysis):
                 f"Found {parameters.keys()}"
             )
         if "status" not in parameters:
-            parameters['status'] = "ready"
+            parameters["status"] = "ready"
         if "event" in parameters:
             parameters.pop("event")
         pipeline = parameters.pop("pipeline")
         name = parameters.pop("name")
         if "comment" not in parameters:
-            parameters['comment'] = None
+            parameters["comment"] = None
 
-        return cls(subject, name, pipeline,  **parameters)
+        return cls(subject, name, pipeline, **parameters)
 
 
 class SubjectAnalysis(Analysis):
@@ -408,16 +413,16 @@ class SubjectAnalysis(Analysis):
         self.logger.setLevel(LOGGER_LEVEL)
 
         if "status" in kwargs:
-            self.status_str = kwargs['status'].lower()
+            self.status_str = kwargs["status"].lower()
         else:
             self.status_str = "none"
 
         self.meta = deepcopy(self.meta_defaults)
         self.meta = update(self.meta, deepcopy(self.subject.meta))
         if "productions" in self.meta:
-           self.meta.pop("productions")
+            self.meta.pop("productions")
         if "needs" in self.meta:
-           self.meta.pop("needs")
+            self.meta.pop("needs")
 
         self.meta = update(self.meta, deepcopy(kwargs))
         self.pipeline = pipeline.lower()
@@ -426,12 +431,12 @@ class SubjectAnalysis(Analysis):
             self._needs = self.meta.pop("needs")
         else:
             self._needs = []
-        
+
         if "comment" in kwargs:
-            self.comment = kwargs['comment']
+            self.comment = kwargs["comment"]
         else:
             self.comment = None
-        
+
     def to_dict(self, event=True):
         """
         Return this production as a dictionary.
@@ -449,7 +454,7 @@ class SubjectAnalysis(Analysis):
 
         dictionary["status"] = self.status
         if isinstance(self.pipeline, str):
-            dictionary['pipeline'] = self.pipeline
+            dictionary["pipeline"] = self.pipeline
         else:
             dictionary["pipeline"] = self.pipeline.name.lower()
         dictionary["comment"] = self.comment
@@ -457,8 +462,8 @@ class SubjectAnalysis(Analysis):
         if self.review:
             dictionary["review"] = self.review.to_dicts()
 
-        dictionary['needs'] = self.dependencies
-            
+        dictionary["needs"] = self.dependencies
+
         if "quality" in self.meta:
             dictionary["quality"] = self.meta["quality"]
         if "priors" in self.meta:
@@ -488,17 +493,15 @@ class SubjectAnalysis(Analysis):
                 f"Found {parameters.keys()}"
             )
         if "status" not in parameters:
-            parameters['status'] = "ready"
+            parameters["status"] = "ready"
         if "event" in parameters:
             parameters.pop("event")
         pipeline = parameters.pop("pipeline")
         name = parameters.pop("name")
         if "comment" not in parameters:
-            parameters['comment'] = None
+            parameters["comment"] = None
 
-        return cls(subject, name, pipeline,  **parameters)
-
-
+        return cls(subject, name, pipeline, **parameters)
 
 
 class ProjectAnalysis(Analysis):
@@ -506,14 +509,12 @@ class ProjectAnalysis(Analysis):
     A multi-subject analysis.
     """
 
-    def __init__(
-            self, subjects, analyses, name, pipeline, ledger=None, **kwargs
-    ):
+    def __init__(self, subjects, analyses, name, pipeline, ledger=None, **kwargs):
         """ """
         super().__init__()
 
-        self.name = name # if name else "unnamed project analysis"
-        
+        self.name = name  # if name else "unnamed project analysis"
+
         self.logger = logger.getChild("project analyses").getChild(f"{self.name}")
         self.logger.setLevel(LOGGER_LEVEL)
 
@@ -533,19 +534,23 @@ class ProjectAnalysis(Analysis):
             if self._analysis_spec:
                 matches = set(sub.analyses)
                 for attribute, match in requirements:
-                    filtered_analyses = list(filter(lambda x: x.matches_filter(attribute, match), sub.analyses))
+                    filtered_analyses = list(
+                        filter(
+                            lambda x: x.matches_filter(attribute, match), sub.analyses
+                        )
+                    )
                     matches = set.intersection(matches, set(filtered_analyses))
                 for analysis in matches:
                     self.analyses.append(analysis)
         if "status" in kwargs:
-            self.status_str = kwargs['status'].lower()
+            self.status_str = kwargs["status"].lower()
         else:
             self.status_str = "none"
 
         self.pipeline = pipeline.lower()
         try:
             self.pipeline = known_pipelines[str(pipeline).lower()](self)
-        except:
+        except KeyError:
             self.logger.warning(f"The pipeline {pipeline} could not be found.")
         if "needs" in self.meta:
             self._needs = self.meta.pop("needs")
@@ -553,7 +558,7 @@ class ProjectAnalysis(Analysis):
             self._needs = []
 
         if "comment" in kwargs:
-            self.comment = kwargs['comment']
+            self.comment = kwargs["comment"]
         else:
             self.comment = None
 
@@ -577,14 +582,14 @@ class ProjectAnalysis(Analysis):
                 f"Found {parameters.keys()}"
             )
         if "status" not in parameters:
-            parameters['status'] = "ready"
+            parameters["status"] = "ready"
         if "event" in parameters:
             parameters.pop("event")
         pipeline = parameters.pop("pipeline")
         name = parameters.pop("name")
         if "comment" not in parameters:
-            parameters['comment'] = None
-        return cls(name=name, pipeline=pipeline, ledger=ledger,  **parameters)
+            parameters["comment"] = None
+        return cls(name=name, pipeline=pipeline, ledger=ledger, **parameters)
 
     def to_dict(self):
         """
@@ -597,10 +602,10 @@ class ProjectAnalysis(Analysis):
            The event name is not included in the representation, and the production name is provided as a key.
         """
         dictionary = {}
-        dictionary['name'] = self.name
+        dictionary["name"] = self.name
         dictionary["status"] = self.status
         if isinstance(self.pipeline, str):
-            dictionary['pipeline'] = self.pipeline
+            dictionary["pipeline"] = self.pipeline
         else:
             dictionary["pipeline"] = self.pipeline.name.lower()
         dictionary["comment"] = self.comment
@@ -608,8 +613,8 @@ class ProjectAnalysis(Analysis):
         if self.review:
             dictionary["review"] = self.review.to_dicts()
 
-        dictionary['needs'] = self.dependencies
-            
+        dictionary["needs"] = self.dependencies
+
         if "quality" in self.meta:
             dictionary["quality"] = self.meta["quality"]
         if "priors" in self.meta:
@@ -623,18 +628,19 @@ class ProjectAnalysis(Analysis):
         if "pipelines" in dictionary:
             dictionary.pop("pipelines")
 
-        dictionary['subjects'] = self.subjects
-        dictionary['analyses'] = self._analysis_spec
-            
+        dictionary["subjects"] = self.subjects
+        dictionary["analyses"] = self._analysis_spec
+
         output = dictionary
-        
+
         return output
 
-    
+
 class GravitationalWaveTransient(SimpleAnalysis):
     """
     A single subject, single pipeline analysis for a gravitational wave transient.
     """
+
     def __init__(self, subject, name, pipeline, **kwargs):
 
         self.category = config.get("general", "calibration_directory")
@@ -642,7 +648,7 @@ class GravitationalWaveTransient(SimpleAnalysis):
         super().__init__(subject, name, pipeline, **kwargs)
         self._add_missing_parameters()
         self._checks()
-        
+
         self.psds = self._set_psds()
         self.xml_psds = self._collect_psds(format="xml")
 
@@ -654,11 +660,11 @@ class GravitationalWaveTransient(SimpleAnalysis):
         # If the PSDs are specifically provided in the ledger,
         # use those.
 
-        if format=="ascii":
+        if format == "ascii":
             keyword = "psds"
-        elif format=="xml":
+        elif format == "xml":
             keyword = "xml psds"
-        
+
         if keyword in self.meta:
             if self.meta["likelihood"]["sample rate"] in self.meta[keyword]:
                 psds = self.meta[keyword][self.meta["likelihood"]["sample rate"]]
@@ -690,26 +696,26 @@ class GravitationalWaveTransient(SimpleAnalysis):
             self.logger.debug(f"PSD-{ifo}: {psd}")
 
         return psds
-        
+
     def _add_missing_parameters(self):
         for parameter in {"quality", "waveform", "likelihood"}:
-            if not parameter in self.meta:
+            if parameter not in self.meta:
                 self.meta[parameter] = {}
-                
+
         for parameter in {"marginalization"}:
-            if not parameter in self.meta['likelihood']:
-                self.meta['likelihood'][parameter] = {}
+            if parameter not in self.meta["likelihood"]:
+                self.meta["likelihood"][parameter] = {}
 
         for parameter in {"maximum frequency"}:
-            if not parameter in self.meta['quality']:
-                self.meta['quality'][parameter] = {}
-        
+            if parameter not in self.meta["quality"]:
+                self.meta["quality"][parameter] = {}
+
     def _checks(self):
         """
         Carry-out a number of data consistency checks on the information from the ledger.
         """
         # Check that the upper frequency is included, otherwise calculate it
-        
+
         if self.quality:
             if ("high-frequency" not in self.quality) and (
                 "sample-rate" in self.quality
@@ -804,7 +810,9 @@ class GravitationalWaveTransient(SimpleAnalysis):
         else:
             # We'll need to search the repository for it.
             try:
-                ini_loc = self.subject.repository.find_prods(self.name, self.category)[0]
+                ini_loc = self.subject.repository.find_prods(self.name, self.category)[
+                    0
+                ]
                 if not os.path.exists(ini_loc):
                     raise ValueError("Could not open the ini file.")
             except IndexError:
@@ -817,7 +825,7 @@ class GravitationalWaveTransient(SimpleAnalysis):
             raise ValueError("This isn't a valid ini file")
 
         return ini
-        
+
 
 class Production(SimpleAnalysis):
     pass

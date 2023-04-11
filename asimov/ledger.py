@@ -52,7 +52,7 @@ class YAMLLedger(Ledger):
             update(self.get_defaults(), event, inplace=False)
             for event in self.data["events"]
         ]
-        
+
         self.events = {ev["name"]: ev for ev in self.data["events"]}
         self.data.pop("events")
 
@@ -93,30 +93,6 @@ class YAMLLedger(Ledger):
         self.data["trash"]["events"][event_name] = event
         self.save()
 
-    def update_event(self, event):
-        """
-        Update an event in the ledger with a changed event object.
-        """
-        self.events[event.name] = event.to_dict()
-        self.save()
-
-    def delete_event(self, event_name):
-        """
-        Remove an event from the ledger.
-
-        Parameters
-        ----------
-        event_name : str
-           The name of the event to remove from the ledger.
-        """
-        event = self.events.pop(event_name)
-        if "trash" not in self.data:
-            self.data["trash"] = {}
-        if "events" not in self.data["trash"]:
-            self.data["trash"]["events"] = {}
-        self.data["trash"]["events"][event_name] = event
-        self.save()
-
     def save(self):
         """
         Update the ledger YAML file with the data from the various events.
@@ -131,12 +107,12 @@ class YAMLLedger(Ledger):
         self.data["events"] = list(self.events.values())
         with set_directory(config.get("project", "root")):
             # First produce a backup of the ledger
-            shutil.copy(self.location, self.location+".bak")
-            with open(self.location+"_tmp", "w") as ledger_file:
+            shutil.copy(self.location, self.location + ".bak")
+            with open(self.location + "_tmp", "w") as ledger_file:
                 ledger_file.write(yaml.dump(self.data, default_flow_style=False))
                 ledger_file.flush()
-                #os.fsync(ledger_file.fileno())
-            os.replace(self.location+"_tmp", self.location)
+                # os.fsync(ledger_file.fileno())
+            os.replace(self.location + "_tmp", self.location)
 
     def add_subject(self, subject):
         """Add a new subject to the ledger."""
@@ -145,7 +121,7 @@ class YAMLLedger(Ledger):
 
         self.events[subject.name] = subject.to_dict()
         self.save()
-        
+
     def add_event(self, event):
         self.add_subject(subject=event)
 
@@ -163,23 +139,15 @@ class YAMLLedger(Ledger):
         event : str, optional
            The name of the event which the analysis should be added to.
            This is not required for project analyses.
-        
+
         Examples
         --------
         """
         if isinstance(analysis, ProjectAnalysis):
-            self.data['project analyses'].append(analysis.to_dict())
+            self.data["project analyses"].append(analysis.to_dict())
         else:
             event.add_production(analysis)
             self.events[event.name] = event.to_dict()
-        self.save()
-        
-    def add_production(self, event, production):
-        self.add_analysis(production=production, event=event)
-
-    def add_production(self, event, production):
-        event.add_production(production)
-        self.events[event.name] = event.to_dict()
         self.save()
 
     def add_production(self, event, production):
@@ -208,8 +176,11 @@ class YAMLLedger(Ledger):
 
     @property
     def project_analyses(self):
-        return [ProjectAnalysis.from_dict(analysis, ledger=self) for analysis in self.data['project analyses']]
-    
+        return [
+            ProjectAnalysis.from_dict(analysis, ledger=self)
+            for analysis in self.data["project analyses"]
+        ]
+
     def get_event(self, event=None):
         if event:
             return [Event(**self.events[event], ledger=self)]
@@ -329,43 +300,3 @@ class DatabaseLedger(Ledger):
         return [
             Production.from_dict(dict(production), event) for production in productions
         ]
-
-    def get_productions(self, event=None, filters=None):
-        """Get a list of productions either for a single event or for all events.
-
-        Parameters
-        ----------
-        event : str
-           The name of the event to pull productions from.
-           Optional; if no event is specified then all of the productions are
-           returned.
-
-        filters : dict
-           A dictionary of parameters to filter on.
-
-        Examples
-        --------
-        FIXME: Add docs.
-
-        """
-
-        if event:
-            productions = self.get_event(event).productions
-        else:
-            productions = []
-            for event_i in self.get_event():
-                for production in event_i.productions:
-                    productions.append(production)
-
-        def apply_filter(productions, parameter, value):
-            productions = filter(lambda x: x.meta[parameter] == value
-                                 if (parameter in x.meta)
-                                 else (getattr(x, parameter) == value
-                                       if hasattr(x, parameter) else False),
-                                 productions)
-            return productions
-
-        if filters:
-            for parameter, value in filters.items():
-                productions = apply_filter(productions, parameter, value)
-        return list(productions)

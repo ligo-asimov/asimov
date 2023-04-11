@@ -38,29 +38,11 @@ def datetime_from_epoch(dt, tzinfo=UTC):
     """
     return datetime.datetime.utcfromtimestamp(dt).replace(tzinfo=tzinfo)
 
+
 UTC = tz.tzutc()
 
 logger = logger.getChild("condor")
 logger.setLevel(LOGGER_LEVEL)
-
-
-def datetime_from_epoch(dt, tzinfo=UTC):
-    """Returns the `datetime.datetime` for a given Unix epoch
-
-    Parameters
-    ----------
-    dt : `float`
-        a Unix timestamp
-
-    tzinfo : `datetime.tzinfo`, optional
-        the desired timezone for the output `datetime.datetime`
-
-    Returns
-    -------
-    datetime.datetime
-        the datetime that represents the given Unix epoch
-    """
-    return datetime.datetime.utcfromtimestamp(dt).replace(tzinfo=tzinfo)
 
 
 def submit_job(submit_description):
@@ -122,15 +104,15 @@ def collect_history(cluster_id):
             logger.info(f"Found {collector}")
             schedd = htcondor.Schedd(collector)
             HISTORY_CLASSADS = [
-                    "CompletionDate",
-                    "CpusProvisioned",
-                    "GpusProvisioned",
-                    "CumulativeSuspensionTime",
-                    "EnteredCurrentStatus",
-                    "MaxHosts",
-                    "RemoteWallClockTime",
-                    "RequestCpus",
-                ]
+                "CompletionDate",
+                "CpusProvisioned",
+                "GpusProvisioned",
+                "CumulativeSuspensionTime",
+                "EnteredCurrentStatus",
+                "MaxHosts",
+                "RemoteWallClockTime",
+                "RequestCpus",
+            ]
             try:
                 jobs = schedd.history(
                     f"ClusterId == {cluster_id}", projection=HISTORY_CLASSADS
@@ -200,7 +182,7 @@ class CondorJob(yaml.YAMLObject):
 
         for key, value in kwargs.items():
             setattr(self, key, value)
-        
+
     def __repr__(self):
         out = f"<htcondor job | {self.idno} | {self.status} "
         out += f"| {self.hosts} | {self.name} | {len(self.subjobs)} subjobs >"

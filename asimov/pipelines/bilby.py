@@ -6,12 +6,9 @@ import re
 import subprocess
 import configparser
 
-import git.exc
 import time
 
-from liquid import Liquid
-
-from asimov.utils import update
+from asimov.utils import set_directory
 
 from .. import config
 from ..pipeline import Pipeline, PipelineException, PipelineLogger, PESummaryPipeline
@@ -358,7 +355,7 @@ class Bilby(Pipeline):
 
     def html(self):
         """Return the HTML representation of this pipeline."""
-        pages_dir = os.path.join(self.production.event.name, self.production.name)
+        # pages_dir = os.path.join(self.production.event.name, self.production.name)
         out = ""
 
         return out

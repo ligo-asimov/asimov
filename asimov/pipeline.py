@@ -17,7 +17,6 @@ import otter  # NoQA
 from .storage import Store  # NoQA
 
 
-
 class PipelineException(Exception):
     """Exception for pipeline problems."""
 
@@ -104,7 +103,6 @@ class Pipeline:
     def __repr__(self):
         return self.name.lower()
 
-        
     def detect_completion(self):
         """
         Check to see if the job has in fact completed.
@@ -122,7 +120,7 @@ class Pipeline:
         Define a hook to be run before the DAG is built.
         """
         pass
-    
+
     def before_submit(self, dryrun=False):
         """
         Define a hook to run before the DAG file is generated and submitted.
@@ -188,21 +186,6 @@ class Pipeline:
             self.production.event.name,
             self.production.name,
             "pesummary",
-            "samples",
-            files,
-        )
-        if os.path.exists(results):
-            return True
-        else:
-            return False
-
-    def detect_completion_processing(self):
-        files = f"{self.production.name}_pesummary.dat"
-        results = os.path.join(
-            config.get("general", "webroot"),
-            self.production.event.name,
-            self.production.name,
-            "results",
             "samples",
             files,
         )
