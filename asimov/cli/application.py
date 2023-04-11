@@ -108,7 +108,7 @@ def apply_page(file, event=None, ledger=ledger):
             else:
                 level = ledger
             try:
-                if document["name"] in level.postprocessing:
+                if document["name"] in level.data["postprocessing"]:
                     click.echo(
                         click.style("●", fg="red")
                         + f" Could not apply postprocessing, as {document['name']} is already in the ledger."
