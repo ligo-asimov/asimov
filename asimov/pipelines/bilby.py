@@ -6,12 +6,9 @@ import re
 import subprocess
 import configparser
 
-import git.exc
 import time
 
-from liquid import Liquid
-
-from asimov.utils import update
+from asimov.utils import set_directory
 
 from .. import config
 from ..pipeline import Pipeline, PipelineException, PipelineLogger, PESummaryPipeline

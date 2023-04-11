@@ -155,7 +155,7 @@ def apply_page(file, event=None, ledger=ledger):
                     + "an analysis already exists with this name"
                 )
                 logger.exception(e)
-            
+
         elif document["kind"] == "configuration":
             logger.info("Found configurations")
             document.pop("kind")
