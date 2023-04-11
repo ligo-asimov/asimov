@@ -1,6 +1,7 @@
 """Tests for the LALInference interface."""
 
 import unittest
+from unittest.mock import patch
 import shutil
 import os
 import git

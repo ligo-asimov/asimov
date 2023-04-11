@@ -104,9 +104,9 @@ class TestIniFileHandling(AsimovTestCase):
 
     def test_detchar_substitution(self):
         event = "Nonstandard fmin"
-
-        for pipeline in known_pipelines.keys():
-            if pipeline == "bilby": continue
+        
+        for pipeline in mappings.keys():
+            if pipeline in {"bilby"}: continue
             f = io.StringIO()
             with contextlib.redirect_stdout(f):
 

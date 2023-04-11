@@ -189,7 +189,9 @@ class EventRepo:
         """
         Find the coinc file for this calibration category in this repository.
         """
-        coinc_file = glob.glob(os.path.join(os.getcwd(), self.directory, category, "*coinc*.xml"))
+        coinc_file = glob.glob(
+            os.path.join(os.getcwd(), self.directory, category, "*coinc*.xml")
+        )
 
         if len(coinc_file) > 0:
             return coinc_file[0]

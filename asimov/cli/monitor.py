@@ -1,65 +1,14 @@
 import shutil
 import configparser
-import os
 import sys
 import click
 
 from asimov import condor, config, logger, LOGGER_LEVEL
 from asimov import current_ledger as ledger
 from asimov.cli import ACTIVE_STATES, manage, report
-from asimov.pipelines import known_pipelines
 
 logger = logger.getChild("cli").getChild("monitor")
 logger.setLevel(LOGGER_LEVEL)
-
-if sys.version_info < (3, 10):
-    from importlib_metadata import entry_points
-else:
-    from importlib.metadata import entry_points
-
-
-@click.option("--dry-run", "-n", "dry_run", is_flag=True)
-@click.command()
-def start(dry_run):
-    """Set up a cron job on condor to monitor the project."""
-
-    try:
-        minute_expression = config.get("condor", "cron_minute")
-    except (configparser.NoOptionError, configparser.NoSectionError):
-        minute_expression = "*/15"
-
-    submit_description = {
-        "executable": shutil.which("asimov"),
-        "arguments": "monitor --chain",
-        "accounting_group": config.get("pipelines", "accounting"),
-        "output": os.path.join(".asimov", "asimov_cron.out"),
-        "on_exit_remove": "false",
-        "universe": "local",
-        "error": os.path.join(".asimov", "asimov_cron.err"),
-        "log": os.path.join(".asimov", "asimov_cron.log"),
-        "request_cpus": "1",
-        "cron_minute": minute_expression,
-        "getenv": "true",
-        "batch_name": f"asimov/monitor/{ledger.data['project']['name']}",
-        "request_memory": "8192MB",
-        "request_disk": "8192MB",
-    }
-    cluster = condor.submit_job(submit_description)
-    ledger.data["cronjob"] = cluster
-    ledger.save()
-    click.secho(f"  \t  ● Asimov is running ({cluster})", fg="green")
-    logger.info(f"Running asimov cronjob as  {cluster}")
-
-
-@click.option("--dry-run", "-n", "dry_run", is_flag=True)
-@click.command()
-def stop(dry_run):
-    """Set up a cron job on condor to monitor the project."""
-    cluster = ledger.data["cronjob"]
-    condor.delete_job(cluster)
-    click.secho("  \t  ● Asimov has been stopped", fg="red")
-    logger.info(f"Stopped asimov cronjob {cluster}")
-
 
 
 @click.option("--dry-run", "-n", "dry_run", is_flag=True)
@@ -187,7 +136,7 @@ def monitor(ctx, event, update, dry_run, chain):
 
             # Get the condor jobs
             try:
-                if "job id" in production.meta['scheduler']:
+                if "job id" in production.meta["scheduler"]:
                     if not dry_run:
                         if production.job_id in job_list.jobs:
                             job = job_list.jobs[production.job_id]
@@ -223,7 +172,7 @@ def monitor(ctx, event, update, dry_run, chain):
                             + click.style("●", "green")
                             + f" {production.name} is postprocessing (condor id: {production.job_id})"
                         )
-                        #production.meta["postprocessing"]["status"] = "running"
+                        # production.meta["postprocessing"]["status"] = "running"
 
                     elif job.status.lower() == "running":
                         click.echo(
@@ -307,7 +256,7 @@ def monitor(ctx, event, update, dry_run, chain):
                                 + f" {production.name} has finished and post-processing"
                                 + f" is stuck ({production.job_id})"
                             )
-                            #production.meta["postprocessing"]["status"] = "stuck"
+                            # production.meta["postprocessing"]["status"] = "stuck"
                     elif (
                         pipe.detect_completion()
                         and production.status.lower() == "processing"
@@ -335,8 +284,8 @@ def monitor(ctx, event, update, dry_run, chain):
                             configparser.NoSectionError,
                         ):
                             logger.warning(
-                                "Could not collect condor profiling data as no " +
-                                "scheduler was specified in the config file."
+                                "Could not collect condor profiling data as no "
+                                + "scheduler was specified in the config file."
                             )
                         except ValueError as e:
                             logger.error("Could not collect condor profiling data.")
@@ -393,23 +342,35 @@ def monitor(ctx, event, update, dry_run, chain):
                 click.echo(f"\t{production.name} which needs {needs}")
 
         if "postprocessing" in ledger.data:
-            if len(ledger.data['postprocessing'])>0:
-                click.echo("The following post-processing jobs are defined on this subject")
+            if len(ledger.data["postprocessing"]) > 0:
+                click.echo(
+                    "The following post-processing jobs are defined on this subject"
+                )
             for postprocess in ledger.postprocessing(event):
                 # If the pipeline's not fresh and not currently running, then run it.
                 pipe = postprocess.pipeline
-                if not postprocess.pipeline.fresh and not postprocess.pipeline.job_id in job_list.jobs and not postprocess.pipeline.status == "running":
+                if (
+                    not postprocess.pipeline.fresh
+                    and postprocess.pipeline.job_id not in job_list.jobs
+                    and not postprocess.pipeline.status == "running"
+                ):
                     postprocess.pipeline.run()
-                    ledger.data['postprocessing'][name] = postprocess.to_dict()
+                    ledger.data["postprocessing"][postprocess.name] = postprocess.to_dict()
                     ledger.save()
-                elif pipe.fresh and not pipe.job_id in job_list.jobs and pipe.status == "running":
-                    postprocess.status = 'finished'
+                elif (
+                    pipe.fresh
+                    and pipe.job_id not in job_list.jobs
+                    and pipe.status == "running"
+                ):
+                    postprocess.status = "finished"
                     ledger.save()
-                elif not pipe.fresh and not pipe.job_id in job_list.jobs:
+                elif not pipe.fresh and pipe.job_id not in job_list.jobs:
                     postprocess.pipeline.run()
-                    postprocess.status = 'running'
+                    postprocess.status = "running"
                     ledger.save()
-                click.echo(f"""\t{name} ({pipe.name}) - {"fresh" if pipe.fresh else "stale"} - {pipe.status}""")
-                
+                click.echo(
+                    f"""\t{postprocess.name} ({pipe.name}) - {"fresh" if pipe.fresh else "stale"} - {pipe.status}"""
+                )
+
         if chain:
             ctx.invoke(report.html)

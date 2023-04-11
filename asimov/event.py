@@ -48,18 +48,21 @@ status_map = {
 }
 
 
-status_map = {"cancelled": "light",
-              "finished": "success",
-              "uploaded": "success",
-              "processing": "primary",
-              "running": "primary",
-              "stuck": "warning",
-              "restart": "secondary",
-              "ready": "secondary",
-              "wait": "light",
-              "stop": "danger",
-              "manual": "light",
-              "stopped": "light"}
+status_map = {
+    "cancelled": "light",
+    "finished": "success",
+    "uploaded": "success",
+    "processing": "primary",
+    "running": "primary",
+    "stuck": "warning",
+    "restart": "secondary",
+    "ready": "secondary",
+    "wait": "light",
+    "stop": "danger",
+    "manual": "light",
+    "stopped": "light",
+}
+
 
 class DescriptionException(Exception):
     """Exception for event description problems."""
@@ -194,15 +197,6 @@ class Event:
             self.ledger.update_event(self)
         pass
 
-    def __eq__(self, other):
-        if isinstance(other, Event):
-            if other.name == self.name:
-                return True
-            else:
-                return False
-        else:
-            return False
-            
     def _check_required(self):
         """
         Find all of the required metadata is provided.

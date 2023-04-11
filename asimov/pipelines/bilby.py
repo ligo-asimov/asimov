@@ -8,12 +8,9 @@ import configparser
 
 import time
 
-from asimov.utils import set_directory
-
 from .. import config
 from ..pipeline import Pipeline, PipelineException, PipelineLogger
-from .pesummary import PESummary
-from asimov.utils import set_directory
+
 
 class Bilby(Pipeline):
     """
@@ -221,8 +218,6 @@ class Bilby(Pipeline):
                     command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
                 )
 
-
-
                 dagman = subprocess.Popen(
                     command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
                 )
@@ -279,7 +274,7 @@ class Bilby(Pipeline):
 
     def after_completion(self):
         super().after_completion()
-        #post_pipeline = PESummary(production=self.production, subject=self.production.subject)
+        # post_pipeline = PESummary(production=self.production, subject=self.production.subject)
         self.logger.info("Job has completed. Running PE Summary.")
         # cluster = post_pipeline.submit_dag()
         # self.production.meta["job id"] = int(cluster)

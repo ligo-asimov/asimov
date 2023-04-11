@@ -1,7 +1,6 @@
 """
 Code for the project ledger.
 """
-from copy import deepcopy
 from functools import reduce
 
 import yaml
@@ -53,7 +52,7 @@ class YAMLLedger(Ledger):
             update(self.get_defaults(), event, inplace=False)
             for event in self.data["events"]
         ]
-        
+
         self.events = {ev["name"]: ev for ev in self.data["events"]}
         self.data.pop("events")
 
@@ -69,30 +68,6 @@ class YAMLLedger(Ledger):
         data["project"]["name"] = name
         with open(location, "w") as ledger_file:
             ledger_file.write(yaml.dump(data, default_flow_style=False))
-
-    def update_event(self, event):
-        """
-        Update an event in the ledger with a changed event object.
-        """
-        self.events[event.name] = event.to_dict()
-        self.save()
-
-    def delete_event(self, event_name):
-        """
-        Remove an event from the ledger.
-
-        Parameters
-        ----------
-        event_name : str
-           The name of the event to remove from the ledger.
-        """
-        event = self.events.pop(event_name)
-        if "trash" not in self.data:
-            self.data["trash"] = {}
-        if "events" not in self.data["trash"]:
-            self.data["trash"]["events"] = {}
-        self.data["trash"]["events"][event_name] = event
-        self.save()
 
     def update_event(self, event):
         """
@@ -149,9 +124,6 @@ class YAMLLedger(Ledger):
 
     def add_event(self, event):
         self.add_subject(subject=event)
-        
-    def add_event(self, event):
-        self.add_subject(subject=event)
 
     def add_analysis(self, analysis, event=None):
         """
@@ -167,17 +139,17 @@ class YAMLLedger(Ledger):
         event : str, optional
            The name of the event which the analysis should be added to.
            This is not required for project analyses.
-        
+
         Examples
         --------
         """
         if isinstance(analysis, ProjectAnalysis):
-            self.data['project analyses'].append(analysis.to_dict())
+            self.data["project analyses"].append(analysis.to_dict())
         else:
             event.add_production(analysis)
             self.events[event.name] = event.to_dict()
         self.save()
-        
+
     def add_production(self, event, production):
         self.add_analysis(production=production, event=event)
 
@@ -202,18 +174,23 @@ class YAMLLedger(Ledger):
 
     @property
     def project_analyses(self):
-        return [ProjectAnalysis.from_dict(analysis, ledger=self) for analysis in self.data['project analyses']]
+        return [
+            ProjectAnalysis.from_dict(analysis, ledger=self)
+            for analysis in self.data["project analyses"]
+        ]
 
     def postprocessing(self, subject):
         """
         Return a list of all postprocessing jobs defined in this project.
         """
         if "postprocessing" in self.data:
-            return [PostAnalysis.from_dict(analysis, subject=subject, ledger=self) for analysis in self.data['postprocessing']]
+            return [
+                PostAnalysis.from_dict(analysis, subject=subject, ledger=self)
+                for analysis in self.data["postprocessing"]
+            ]
         else:
             return []
 
-    
     def get_event(self, event=None):
         if event:
             return [Event(**self.events[event], ledger=self)]
