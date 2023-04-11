@@ -5,6 +5,7 @@ import subprocess
 import time
 import warnings
 from copy import deepcopy
+
 warnings.filterwarnings("ignore", module="htcondor")
 
 
@@ -140,12 +141,11 @@ class Pipeline:
         specific pipeline implementation if required.
         """
         self.production.status = "finished"
-        #self.production.meta.pop("job id")
-        
-        #post_pipeline = PESummary(production=self.production, subject=self.production.subject)
+        # self.production.meta.pop("job id")
+
+        # post_pipeline = PESummary(production=self.production, subject=self.production.subject)
         # cluster = post_pipeline.submit_dag()
         # self.production.meta["job id"] = int(cluster)
-
 
     def collect_assets(self):
         """
@@ -310,6 +310,7 @@ class Pipeline:
             # with report_config:
             #     report_config + self.
 
+
 class PostPipeline:
     """This class describes post processing pipelines which are a
     class of pipelines which can be run on multiple analyses for a
@@ -322,24 +323,25 @@ class PostPipeline:
     job.
 
     """
+
     style = "multiplex"
+
     def __init__(self, subject, **kwargs):
         """
         Post processing pipeline factory class.
-        
+
         """
 
         if "ledger" in kwargs:
-            self.ledger = kwargs['ledger']
+            self.ledger = kwargs["ledger"]
         else:
             self.ledger = None
-        
-        self.subject = subject
-        #self.category = category if category else production.category
-        self.logger = logger
-        #self.meta = self.production.meta["postprocessing"][self.name.lower()]
-        self.meta = kwargs
 
+        self.subject = subject
+        # self.category = category if category else production.category
+        self.logger = logger
+        # self.meta = self.production.meta["postprocessing"][self.name.lower()]
+        self.meta = kwargs
 
         self.outputs = os.path.join(
             config.get("project", "root"),
@@ -351,13 +353,20 @@ class PostPipeline:
 
     def __repr__(self):
         output = ""
-        output +=  "-------------------------------------------------------" + "\n"
-        output +=  "Asimov postprocessing pipeline" + "\n"
+        output += "-------------------------------------------------------" + "\n"
+        output += "Asimov postprocessing pipeline" + "\n"
         output += f"{self.name}" + "\n"
-        output += f"""Currently contains: {(chr(10)+"                    ").join(self.current_list)}""" + "\n"
-        output += f"""Designed to contain: {(chr(10)+"                     ").join([analysis.name for analysis in self.analyses])}""" + "\n"
+        output += (
+            f"""Currently contains: {(chr(10)+"                    ").join(self.current_list)}"""
+            + "\n"
+        )
+        output += (
+            """Designed to contain: """
+            + f"""{(chr(10)+"                     ").join([analysis.name for analysis in self.analyses])}"""
+            + "\n"
+        )
         output += f"""Is fresh?: {self.fresh}""" + "\n"
-        output +=  "-------------------------------------------------------" + "\n"
+        output += "-------------------------------------------------------" + "\n"
         return output
 
     def _process_analyses(self):
@@ -379,7 +388,7 @@ class PostPipeline:
         """
         all_requirements = []
         post_requirements = []
-        for need in self.meta['analyses']:
+        for need in self.meta["analyses"]:
             try:
                 requirement = need.split(":")
                 requirement = [requirement[0].split("."), requirement[1]]
@@ -392,18 +401,27 @@ class PostPipeline:
 
         analyses = []
         post = []
-        if self.meta['analyses']:
+        if self.meta["analyses"]:
             matches = set(self.subject.analyses)
             for attribute, match in all_requirements:
-                filtered_analyses = list(filter(lambda x: x.matches_filter(attribute, match), self.subject.analyses))
+                filtered_analyses = list(
+                    filter(
+                        lambda x: x.matches_filter(attribute, match),
+                        self.subject.analyses,
+                    )
+                )
                 matches = set.intersection(matches, set(filtered_analyses))
                 for analysis in matches:
                     analyses.append(analysis)
 
             matches = set(self.ledger.postprocessing)
             for attribute, match in post_requirements:
-                filtered_posts = list(filter(lambda x: x == match, self.ledger.postprocessing.keys()))
-                matches = set.intersection(self.ledger.postprocessing, set(filtered_posts))
+                filtered_posts = list(
+                    filter(lambda x: x == match, self.ledger.postprocessing.keys())
+                )
+                matches = set.intersection(
+                    self.ledger.postprocessing, set(filtered_posts)
+                )
                 for analysis in matches:
                     post.append(analysis)
         return analyses
@@ -414,7 +432,7 @@ class PostPipeline:
         Return the list of analyses which are included in the current results.
         """
         if "current list" in self.meta:
-            return self.meta['current list']
+            return self.meta["current list"]
         else:
             return []
 
@@ -423,15 +441,15 @@ class PostPipeline:
         """
         Return the list of analyses which are included in the current results.
         """
-        self.meta['current list'] = [analysis.name for analysis in data]
+        self.meta["current list"] = [analysis.name for analysis in data]
         if self.ledger:
             self.ledger.save()
-        
+
     @property
     def fresh(self):
         """
         Check if the post-processing job is fresh.
-        
+
         Tries to work out if any of the samples which should have been
         included for post-processing are newer than the most recent
         files produced by this job.  If they are all older then the
@@ -444,7 +462,6 @@ class PostPipeline:
            If the job is fresh True is returned.
            Otherwise False.
         """
-        analysis_status = 0
         # Check if there are any finished analyses
         finished = []
         for analysis in self.analyses:
@@ -469,11 +486,11 @@ class PostPipeline:
         """
         Check that the ages of all the samples from listA are younger than all the files from listB.
         """
-        
+
         for sample in listA:
             for comparison in listB:
                 assert os.stat(sample).st_mtime < os.stat(comparison).st_mtime
-        
+
     @property
     def analyses(self):
         """
@@ -496,9 +513,11 @@ class PostPipeline:
         Run all of the steps required to build and submit this pipeline.
         """
         cluster = self.submit_dag(dryrun=dryrun)
-        self.current_list = [analysis for analysis in self.analyses if analysis.finished]
-        self.meta['job id'] = cluster
-        self.meta['status'] = "running"
+        self.current_list = [
+            analysis for analysis in self.analyses if analysis.finished
+        ]
+        self.meta["job id"] = cluster
+        self.meta["status"] = "running"
         if self.ledger:
             self.ledger.save()
 
@@ -509,19 +528,19 @@ class PostPipeline:
         output = {}
         output.update(deepcopy(self.meta))
         output.pop("ledger")
-        output['pipeline'] = self.name
+        output["pipeline"] = self.name
         return output
-            
+
     @property
     def status(self):
         if "status" in self.meta:
-            return self.meta['status']
+            return self.meta["status"]
         else:
             return None
 
     @property
     def job_id(self):
         if "job id" in self.meta:
-            return self.meta['job id']
+            return self.meta["job id"]
         else:
             return None

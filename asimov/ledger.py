@@ -1,7 +1,6 @@
 """
 Code for the project ledger.
 """
-from copy import deepcopy
 from functools import reduce
 
 import yaml
@@ -143,45 +142,17 @@ class YAMLLedger(Ledger):
         event : str, optional
            The name of the event which the analysis should be added to.
            This is not required for project analyses.
-        
+
         Examples
         --------
         """
         if isinstance(analysis, ProjectAnalysis):
-            self.data['project analyses'].append(analysis.to_dict())
+            self.data["project analyses"].append(analysis.to_dict())
         else:
             event.add_production(analysis)
             self.events[event.name] = event.to_dict()
         self.save()
-        
-    def add_event(self, event):
-        self.add_subject(subject=event)
 
-    def add_analysis(self, analysis, event=None):
-        """
-        Add an analysis to the ledger.
-
-        This method can accept any of the forms of analysis supported by asimov, and
-        will determine the correct way to add them to the ledger.
-
-        Parameters
-        ----------
-        analysis : `asimov.Analysis`
-           The analysis to be added to the ledger.
-        event : str, optional
-           The name of the event which the analysis should be added to.
-           This is not required for project analyses.
-        
-        Examples
-        --------
-        """
-        if isinstance(analysis, ProjectAnalysis):
-            self.data['project analyses'].append(analysis.to_dict())
-        else:
-            event.add_production(analysis)
-            self.events[event.name] = event.to_dict()
-        self.save()
-        
     def add_production(self, event, production):
         self.add_analysis(production=production, event=event)
 
@@ -206,18 +177,23 @@ class YAMLLedger(Ledger):
 
     @property
     def project_analyses(self):
-        return [ProjectAnalysis.from_dict(analysis, ledger=self) for analysis in self.data['project analyses']]
+        return [
+            ProjectAnalysis.from_dict(analysis, ledger=self)
+            for analysis in self.data["project analyses"]
+        ]
 
     def postprocessing(self, subject):
         """
         Return a list of all postprocessing jobs defined in this project.
         """
         if "postprocessing" in self.data:
-            return [PostAnalysis.from_dict(analysis, subject=subject, ledger=self) for analysis in self.data['postprocessing']]
+            return [
+                PostAnalysis.from_dict(analysis, subject=subject, ledger=self)
+                for analysis in self.data["postprocessing"]
+            ]
         else:
             return []
 
-    
     def get_event(self, event=None):
         if event:
             return [Event(**self.events[event], ledger=self)]

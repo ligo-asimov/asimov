@@ -88,7 +88,7 @@ def apply_page(file, event=None, ledger=ledger):
                 )
                 logger.exception(e)
 
-        elif document['kind'].lower() == "postprocessing":
+        elif document["kind"].lower() == "postprocessing":
             # Handle a project analysis
             logger.info("Found a postprocessing description")
             document.pop("kind")
@@ -108,17 +108,19 @@ def apply_page(file, event=None, ledger=ledger):
             else:
                 level = ledger
             try:
-                if document['name'] in level.postprocessing:
+                if document["name"] in level.postprocessing:
                     click.echo(
                         click.style("●", fg="red")
                         + f" Could not apply postprocessing, as {document['name']} is already in the ledger."
-                )
-                    logger.error(f" Could not apply postprocessing, as {document['name']} is already in the ledger.")
+                    )
+                    logger.error(
+                        f" Could not apply postprocessing, as {document['name']} is already in the ledger."
+                    )
                 else:
                     if isinstance(level, asimov.event.Event):
-                        level.meta['postprocessing'][document['name']] = document
+                        level.meta["postprocessing"][document["name"]] = document
                     elif isinstance(level, Ledger):
-                        level.data['postprocessing'][document['name']] = document
+                        level.data["postprocessing"][document["name"]] = document
                         level.name = "the project"
                     ledger.save()
                     click.echo(
@@ -133,8 +135,8 @@ def apply_page(file, event=None, ledger=ledger):
                     + "a post-process already exists with this name"
                 )
                 logger.exception(e)
-                
-        elif document['kind'].lower() == "projectanalysis":
+
+        elif document["kind"].lower() == "projectanalysis":
             # Handle a project analysis
             logger.info("Found a project analysis")
             document.pop("kind")

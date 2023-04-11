@@ -3,7 +3,6 @@
 import configparser
 import glob
 import os
-import pathlib
 import re
 import subprocess
 from shutil import copyfile, copytree
@@ -110,7 +109,7 @@ class BayesWave(Pipeline):
             ini.save()
 
             ini = ini.ini_loc
-            
+
         else:
             ini = f"{self.production.name}.ini"
 
@@ -319,7 +318,7 @@ class BayesWave(Pipeline):
             f"bwave/{self.production.event.name}/{self.production.name}",
             f"{self.production.name}.dag",
         ]
-        
+
         self.logger.info((" ".join(command)))
 
         if dryrun:

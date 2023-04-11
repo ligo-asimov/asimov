@@ -25,7 +25,6 @@ Project analyses
 import os
 import configparser
 from copy import deepcopy
-from warnings import warn
 
 from functools import reduce
 import operator
@@ -55,16 +54,18 @@ status_map = {
     "stopped": "light",
 }
 
+
 class Analysis:
     """
     The base class for all other types of analysis.
 
     TODO: Add a check to make sure names cannot conflict
     """
+
     meta = {}
     meta_defaults = {"scheduler": {}, "sampler": {}, "review": {}}
     _reviews = Review()
-    
+
     @property
     def review(self):
         """
@@ -121,34 +122,22 @@ class Analysis:
         self.meta["scheduler"]["job id"] = value
 
     @property
-    def job_id(self):
-        """
-        Get the ID number of this job as it resides in the scheduler.
-        """
-        if "scheduler" in self.meta:
-            if "job id" in self.meta['scheduler']:
-                return self.meta['scheduler']["job id"]
-            else:
-                return None
-
-    @job_id.setter
-    def job_id(self, value):
-        if "scheduler" not in self.meta:
-            self.meta['scheduler'] = {}
-        self.meta["scheduler"]["job id"] = value
-
-    @property
     def dependencies(self):
         """Return a list of analyses which this analysis depends upon."""
         all_matches = []
         if len(self._needs) == 0:
             return []
         else:
-            matches = set({})# set(self.event.analyses)
-            #matches.remove(self)
+            matches = set({})  # set(self.event.analyses)
+            # matches.remove(self)
             requirements = self._process_dependencies(self._needs)
             for attribute, match in requirements:
-                filtered_analyses = list(filter(lambda x: x.matches_filter(attribute, match), self.event.analyses))
+                filtered_analyses = list(
+                    filter(
+                        lambda x: x.matches_filter(attribute, match),
+                        self.event.analyses,
+                    )
+                )
                 matches = set.union(matches, set(filtered_analyses))
             for analysis in matches:
                 all_matches.append(analysis)
@@ -170,7 +159,7 @@ class Analysis:
     @property
     def status(self):
         return self.status_str.lower()
-    
+
     @status.setter
     def status(self, value):
         self.status_str = value.lower()
@@ -370,6 +359,7 @@ class Analysis:
 
         return card
 
+
 class PostAnalysis(Analysis):
     """
     A post-processing analysis
@@ -383,9 +373,8 @@ class PostAnalysis(Analysis):
         self.logger = logger.getChild("postprocessing").getChild(f"{self.name}")
         self.logger.setLevel(LOGGER_LEVEL)
 
-
         if "status" in kwargs:
-            self.status_str = kwargs['status'].lower()
+            self.status_str = kwargs["status"].lower()
         else:
             self.status_str = "none"
 
@@ -394,12 +383,14 @@ class PostAnalysis(Analysis):
         # Start by adding pipeline defaults
         if "pipelines" in self.event.ledger.data:
             if pipeline in self.event.ledger.data["pipelines"]:
-                self.meta = update(self.meta, deepcopy(self.event.ledger.data["pipelines"][pipeline]))
+                self.meta = update(
+                    self.meta, deepcopy(self.event.ledger.data["pipelines"][pipeline])
+                )
 
         self.meta = update(self.meta, deepcopy(self.subject.meta))
 
         self.meta = update(self.meta, deepcopy(kwargs))
-        self.meta['pipeline'] = pipeline.lower()
+        self.meta["pipeline"] = pipeline.lower()
         self.pipeline = pipeline.lower()
         self.pipeline = known_pipelines[pipeline.lower()](self)
         # if "needs" in self.meta:
@@ -407,7 +398,7 @@ class PostAnalysis(Analysis):
         # else:
         #     self._needs = []
         if "comment" in kwargs:
-            self.comment = kwargs['comment']
+            self.comment = kwargs["comment"]
         else:
             self.comment = None
 
@@ -423,10 +414,10 @@ class PostAnalysis(Analysis):
         """
         dictionary = {}
         dictionary = update(dictionary, self.meta)
-        dictionary['name'] = self.name
+        dictionary["name"] = self.name
         dictionary["status"] = self.status
         if isinstance(self.pipeline, str):
-            dictionary['pipeline'] = self.pipeline
+            dictionary["pipeline"] = self.pipeline
         else:
             dictionary["pipeline"] = self.pipeline.name.lower()
         dictionary["comment"] = self.comment
@@ -434,7 +425,7 @@ class PostAnalysis(Analysis):
         if self.review:
             dictionary["review"] = self.review.to_dicts()
 
-        dictionary['needs'] = self.dependencies
+        dictionary["needs"] = self.dependencies
 
         if "ledger" in dictionary:
             dictionary.pop("ledger")
@@ -456,15 +447,15 @@ class PostAnalysis(Analysis):
                 f"Found {parameters.keys()}"
             )
         if "status" not in parameters:
-            parameters['status'] = "ready"
+            parameters["status"] = "ready"
         if "event" in parameters:
             parameters.pop("event")
         pipeline = parameters.pop("pipeline")
         name = parameters.pop("name")
         if "comment" not in parameters:
-            parameters['comment'] = None
+            parameters["comment"] = None
 
-        return cls(subject, name, pipeline,  **parameters)
+        return cls(subject, name, pipeline, **parameters)
 
 
 class SimpleAnalysis(Analysis):
@@ -490,7 +481,9 @@ class SimpleAnalysis(Analysis):
         # Start by adding pipeline defaults
         if "pipelines" in self.event.ledger.data:
             if pipeline in self.event.ledger.data["pipelines"]:
-                self.meta = update(self.meta, deepcopy(self.event.ledger.data["pipelines"][pipeline]))
+                self.meta = update(
+                    self.meta, deepcopy(self.event.ledger.data["pipelines"][pipeline])
+                )
 
         # if "postprocessing" in self.event.ledger.data:
         #     self.meta["postprocessing"] = deepcopy(
@@ -698,8 +691,8 @@ class ProjectAnalysis(Analysis):
         """ """
         super().__init__()
 
-        self.name = name # if name else "unnamed project analysis"
-        
+        self.name = name  # if name else "unnamed project analysis"
+
         self.logger = logger.getChild("project analyses").getChild(f"{self.name}")
         self.logger.setLevel(LOGGER_LEVEL)
 
@@ -835,7 +828,7 @@ class GravitationalWaveTransient(SimpleAnalysis):
         self._add_missing_parameters()
         self._checks()
 
-        self.psds = self._set_psds()
+        self.psds = self._collect_psds()
         self.xml_psds = self._collect_psds(format="xml")
 
     def _collect_psds(self, format="ascii"):
@@ -890,10 +883,10 @@ class GravitationalWaveTransient(SimpleAnalysis):
         """
         compatible = True
 
-        #compatible = self.meta["likelihood"] == other_production.meta["likelihood"]
-        #compatible = self.meta["data"] == other_production.meta["data"]
+        # compatible = self.meta["likelihood"] == other_production.meta["likelihood"]
+        # compatible = self.meta["data"] == other_production.meta["data"]
         return compatible
-    
+
     def _add_missing_parameters(self):
         for parameter in {"quality", "waveform", "likelihood"}:
             if parameter not in self.meta:
@@ -912,7 +905,7 @@ class GravitationalWaveTransient(SimpleAnalysis):
         Carry-out a number of data consistency checks on the information from the ledger.
         """
         # Check that the upper frequency is included, otherwise calculate it
-        
+
         if "quality" in self.meta:
             if ("maximum frequency" not in self.meta["quality"]) and (
                 "sample rate" in self.meta["likelihood"]
@@ -985,7 +978,9 @@ class GravitationalWaveTransient(SimpleAnalysis):
         else:
             # We'll need to search the repository for it.
             try:
-                ini_loc = self.subject.repository.find_prods(self.name, self.category)[0]
+                ini_loc = self.subject.repository.find_prods(self.name, self.category)[
+                    0
+                ]
                 if not os.path.exists(ini_loc):
                     raise ValueError("Could not open the ini file.")
             except IndexError:
