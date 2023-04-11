@@ -1,5 +1,6 @@
 import shutil
 import configparser
+import os
 import sys
 import click
 
@@ -11,6 +12,11 @@ from asimov.pipelines import known_pipelines
 logger = logger.getChild("cli").getChild("monitor")
 logger.setLevel(LOGGER_LEVEL)
 
+if sys.version_info < (3, 10):
+    from importlib_metadata import entry_points
+else:
+    from importlib.metadata import entry_points
+
 
 @click.option("--dry-run", "-n", "dry_run", is_flag=True)
 @click.command()
@@ -18,19 +24,19 @@ def start(dry_run):
     """Set up a cron job on condor to monitor the project."""
 
     try:
-        minute_expression = config.get("asimov start", "cron_minute")
+        minute_expression = config.get("condor", "cron_minute")
     except (configparser.NoOptionError, configparser.NoSectionError):
         minute_expression = "*/15"
 
     submit_description = {
         "executable": shutil.which("asimov"),
         "arguments": "monitor --chain",
-        "accounting_group": config.get("asimov start", "accounting"),
-        "output": "asimov_cron.out",
+        "accounting_group": config.get("pipelines", "accounting"),
+        "output": os.path.join(".asimov", "asimov_cron.out"),
         "on_exit_remove": "false",
         "universe": "local",
-        "error": "asimov_cron.err",
-        "log": "asimov_cron.log",
+        "error": os.path.join(".asimov", "asimov_cron.err"),
+        "log": os.path.join(".asimov", "asimov_cron.log"),
         "request_cpus": "1",
         "cron_minute": minute_expression,
         "getenv": "true",
@@ -150,6 +156,7 @@ def monitor(ctx, event, update, dry_run, chain):
             for production in event.productions
             if production.status.lower() in ACTIVE_STATES
         ]
+
         for production in on_deck:
 
             logger.debug(f"Available analyses: {event}/{production.name}")
@@ -318,10 +325,19 @@ def monitor(ctx, event, update, dry_run, chain):
                         if "profiling" not in production.meta:
                             production.meta["profiling"] = {}
                         try:
+                            config.get("condor", "scheduler")
                             production.meta["profiling"] = condor.collect_history(
                                 production.job_id
                             )
                             production.job_id = None
+                        except (
+                            configparser.NoOptionError,
+                            configparser.NoSectionError,
+                        ):
+                            logger.warning(
+                                "Could not collect condor profiling data as no " +
+                                "scheduler was specified in the config file."
+                            )
                         except ValueError as e:
                             logger.error("Could not collect condor profiling data.")
                             logger.exception(e)

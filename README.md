@@ -134,7 +134,7 @@ Now you can add an existing event, by downloading the event data settings using 
 $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/events/gwtc-2-1/GW150914_095045.yaml
 ```
 
-This downloads the settings which were used for analysing GW150914 for the GWTC-2.1 catalogue paper, and stores them in the ledger file in the project (`ledger.yml`).
+This downloads the settings which were used for analysing GW150914 for the GWTC-2.1 catalogue paper, and stores them in the ledger file in the project (`.asimov/ledger.yml`).
 
 Many analyses can be run on a single event (these are called "productions" in asimov parlence).
 We can add some pre-configured analyses by downloading some analysis configuration settings.

@@ -42,7 +42,7 @@ def html(event, webdir):
         f"{webdir}/index.html",
         author="Asimov",
         title="Asimov project report",
-        theme_location=resource_filename("asimov.cli", "report-theme"),
+        theme_location=resource_filename(__name__, "theme/"),
         config_file="asimov.conf",
     )
     with report:

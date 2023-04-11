@@ -1,16 +1,20 @@
 """
 Code for the project ledger.
 """
+from copy import deepcopy
 from functools import reduce
 
 import yaml
+
+import os
+import shutil
 
 import asimov
 import asimov.database
 from asimov import config
 from asimov.analysis import ProjectAnalysis, PostAnalysis
 from asimov.event import Event, Production
-from asimov.utils import update
+from asimov.utils import update, set_directory
 
 
 class Ledger:
@@ -40,7 +44,7 @@ class Ledger:
 
 
 class YAMLLedger(Ledger):
-    def __init__(self, location="ledger.yml"):
+    def __init__(self, location=".asimov/ledger.yml"):
         self.location = location
         with open(location, "r") as ledger_file:
             self.data = yaml.safe_load(ledger_file)
@@ -54,7 +58,7 @@ class YAMLLedger(Ledger):
         self.data.pop("events")
 
     @classmethod
-    def create(cls, name, location="ledger.yml"):
+    def create(cls, name, location=".asimov/ledger.yml"):
 
         data = {}
         data["asimov"] = {}
@@ -126,9 +130,14 @@ class YAMLLedger(Ledger):
 
         """
         self.data["events"] = list(self.events.values())
-
-        with open(self.location, "w") as ledger_file:
-            ledger_file.write(yaml.dump(self.data, default_flow_style=False))
+        with set_directory(config.get("project", "root")):
+            # First produce a backup of the ledger
+            shutil.copy(self.location, self.location + ".bak")
+            with open(self.location + "_tmp", "w") as ledger_file:
+                ledger_file.write(yaml.dump(self.data, default_flow_style=False))
+                ledger_file.flush()
+                # os.fsync(ledger_file.fileno())
+            os.replace(self.location + "_tmp", self.location)
 
     def add_subject(self, subject):
         """Add a new subject to the ledger."""
@@ -137,6 +146,9 @@ class YAMLLedger(Ledger):
 
         self.events[subject.name] = subject.to_dict()
         self.save()
+
+    def add_event(self, event):
+        self.add_subject(subject=event)
         
     def add_event(self, event):
         self.add_subject(subject=event)
@@ -321,9 +333,3 @@ class DatabaseLedger(Ledger):
         return [
             Production.from_dict(dict(production), event) for production in productions
         ]
-
-    def add_event(self, event):
-        self._insert(event)
-
-    def add_production(self, production):
-        self._insert(production)

@@ -30,7 +30,7 @@ class DAGTests(unittest.TestCase):
         os.makedirs(f"{self.cwd}/tests/tmp/project")
         os.chdir(f"{self.cwd}/tests/tmp/project")
         make_project(name="Test project", root=f"{self.cwd}/tests/tmp/project")
-        self.ledger = YAMLLedger(f"ledger.yml")
+        self.ledger = YAMLLedger(f".asimov/ledger.yml")
         apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
         apply_page(file = f"{self.cwd}/tests/test_data/events_blueprint.yaml", ledger=self.ledger)
 
@@ -70,8 +70,6 @@ class DAGTests(unittest.TestCase):
 
         apply_page(file = f"{self.cwd}/tests/test_data/test_complex_dag.yaml", event='GW150914_095045', ledger=self.ledger)
         event = self.ledger.get_event('GW150914_095045')[0]
-        # for edge in event.graph.edges:
-        #     print(edge[0].name, "->", edge[1].name)
         self.assertEqual(len(event.get_all_latest()), 2)
         
     def test_query_dag(self):

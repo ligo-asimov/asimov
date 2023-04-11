@@ -3,6 +3,7 @@
 import configparser
 import glob
 import os
+import pathlib
 import re
 import subprocess
 from shutil import copyfile, copytree
@@ -165,21 +166,74 @@ class BayesWave(Pipeline):
                 self.logger.debug(out)
 
     def detect_completion(self):
-        self.logger.info("Checking for completion.")
         psds = self.collect_assets()["psds"]
         if len(list(psds.values())) > 0:
-            self.logger.info("PSDs detected, job complete.")
             return True
         else:
             self.logger.info("Bayeswave job completion was not detected.")
             return False
 
+    def _convert_psd(self, ascii_format, ifo):
+        """
+        Convert an ascii format PSD to XML.
+
+        Parameters
+        ----------
+        ascii_format : str
+           The location of the ascii format file.
+        ifo : str
+           The IFO which this PSD is for.
+        """
+        command = [
+            "convert_psd_ascii2xml",
+            "--fname-psd-ascii",
+            f"{ascii_format}",
+            "--conventional-postfix",
+            "--ifo",
+            f"{ifo}",
+        ]
+        self.logger.info(" ".join(command))
+        pipe = subprocess.Popen(
+            command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
+        out, err = pipe.communicate()
+
+        if err:
+            self.production.status = "stuck"
+            if hasattr(self.production.event, "issue_object"):
+                raise Exception(
+                    f"An XML format PSD could not be created.\n{command}\n{out}\n\n{err}",
+                )
+            else:
+                raise Exception(
+                    f"An XML format PSD could not be created.\n{command}\n{out}\n\n{err} ",
+                )
+        else:
+            asset = f"{ifo.upper()}-psd.xml.gz"
+            git_location = os.path.join(
+                self.production.category,
+                "psds",
+                f"{self.production.meta['likelihood']['sample rate']}",
+            )
+            self.production.event.repository.add_file(
+                asset,
+                os.path.join(git_location, f"{ifo}-psd.xml.gz"),
+                commit_message=f"Added the xml format PSD for {ifo}.",
+            )
+
     def after_completion(self):
+
+        try:
+            for ifo, psd in self.collect_assets()["psds"].items():
+                self._convert_psd(ascii_format=psd, ifo=ifo)
+        except Exception as e:
+            self.logger.error("Failed to convert the PSDs to XML")
+            self.logger.exception(e)
 
         try:
             self.collect_pages()
         except FileNotFoundError as e:
-            self.logger.error("Failed to copy the megaplot outputs.")
+            self.logger.error("Failed to copy the megaplot output")
             self.logger.exception(e)
 
         try:
@@ -197,6 +251,9 @@ class BayesWave(Pipeline):
                         self.production.meta["quality"]["supress"][ifo]["lower"],
                         self.production.meta["quality"]["supress"][ifo]["upper"],
                     )
+
+        self.production.meta.update(self.collect_assets())
+
         self.production.status = "uploaded"
 
     def before_submit(self):
@@ -272,23 +329,23 @@ class BayesWave(Pipeline):
 
                 stdout, stderr = dagman.communicate()
 
-                if "submitted to cluster" in str(stdout):
-                    cluster = re.search(
-                        r"submitted to cluster ([\d]+)", str(stdout)
-                    ).groups()[0]
-                    self.production.status = "running"
-                    self.production.job_id = int(cluster)
-                    self.logger.info(
-                        f"Successfully submitted to cluster {self.production.job_id}"
-                    )
-                    self.logger.debug(stdout)
-                    return (int(cluster),)
-                else:
-                    self.logger.info(stdout)
-                    self.logger.error(stderr)
-                    raise PipelineException(
-                        f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
-                    )
+            if "submitted to cluster" in str(stdout):
+                cluster = re.search(
+                    r"submitted to cluster ([\d]+)", str(stdout)
+                ).groups()[0]
+                self.production.status = "running"
+                self.production.job_id = int(cluster)
+                self.logger.info(
+                    f"Successfully submitted to cluster {self.production.job_id}"
+                )
+                self.logger.debug(stdout)
+                return (int(cluster),)
+            else:
+                self.logger.info(stdout)
+                self.logger.error(stderr)
+                raise PipelineException(
+                    f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
+                )
 
     def upload_assets(self):
         """
@@ -300,7 +357,7 @@ class BayesWave(Pipeline):
         for detector, asset in self.collect_assets()["psds"]:
             self.production.event.repository.add_file(
                 asset,
-                os.path.join(git_location, str(sample), f"psd_{detector}.dat"),
+                os.path.join(git_location, str(sample), f"{detector}-psd.dat"),
                 commit_message=f"Added the PSD for {detector}.",
             )
 
@@ -357,8 +414,8 @@ class BayesWave(Pipeline):
         Collect the assets for this job and commit them to the event repository.
         Since this job also generates the PSDs these should be added to the production ledger.
         """
-        results_dir = glob.glob(f"{self.production.rundir}/trigtime_*")[0]
         psds = {}
+        results_dir = glob.glob(f"{self.production.rundir}/trigtime_*")[0]
         for det in self.production.meta["interferometers"]:
             asset = os.path.join(
                 results_dir, "post", "clean", f"glitch_median_PSD_forLI_{det}.dat"
@@ -368,6 +425,21 @@ class BayesWave(Pipeline):
 
         outputs = {}
         outputs["psds"] = psds
+
+        xml_psds = {}
+        for det in self.production.meta["interferometers"]:
+            asset = os.path.join(
+                f"{self.production.event.repository.directory}",
+                f"{self.production.category}",
+                "psds",
+                f"{self.production.meta['likelihood']['sample rate']}",
+                f"{det.upper()}-psd.xml.gz",
+            )
+            if os.path.exists(asset):
+                xml_psds[det] = os.path.abspath(asset)
+
+        outputs["xml psds"] = xml_psds
+
         return outputs
 
     def supress_psd(self, ifo, fmin, fmax):
@@ -457,24 +529,12 @@ class BayesWave(Pipeline):
         """Return the HTML representation of this pipeline."""
         pages_dir = os.path.join(self.production.event.name, self.production.name)
         out = ""
-
-        image_card = """<div class="card" style="width: 18rem;">
-<img class="card-img-top" src="{0}" alt="Card image cap">
-  <div class="card-body">
-    <p class="card-text">{1}</p>
-  </div>
-</div>
-        """
-
         if self.production.status in {"finished", "uploaded"}:
-            out += """<div class="asimov-pipeline bayeswave">"""
+            out += """<div class="asimov-pipeline">"""
             out += (
                 f"""<p><a href="{pages_dir}/index.html">Full Megaplot output</a></p>"""
             )
-            out += image_card.format(
-                f"{pages_dir}/plots/clean_whitened_residual_histograms.png",
-                "Cleaned whitened residual histograms",
-            )
+            out += f"""<img height=200 src="{pages_dir}/plots/clean_whitened_residual_histograms.png"</src>"""
 
             out += """</div>"""
 

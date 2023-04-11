@@ -2,15 +2,14 @@
 Olivaw management commands
 """
 import os
-import sys
 import pathlib
 
 import click
 
 from asimov import current_ledger as ledger
 import asimov
-from asimov import LOGGER_LEVEL
 from asimov import condor
+from asimov import LOGGER_LEVEL
 from asimov.event import DescriptionException
 from asimov.pipeline import PipelineException
 
@@ -66,7 +65,9 @@ def build(event, dryrun):
                     )
                 continue  # I think this test might be unused
             try:
-                ini_loc = production.event.repository.find_prods(production.name, production.category)[0]
+                ini_loc = production.event.repository.find_prods(
+                    production.name, production.category
+                )[0]
                 if not os.path.exists(ini_loc):
                     raise KeyError
             except KeyError:
@@ -82,6 +83,7 @@ def build(event, dryrun):
                     else:
                         # path.mkdir(parents=True, exist_ok=True)
                         config_loc = os.path.join(f"{production.name}.ini")
+                        production.pipeline.before_config()
                         production.make_config(config_loc, dryrun=dryrun)
                         click.echo(f"Production config {production.name} created.")
                         try:
@@ -183,14 +185,14 @@ def submit(event, update, dryrun):
                         click.style("●", fg="red")
                         + f" Unable to submit {production.name}"
                     )
-                except ValueError:
+                except ValueError as e:
+                    print("ERROR", e)
                     logger.info("Unable to submit an unbuilt production")
                     click.echo(
                         click.style("●", fg="red")
                         + f" Unable to submit {production.name} as it hasn't been built yet."
                     )
                     click.echo("Try running `asimov manage build` first.")
-                    sys.exit()
                 try:
                     pipe.submit_dag(dryrun=dryrun)
                     if not dryrun:
@@ -211,11 +213,12 @@ def submit(event, update, dryrun):
                     logger.error(
                         f"The pipeline failed to submit the DAG file to the cluster. {e}",
                     )
-                # Refresh the job list
-                job_list = condor.CondorJobList()
-                job_list.refresh()
-                # Update the ledger
-                ledger.update_event(event)
+                if not dryrun:
+                    # Refresh the job list
+                    job_list = condor.CondorJobList()
+                    job_list.refresh()
+                    # Update the ledger
+                    ledger.update_event(event)
 
 
 @click.option(

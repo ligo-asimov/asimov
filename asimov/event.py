@@ -2,27 +2,35 @@
 Trigger handling code.
 """
 
-import glob
 import os
 import pathlib
-from copy import deepcopy
 import logging
-import configparser
+import subprocess
 
 import networkx as nx
 import yaml
 from ligo.gracedb.rest import GraceDb, HTTPError
-from liquid import Liquid
 
 from asimov import config, logger, LOGGER_LEVEL
-from asimov.pipelines import known_pipelines
-from asimov.storage import Store
-from asimov.utils import update
 from asimov.analysis import GravitationalWaveTransient
 
 from .git import EventRepo
-from .ini import RunConfiguration
-from .review import Review
+
+status_map = {
+    "cancelled": "light",
+    "finished": "success",
+    "uploaded": "success",
+    "processing": "primary",
+    "running": "primary",
+    "stuck": "warning",
+    "restart": "secondary",
+    "ready": "secondary",
+    "wait": "light",
+    "stop": "danger",
+    "manual": "light",
+    "stopped": "light",
+}
+
 
 status_map = {
     "cancelled": "light",
@@ -77,6 +85,7 @@ Please fix the error and then remove the `yaml-error` label from this issue.
 """
         return text
 
+
 class Event:
     """
     A specific gravitational wave event or trigger.
@@ -121,7 +130,7 @@ class Event:
             self.ledger = None
 
         if "ledger" in kwargs:
-            self.ledger = kwargs['ledger']
+            self.ledger = kwargs["ledger"]
         else:
             self.ledger = None
 
@@ -155,7 +164,8 @@ class Event:
             for production in kwargs["productions"]:
                 self.add_production(
                     Production.from_dict(
-                        production, subject=self,
+                        production,
+                        subject=self,
                     )
                 )
         self._check_required()
@@ -169,7 +179,7 @@ class Event:
     @property
     def analyses(self):
         return self.productions
-            
+
     def __eq__(self, other):
         if isinstance(other, Event):
             if other.name == self.name:
@@ -211,7 +221,7 @@ class Event:
             pass
         else:
             raise DescriptionException(
-                f"""Some of the required calibration envelopes are missing from this event."""
+                f"""Some of the required calibration envelopes are missing from this issue."""
                 f"""{set(self.meta['interferometers']) - set(self.meta['data']['calibration'].keys())}"""
             )
 
@@ -253,7 +263,7 @@ class Event:
 
         if production.dependencies:
             for dependency in production.dependencies:
-                if (dependency == production):
+                if dependency == production:
                     continue
                 self.graph.add_edge(dependency, production)
 
@@ -338,8 +348,8 @@ class Event:
         event = cls.from_dict(data, update=update, ledger=ledger)
 
         if "productions" in data:
-            if isinstance(data['productions'], type(None)):
-                data['productions'] = []
+            if isinstance(data["productions"], type(None)):
+                data["productions"] = []
         else:
             data["productions"] = []
 
@@ -378,7 +388,10 @@ class Event:
            The location in the repository for this file.
         """
 
-        gid = self.meta["gid"]
+        if "gid" in self.meta:
+            gid = self.meta["gid"]
+        else:
+            raise ValueError("No GID is included in this event's metadata.")
 
         try:
             client = GraceDb(service_url=config.get("gracedb", "url"))
@@ -386,6 +399,14 @@ class Event:
 
             with open("download.file", "w") as dest_file:
                 dest_file.write(file_obj.read().decode())
+
+            if "xml" in gfile:
+                # Convert to the new xml format
+                command = ["ligolw_no_ilwdchar", "download.file"]
+                pipe = subprocess.Popen(
+                    command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+                )
+                out, err = pipe.communicate()
 
             self.repository.add_file(
                 "download.file",
@@ -460,7 +481,9 @@ class Event:
             for x in unfinished.reverse().nodes()
             if unfinished.reverse().out_degree(x) == 0
         ]
-        return {end for end in ends if end.status.lower()=="ready"}  # only want to return one version of each production!
+        return {
+            end for end in ends if end.status.lower() == "ready"
+        }  # only want to return one version of each production!
 
     def build_report(self):
         for production in self.productions:
@@ -487,5 +510,6 @@ class Event:
         """
 
         return card
+
 
 Production = GravitationalWaveTransient

@@ -6,12 +6,9 @@ import re
 import subprocess
 import configparser
 
-import git.exc
 import time
 
-from liquid import Liquid
-
-from asimov.utils import update
+from asimov.utils import set_directory
 
 from .. import config
 from ..pipeline import Pipeline, PipelineException, PipelineLogger
@@ -80,79 +77,6 @@ class Bilby(Pipeline):
                 self.logger.info(f"Adding preserve_relative_paths to {sub_file}")
                 f_handle.write("preserve_relative_paths = True\n" + original)
 
-    def _determine_prior(self):
-        """
-        Determine the correct choice of prior file for this production.
-        """
-
-        self.logger.info("Determining the prior file for this production")
-
-        if "prior file" in self.production.meta:
-            self.logger.info("A prior file has already been specified.")
-            self.logger.info(f"{self.production.meta['prior file']}")
-            return self.production.meta["prior file"]
-        else:
-            template = None
-
-            if "event type" in self.production.meta:
-                event_type = self.production.meta["event type"].lower()
-            else:
-                event_type = "bbh"
-                self.production.meta["event type"] = event_type
-
-            if template is None:
-                template_filename = f"{event_type}.prior.template"
-                self.logger.info(
-                    f"[bilby] Constructing a prior using {event_type}.prior.template."
-                )
-                try:
-                    template = os.path.join(
-                        config.get("bilby", "priors"), template_filename
-                    )
-                except (configparser.NoOptionError, configparser.NoSectionError):
-                    from pkg_resources import resource_filename
-
-                    template = resource_filename(
-                        "asimov", f"priors/{template_filename}"
-                    )
-
-            priors = {}
-            priors = update(priors, self.production.event.ledger.data["priors"])
-            priors = update(priors, self.production.event.meta["priors"])
-            priors = update(priors, self.production.meta["priors"])
-
-            priors = {}
-            priors = update(priors, self.production.event.ledger.data["priors"])
-            priors = update(priors, self.production.event.meta["priors"])
-            priors = update(priors, self.production.meta["priors"])
-
-            liq = Liquid(template)
-            rendered = liq.render(priors=priors, config=config)
-
-            prior_name = f"{self.production.name}.prior"
-            prior_file = os.path.join(os.getcwd(), prior_name)
-            self.logger.info(f"Saving the new prior file as {prior_file}")
-            with open(prior_file, "w") as new_prior:
-                new_prior.write(rendered)
-
-            repo = self.production.event.repository
-            try:
-
-                repo.add_file(
-                    prior_file,
-                    os.path.join(
-                        config.get("general", "calibration_directory"), prior_name
-                    ),
-                )
-                os.remove(prior_file)
-            except git.exc.GitCommandError:
-                pass
-            return os.path.join(
-                self.production.event.repository.directory,
-                config.get("general", "calibration_directory"),
-                prior_name,
-            )
-
     def build_dag(self, psds=None, user=None, clobber_psd=False, dryrun=False):
         """
         Construct a DAG file in order to submit a production to the
@@ -180,10 +104,6 @@ class Bilby(Pipeline):
         cwd = os.getcwd()
 
         self.logger.info(f"Working in {cwd}")
-
-        self._determine_prior()  # Build the prior file
-
-        self._determine_prior()  # Build the prior file
 
         if self.production.event.repository:
             ini = self.production.event.repository.find_prods(
@@ -287,7 +207,7 @@ class Bilby(Pipeline):
                 "condor_submit_dag",
                 "-batch-name",
                 f"bilby/{self.production.event.name}/{self.production.name}",
-                os.path.join(self.production.rundir, "submit", dag_filename),
+                os.path.join("submit", dag_filename),
             ]
 
             if dryrun:
@@ -296,6 +216,12 @@ class Bilby(Pipeline):
 
                 # with set_directory(self.production.rundir):
                 self.logger.info(f"Working in {os.getcwd()}")
+
+                dagman = subprocess.Popen(
+                    command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+                )
+
+
 
                 dagman = subprocess.Popen(
                     command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
@@ -431,42 +357,9 @@ class Bilby(Pipeline):
 
     def html(self):
         """Return the HTML representation of this pipeline."""
-        pages_dir = os.path.join(self.production.event.name, self.production.name)
+        # pages_dir = os.path.join(self.production.event.name, self.production.name)
         out = ""
-        out += """<div class="asimov-pipeline bilby">"""
-        out += """<ul>"""
-        out += f"""<li><a href="{pages_dir}/overview.html">Overview pages</a></li>"""
-        if self.production.status in {"finished", "uploaded"}:
-            if self.production.status == "uploaded":
-                out += f"""<li><a href="{pages_dir}/pesummary/home.html">Summary pages</a></li>"""
-        out += """</ul>"""
 
-        image_card = """<div class="card" style="width: 18rem;">
-<img class="card-img-top" src="{0}" alt="Card image cap">
-  <div class="card-body">
-    <p class="card-text">{1}</p>
-  </div>
-</div>
-        """
-
-        plots = [
-            [
-                f"{pages_dir}/pesummary/plots/{self.production.name}_1d_posterior_luminosity_distance.png",
-                "luminosity distance",
-            ],
-            [
-                f"{pages_dir}/pesummary/plots/{self.production.name}_skymap.png",
-                "skymap",
-            ],
-        ]
-
-        out += """<div class="card-group">"""
-        for plot in plots:
-            if self.production.status in {"finished", "uploaded"}:
-                out += image_card.format(plot[0], plot[1])
-
-        out += """</div>"""  # Closes card-group
-        out += """</div>"""  # Closes the bilby div
         return out
 
     def resurrect(self):

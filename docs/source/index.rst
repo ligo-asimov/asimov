@@ -1,5 +1,3 @@
-:page_template: homepage.html
-
 .. raw:: html
 	 
 	 <div class="px-4 py-5 my-5 text-center">
@@ -128,12 +126,12 @@ Users' guide
 
    getting-started
    installation
-   user-guide/projects
-   user-guide/events
-   user-guide/productions
-   user-guide/running
-   user-guide/monitoring
-   user-guide/reporting
+   olivaw/projects
+   olivaw/events
+   olivaw/productions
+   olivaw/running
+   olivaw/monitoring
+   olivaw/reporting
    storage
    olivaw/review
    
@@ -177,6 +175,10 @@ Developers' Guide
    contributing.rst
    code-of-conduct.rst
 
+   asimov-repository
+   
+   ledger   
+   pipelines-dev
    
    asimov-repository
 
@@ -184,6 +186,7 @@ Developers' Guide
 	     
    ledger   
    pipelines-dev
+   hooks
 
    building-docs
    
@@ -198,14 +201,8 @@ Python API
    api/condor
    api/event
    api/git
-   api/gitlab
-   api/ini
-   api/ledger
-   api/locutus
-   api/logging
-   api/mattermost
-   api/olivaw
-   api/pipeline
+   state
+   pipelines
    config
 	     
 Indices and tables

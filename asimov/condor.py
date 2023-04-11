@@ -71,7 +71,6 @@ def submit_job(submit_description):
     hostname_job = htcondor.Submit(submit_description)
 
     try:
-        logger.info(f"Trying to submit to {config.get('condor', 'scheduler')}")
         # There should really be a specified submit node, and if there is, use it.
         schedulers = htcondor.Collector().locate(
             htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler")
@@ -115,7 +114,6 @@ def collect_history(cluster_id):
             htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler")
         )
         schedd = htcondor.Schedd(schedulers)
-        logger.info(f"Found {schedd}")
     except:  # NoQA
         # If you can't find a specified scheduler, use the first one you find
         collectors = htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd)
@@ -124,15 +122,15 @@ def collect_history(cluster_id):
             logger.info(f"Found {collector}")
             schedd = htcondor.Schedd(collector)
             HISTORY_CLASSADS = [
-                    "CompletionDate",
-                    "CpusProvisioned",
-                    "GpusProvisioned",
-                    "CumulativeSuspensionTime",
-                    "EnteredCurrentStatus",
-                    "MaxHosts",
-                    "RemoteWallClockTime",
-                    "RequestCpus",
-                ]
+                "CompletionDate",
+                "CpusProvisioned",
+                "GpusProvisioned",
+                "CumulativeSuspensionTime",
+                "EnteredCurrentStatus",
+                "MaxHosts",
+                "RemoteWallClockTime",
+                "RequestCpus",
+            ]
             try:
                 jobs = schedd.history(
                     f"ClusterId == {cluster_id}", projection=HISTORY_CLASSADS
@@ -190,10 +188,6 @@ class CondorJob(yaml.YAMLObject):
            The number of hosts currently processing the job.
         status: int
            The status condition for the job.
-
-        Examples
-        --------
-        job = CondorJob(346758)
         """
 
         self.idno = idno

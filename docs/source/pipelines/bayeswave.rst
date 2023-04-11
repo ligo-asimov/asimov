@@ -1,5 +1,3 @@
-.. _bayeswave-pipelines:
-
 BayesWave pipelines
 ===================
 

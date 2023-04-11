@@ -56,7 +56,7 @@ class TestBaseAnalysis(unittest.TestCase):
         )
         assert result.exit_code == 0
         assert result.output == "● New project created successfully!\n"
-        self.ledger = YAMLLedger("ledger.yml")
+        self.ledger = YAMLLedger(".asimov/ledger.yml")
 
         f = io.StringIO()
         with contextlib.redirect_stdout(f):

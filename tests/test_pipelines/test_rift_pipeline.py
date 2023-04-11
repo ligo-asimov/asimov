@@ -8,8 +8,12 @@ import git
 import io
 import contextlib
 
+from unittest.mock import patch
+from importlib import reload
+
 from click.testing import CliRunner
 
+import asimov
 from asimov.cli import project, manage
 from asimov.cli import configuration
 from asimov.cli.application import apply_page
@@ -23,10 +27,6 @@ from asimov.pipeline import PipelineException
 class RiftTests(unittest.TestCase):
     """Test RIFT interface.
 
-    TODO
-    ----
-    Right now these feel a bit more like an expression of intention than actual tests, as we'll need to set the testing environment up better to make this work.
-
     The test_dag method will need to be updated.
 """
 
@@ -37,47 +37,63 @@ class RiftTests(unittest.TestCase):
     def setUp(self):
         os.makedirs(f"{self.cwd}/tests/tmp/project")
         os.chdir(f"{self.cwd}/tests/tmp/project")
-        runner = CliRunner()
-        result = runner.invoke(project.init,
-                               ['Test Project', '--root', f"{self.cwd}/tests/tmp/project"])
-        assert result.exit_code == 0
-        assert result.output == '● New project created successfully!\n'
-        self.ledger = YAMLLedger(f"ledger.yml")
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):
+        
+            runner = CliRunner()
+            result = runner.invoke(project.init,
+                                   ['Test Project', '--root', f"{self.cwd}/tests/tmp/project"])
+            assert result.exit_code == 0
+            assert result.output == '● New project created successfully!\n'
+            self.ledger = YAMLLedger()
 
     def tearDown(self):
         os.chdir(self.cwd)
         shutil.rmtree(f"{self.cwd}/tests/tmp/project/")
 
-    @unittest.skip("Skipped temporarily while RIFT is updated")
-    def test_build_cli(self):
+    # @unittest.skip("Skipped temporarily while RIFT is updated")
+    def test_submit_cli(self):
         """Check that a RIFT config file can be built."""
-        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
-        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml", event=None, ledger=self.ledger)
-        event = "GW150914_095045"
-        pipeline = "rift"
-        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
-        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{pipeline}.yaml", event=event, ledger=self.ledger)
-
-        runner = CliRunner()
-        result = runner.invoke(manage.build, "--dryrun")
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):
+            apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
+            apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml", event=None, ledger=self.ledger)
+            event = "GW150914_095045"
+            pipeline = "rift"
+            apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
+            apply_page(file = f"{self.cwd}/tests/test_data/test_{pipeline}.yaml", event=event, ledger=self.ledger)
+        with patch("asimov.current_ledger", new=YAMLLedger()):
+            reload(asimov)
+            reload(manage)
+            runner = CliRunner()
+            result = runner.invoke(manage.manage, ['build'])
+            result = runner.invoke(manage.submit, "--dryrun")
         self.assertTrue("util_RIFT_pseudo_pipe.py" in result.output)
 
     @unittest.skip("Skipped temporarily while RIFT is updated")
     def test_build_api(self):
         """Check that a RIFT config file can be built."""
-        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
-        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml", event=None, ledger=self.ledger)
-        event = "GW150914_095045"
-        pipeline = "rift"
-        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
-        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{pipeline}.yaml", event=event, ledger=self.ledger)
-
         f = io.StringIO()
         with contextlib.redirect_stdout(f):
-            self.ledger.get_event(event)[0].productions[0].pipeline.build_dag(dryrun=True)
-            print("--------")
-            print(f.getvalue())
-            self.assertTrue("util_RIFT_pseudo_pipe.py --use-coinc COINC MISSING --l-max 4 --calibration C01 --add-extrinsic --approx SEOBNRv4PHM --cip-explode-jobs 3 --use-rundir working/GW150914_095045/RIFT0 --ile-force-gpu --use-ini INI MISSING" in f.getvalue())
+            apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
+            apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml", event=None, ledger=self.ledger)
+            event = "GW150914_095045"
+            pipeline = "rift"
+            apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
+            apply_page(file = f"{self.cwd}/tests/test_data/test_{pipeline}.yaml", event=event, ledger=self.ledger)
+        with patch("asimov.current_ledger", new=YAMLLedger()):
+            reload(asimov)
+            reload(manage)
+            runner = CliRunner()
+            result = runner.invoke(manage.manage, ['build'])
+            result = runner.invoke(manage.submit, "--dryrun")
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):
+            result = self.ledger.get_event(event)[0].productions[0].pipeline.build_dag(dryrun=True)
+            print("\n\nBUILDDAG ",f.getvalue())
+            print("RESULT", result)
+            self.assertTrue("util_RIFT_pseudo_pipe.py --assume-nospin --calibration C01 --approx IMRPhenomD" in f.getvalue())
+            self.assertTrue("--ile-force-gpu " in f.getvalue())
         
     @unittest.skip("Skipped temporarily while RIFT is updated")
     def test_build_api_non_default_calibration(self):
@@ -91,18 +107,25 @@ class RiftTests(unittest.TestCase):
                                ['--general/calibration', f"C00"])
         assert result.exit_code == 0
 
-        
-        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
-        apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml", event=None, ledger=self.ledger)
-        event = "GW150914_095045"
-        pipeline = "rift"
-        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
-        apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{pipeline}.yaml", event=event, ledger=self.ledger)
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):        
+            apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
+            apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml", event=None, ledger=self.ledger)
+            event = "GW150914_095045"
+            pipeline = "rift"
+            apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
+            apply_page(file = f"{self.cwd}/tests/test_data/test_{pipeline}.yaml", event=event, ledger=self.ledger)
 
+        with patch("asimov.current_ledger", new=YAMLLedger()):
+            reload(asimov)
+            reload(manage)
+            runner = CliRunner()
+            result = runner.invoke(manage.manage, ['build'])
+            result = runner.invoke(manage.submit, "--dryrun")
         f = io.StringIO()
         with contextlib.redirect_stdout(f):
-            self.ledger.get_event(event)[0].productions[0].pipeline.build_dag(dryrun=True)
-            print("--------")
-            print(f.getvalue())
-            self.assertTrue("util_RIFT_pseudo_pipe.py --use-coinc COINC MISSING --l-max 4 --calibration C00 --add-extrinsic --approx SEOBNRv4PHM --cip-explode-jobs 3 --use-rundir working/GW150914_095045/RIFT0 --ile-force-gpu --use-ini INI MISSING" in f.getvalue())
-
+            result = self.ledger.get_event(event)[0].productions[0].pipeline.build_dag(dryrun=True)
+            print("\n\nBUILDDAG ",f.getvalue())
+            print("RESULT", result)
+            self.assertTrue("util_RIFT_pseudo_pipe.py --assume-nospin --calibration C00 --approx IMRPhenomD" in f.getvalue())
+            self.assertTrue("--ile-force-gpu " in f.getvalue())

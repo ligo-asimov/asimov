@@ -73,9 +73,10 @@ def make_project(
     storage.Store.create(root=results, name=f"{project_name} storage")
     config.set("storage", "directory", results)
 
-    # Make the ledger
+    # Make the ledger and operative files
+    pathlib.Path('.asimov').mkdir(parents=True, exist_ok=True)
     config.set("ledger", "engine", "yamlfile")
-    config.set("ledger", "location", "ledger.yml")
+    config.set("ledger", "location", os.path.join(".asimov", "ledger.yml"))
 
     # Set the default environment
     python_loc = shutil.which("python").split("/")[:-2]
@@ -87,9 +88,11 @@ def make_project(
     else:
         config.set("condor", "user", user)
 
-    Ledger.create(engine="yamlfile", name=project_name, location="ledger.yml")
+    Ledger.create(engine="yamlfile",
+                  name=project_name,
+                  location=os.path.join(".asimov", "ledger.yml"))
 
-    with open("asimov.conf", "w") as config_file:
+    with open(os.path.join(".asimov", "asimov.conf"), "w") as config_file:
         config.write(config_file)
 
 
@@ -116,14 +119,7 @@ def make_project(
     default="results",
     help="The location where the results store should be created.",
 )
-@click.option(
-    "--user",
-    default=None,
-    help="The user account to be used for accounting purposes. Defaults to the current user if not set.",
-)
-def init(
-    name, root, working="working", checkouts="checkouts", results="results", user=None
-):
+def init(name, root, working="working", checkouts="checkouts", results="results"):
     """
     Roll-out a new project.
     """
@@ -219,7 +215,7 @@ def clone(location):
     # Make the ledger
     if config.get("ledger", "engine") == "yamlfile":
         shutil.copyfile(
-            os.path.join(location, config.get("ledger", "location")), "ledger.yml"
+            os.path.join(location, config.get("ledger", "location")), ".asimov/ledger.yml"
         )
     elif config.get("ledger", "engine") == "gitlab":
         raise NotImplementedError(
@@ -227,7 +223,7 @@ def clone(location):
         )
 
     config.set("ledger", "engine", "yamlfile")
-    config.set("ledger", "location", "ledger.yml")
+    config.set("ledger", "location", ".asimov/ledger.yml")
 
     with open("asimov.conf", "w") as config_file:
         config.write(config_file)

@@ -42,8 +42,7 @@ extensions = [
     'sphinxcontrib.httpdomain',
     'sphinxcontrib.httpexample',
     'sphinxcontrib.autohttp.flask',
-    'sphinx-jsonschema',
-    'sphinx_multiversion'
+    
 ]
 
 html_logo = "textmark.png"

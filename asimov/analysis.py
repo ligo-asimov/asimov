@@ -71,7 +71,7 @@ class Analysis:
         Return the review information attached to the analysis.
         """
         if "review" in self.meta:
-            if len(self.meta['review']) > 0:
+            if len(self.meta["review"]) > 0:
                 self._reviews = Review.from_dict(self.meta["review"], production=self)
                 self.meta.pop("review")
         return self._reviews
@@ -256,7 +256,6 @@ class Analysis:
         else:
             return None
 
-        
     def set_meta(self, key, value):
         """
         Set a metadata attribute which doesn't currently exist.
@@ -495,7 +494,7 @@ class SimpleAnalysis(Analysis):
         else:
             self._needs = []
         if "comment" in kwargs:
-            self.comment = kwargs['comment']
+            self.comment = kwargs["comment"]
         else:
             self.comment = None
 
@@ -517,7 +516,7 @@ class SimpleAnalysis(Analysis):
 
         dictionary["status"] = self.status
         if isinstance(self.pipeline, str):
-            dictionary['pipeline'] = self.pipeline
+            dictionary["pipeline"] = self.pipeline
         else:
             dictionary["pipeline"] = self.pipeline.name.lower()
         dictionary["comment"] = self.comment
@@ -525,8 +524,14 @@ class SimpleAnalysis(Analysis):
         if self.review:
             dictionary["review"] = self.review.to_dicts()
 
-        dictionary['needs'] = self._needs #self.dependencies
-            
+        dictionary["needs"] = self._needs  # self.dependencies
+
+        if "quality" in self.meta:
+            dictionary["quality"] = self.meta["quality"]
+        if "priors" in self.meta:
+            dictionary["priors"] = self.meta["priors"]
+        for key, value in self.meta.items():
+            dictionary[key] = value
         if "repository" in self.meta:
             dictionary["repository"] = self.repository.url
         if "ledger" in dictionary:
@@ -550,15 +555,15 @@ class SimpleAnalysis(Analysis):
                 f"Found {parameters.keys()}"
             )
         if "status" not in parameters:
-            parameters['status'] = "ready"
+            parameters["status"] = "ready"
         if "event" in parameters:
             parameters.pop("event")
         pipeline = parameters.pop("pipeline")
         name = parameters.pop("name")
         if "comment" not in parameters:
-            parameters['comment'] = None
+            parameters["comment"] = None
 
-        return cls(subject, name, pipeline,  **parameters)
+        return cls(subject, name, pipeline, **parameters)
 
 
 class SubjectAnalysis(Analysis):
@@ -592,12 +597,12 @@ class SubjectAnalysis(Analysis):
             self._needs = self.meta.pop("needs")
         else:
             self._needs = []
-        
+
         if "comment" in kwargs:
-            self.comment = kwargs['comment']
+            self.comment = kwargs["comment"]
         else:
             self.comment = None
-        
+
     def to_dict(self, event=True):
         """
         Return this production as a dictionary.
@@ -617,7 +622,7 @@ class SubjectAnalysis(Analysis):
 
         dictionary["status"] = self.status
         if isinstance(self.pipeline, str):
-            dictionary['pipeline'] = self.pipeline
+            dictionary["pipeline"] = self.pipeline
         else:
             dictionary["pipeline"] = self.pipeline.name.lower()
         dictionary["comment"] = self.comment
@@ -625,8 +630,14 @@ class SubjectAnalysis(Analysis):
         if self.review:
             dictionary["review"] = self.review.to_dicts()
 
-        dictionary['needs'] = self.dependencies
-            
+        dictionary["needs"] = self.dependencies
+
+        if "quality" in self.meta:
+            dictionary["quality"] = self.meta["quality"]
+        if "priors" in self.meta:
+            dictionary["priors"] = self.meta["priors"]
+        for key, value in self.meta.items():
+            dictionary[key] = value
         if "repository" in self.meta:
             dictionary["repository"] = self.repository.url
         if "ledger" in dictionary:
@@ -650,17 +661,15 @@ class SubjectAnalysis(Analysis):
                 f"Found {parameters.keys()}"
             )
         if "status" not in parameters:
-            parameters['status'] = "ready"
+            parameters["status"] = "ready"
         if "event" in parameters:
             parameters.pop("event")
         pipeline = parameters.pop("pipeline")
         name = parameters.pop("name")
         if "comment" not in parameters:
-            parameters['comment'] = None
+            parameters["comment"] = None
 
-        return cls(subject, name, pipeline,  **parameters)
-
-
+        return cls(subject, name, pipeline, **parameters)
 
 
 class ProjectAnalysis(Analysis):
@@ -695,19 +704,23 @@ class ProjectAnalysis(Analysis):
             if self._analysis_spec:
                 matches = set(sub.analyses)
                 for attribute, match in requirements:
-                    filtered_analyses = list(filter(lambda x: x.matches_filter(attribute, match), sub.analyses))
+                    filtered_analyses = list(
+                        filter(
+                            lambda x: x.matches_filter(attribute, match), sub.analyses
+                        )
+                    )
                     matches = set.intersection(matches, set(filtered_analyses))
                 for analysis in matches:
                     self.analyses.append(analysis)
         if "status" in kwargs:
-            self.status_str = kwargs['status'].lower()
+            self.status_str = kwargs["status"].lower()
         else:
             self.status_str = "none"
 
         self.pipeline = pipeline.lower()
         try:
             self.pipeline = known_pipelines[str(pipeline).lower()](self)
-        except:
+        except KeyError:
             self.logger.warning(f"The pipeline {pipeline} could not be found.")
         if "needs" in self.meta:
             self._needs = self.meta.pop("needs")
@@ -715,7 +728,7 @@ class ProjectAnalysis(Analysis):
             self._needs = []
 
         if "comment" in kwargs:
-            self.comment = kwargs['comment']
+            self.comment = kwargs["comment"]
         else:
             self.comment = None
 
@@ -728,6 +741,82 @@ class ProjectAnalysis(Analysis):
         None
         """
         return f"<Project analysis for {len(self.events)} events and {len(self.analyses)} analyses>"
+
+    @classmethod
+    def from_dict(cls, parameters, ledger=None):
+        parameters = deepcopy(parameters)
+        # Check that pars is a dictionary
+        if not {"pipeline", "name"} <= parameters.keys():
+            raise ValueError(
+                f"Some of the required parameters are missing. "
+                f"Found {parameters.keys()}"
+            )
+        if "status" not in parameters:
+            parameters["status"] = "ready"
+        if "event" in parameters:
+            parameters.pop("event")
+        pipeline = parameters.pop("pipeline")
+        name = parameters.pop("name")
+        if "comment" not in parameters:
+            parameters["comment"] = None
+        return cls(name=name, pipeline=pipeline, ledger=ledger, **parameters)
+
+    def to_dict(self):
+        """
+        Return this project production as a dictionary.
+
+        Parameters
+        ----------
+        event : bool
+           If set to True the output is designed to be included nested within an event.
+           The event name is not included in the representation, and the production name is provided as a key.
+        """
+        dictionary = {}
+        dictionary["name"] = self.name
+        dictionary["status"] = self.status
+        if isinstance(self.pipeline, str):
+            dictionary["pipeline"] = self.pipeline
+        else:
+            dictionary["pipeline"] = self.pipeline.name.lower()
+        dictionary["comment"] = self.comment
+
+        if self.review:
+            dictionary["review"] = self.review.to_dicts()
+
+        dictionary["needs"] = self.dependencies
+
+        if "quality" in self.meta:
+            dictionary["quality"] = self.meta["quality"]
+        if "priors" in self.meta:
+            dictionary["priors"] = self.meta["priors"]
+        for key, value in self.meta.items():
+            dictionary[key] = value
+        if "repository" in self.meta:
+            dictionary["repository"] = self.repository.url
+        if "ledger" in dictionary:
+            dictionary.pop("ledger")
+        if "pipelines" in dictionary:
+            dictionary.pop("pipelines")
+
+        dictionary["subjects"] = self.subjects
+        dictionary["analyses"] = self._analysis_spec
+
+        output = dictionary
+
+        return output
+
+        self.pipeline = pipeline.lower()
+        try:
+            self.pipeline = known_pipelines[pipeline.lower()](self)
+        except:
+            self.logger.warning(f"The pipeline {pipeline} could not be found.")
+        if "needs" in self.meta:
+            self._needs = self.meta.pop("needs")
+        else:
+            self._needs = []
+
+        self.comment = comment
+
 
     @classmethod
     def from_dict(cls, parameters, ledger=None):
@@ -800,18 +889,25 @@ class GravitationalWaveTransient(SimpleAnalysis):
         self._add_missing_parameters()
         self._checks()
 
-        self.psds = self._collect_psds()
+        self.psds = self._set_psds()
+        self.xml_psds = self._collect_psds(format="xml")
 
-    def _collect_psds(self):
+    def _collect_psds(self, format="ascii"):
         """
         Collect the required psds for this production.
         """
         psds = {}
         # If the PSDs are specifically provided in the ledger,
         # use those.
-        if "psds" in self.meta:
-            if self.meta["likelihood"]["sample rate"] in self.meta["psds"]:
-                psds = self.meta["psds"][self.meta["likelihood"]["sample rate"]]
+
+        if format == "ascii":
+            keyword = "psds"
+        elif format == "xml":
+            keyword = "xml psds"
+
+        if keyword in self.meta:
+            if self.meta["likelihood"]["sample rate"] in self.meta[keyword]:
+                psds = self.meta[keyword][self.meta["likelihood"]["sample rate"]]
 
         # First look through the list of the job's dependencies
         # to see if they're provided by a job there.
@@ -823,9 +919,11 @@ class GravitationalWaveTransient(SimpleAnalysis):
             for previous_job in self.dependencies:
                 try:
                     # Check if the job provides PSDs as an asset and were produced with compatible settings
-                    if "psds" in previous_job.pipeline.collect_assets():
-                        if self._check_compatible(previous_job):
-                            psds = previous_job.pipeline.collect_assets()["psds"]
+                    if keyword in productions[previous_job].pipeline.collect_assets():
+                        if self._check_compatible(productions[previous_job]):
+                            psds = productions[previous_job].pipeline.collect_assets()[
+                                keyword
+                            ]
                     else:
                         psds = {}
                 except Exception:
@@ -852,13 +950,17 @@ class GravitationalWaveTransient(SimpleAnalysis):
     
     def _add_missing_parameters(self):
         for parameter in {"quality", "waveform", "likelihood"}:
-            if not parameter in self.meta:
+            if parameter not in self.meta:
                 self.meta[parameter] = {}
-                
+
         for parameter in {"marginalization"}:
-            if not parameter in self.meta['likelihood']:
-                self.meta['likelihood'][parameter] = {}
-        
+            if parameter not in self.meta["likelihood"]:
+                self.meta["likelihood"][parameter] = {}
+
+        for parameter in {"maximum frequency"}:
+            if parameter not in self.meta["quality"]:
+                self.meta["quality"][parameter] = {}
+
     def _checks(self):
         """
         Carry-out a number of data consistency checks on the information from the ledger.
