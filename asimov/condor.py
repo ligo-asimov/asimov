@@ -281,7 +281,7 @@ class CondorJobList:
 
     def __init__(self):
         self.jobs = {}
-        cache = "_cache_jobs.yaml"
+        cache = os.path.join(".asimov", "_cache_jobs.yaml")
         if not os.path.exists(cache):
             self.refresh()
         else:
@@ -357,5 +357,5 @@ class CondorJobList:
                 else:
                     self.jobs[datum.idno] = datum.to_dict()
 
-        with open("_cache_jobs.yaml", "w") as f:
+        with open(os.path.join(".asimov", "_cache_jobs.yaml"), "w") as f:
             f.write(yaml.dump(self.jobs))
