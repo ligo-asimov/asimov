@@ -564,7 +564,7 @@ class Production:
     def __init__(self, event, name, status, pipeline, comment=None, **kwargs):
         self.event = event if isinstance(event, Event) else event[0]
         self.name = name
-
+        
         pathlib.Path(
             os.path.join(config.get("logging", "directory"), self.event.name, name)
         ).mkdir(parents=True, exist_ok=True)
@@ -811,7 +811,7 @@ class Production:
            If set to True the output is designed to be included nested within an event.
            The event name is not included in the representation, and the production name is provided as a key.
         """
-        dictionary = {}
+        dictionary = deepcopy(self.meta)
         if not event:
             dictionary["event"] = self.event.name
             dictionary["name"] = self.name
