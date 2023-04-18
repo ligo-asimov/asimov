@@ -414,6 +414,7 @@ class PESummaryPipeline(PostPipeline):
         submit_description = {
             "executable": os.path.join(config.get("pipelines", "environment"), "bin", "summarypages"),
             "arguments": " ".join(command),
+            "accounting_group_user": config.get('condor', 'user'), 
             "accounting_group": self.meta["accounting group"],
             "output": f"{self.production.rundir}/pesummary.out",
             "error": f"{self.production.rundir}/pesummary.err",
