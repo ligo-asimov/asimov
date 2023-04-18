@@ -32,6 +32,7 @@ def start(dry_run):
         "arguments": "monitor --chain",
         "accounting_group": config.get("pipelines", "accounting"),
         "output": os.path.join(".asimov", "asimov_cron.out"),
+        "accounting_group_user": config.get('condor', 'user'),
         "on_exit_remove": "false",
         "universe": "local",
         "error": os.path.join(".asimov", "asimov_cron.err"),
