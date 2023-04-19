@@ -563,6 +563,7 @@ class Production:
 
     def __init__(self, event, name, status, pipeline, comment=None, **kwargs):
         self.event = event if isinstance(event, Event) else event[0]
+        self.subject = self.event
         self.name = name
         
         pathlib.Path(
