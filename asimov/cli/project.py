@@ -232,5 +232,5 @@ def clone(location):
     config.set("ledger", "engine", "yamlfile")
     config.set("ledger", "location", ".asimov/ledger.yml")
 
-    with open("asimov.conf", "w") as config_file:
+    with open(os.path.join(".asimov", "asimov.conf"), "w") as config_file:
         config.write(config_file)
