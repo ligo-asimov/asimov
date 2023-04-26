@@ -213,7 +213,7 @@ def monitor(ctx, event, update, dry_run, chain):
                     else:
                         running += 1
 
-            except (ValueError, AttributeError) as :
+            except (ValueError, AttributeError):
                 if production.pipeline:
 
                     pipe = production.pipeline
