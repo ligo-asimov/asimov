@@ -171,17 +171,15 @@ def monitor(ctx, event, update, dry_run, chain):
                             + f" (condor id: {production.job_id})"
                         )
 
-                    elif (
-                        job.status.lower() == "running"
-                        and production.status == "processing"
-                    ):
+                        production.meta["postprocessing"]["status"] = "running"
+
+                    elif job.status.lower() == "idle":
                         click.echo(
                             "  \t  "
                             + click.style("●", "green")
-                            + f" {production.name} is postprocessing (condor id: {production.job_id})"
+                            + f" {production.name} is in the queue (condor id: {production.job_id})"
                         )
-                        production.meta["postprocessing"]["status"] = "running"
-
+                        
                     elif job.status.lower() == "running":
                         click.echo(
                             "  \t  "
