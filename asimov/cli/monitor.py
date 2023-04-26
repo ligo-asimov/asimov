@@ -338,7 +338,10 @@ def monitor(ctx, event, update, dry_run, chain):
             discovered_hooks = entry_points(group="asimov.hooks.postmonitor")
             for hook in discovered_hooks:
                 if hook.name in list(ledger.data["hooks"]["postmonitor"].keys()):
-                    hook.load()(deepcopy(ledger)).run()
+                    try:
+                        hook.load()(deepcopy(ledger)).run()
+                    except Exception:
+                        pass
 
         if chain:
             ctx.invoke(report.html)
