@@ -143,10 +143,10 @@ def monitor(ctx, event, update, dry_run, chain):
 
             # Get the condor jobs
             try:
-                if "job id" in production.meta:
+                if "job id" in production.meta['scheduler']:
                     if not dry_run:
-                        if production.meta["job id"] in job_list.jobs:
-                            job = job_list.jobs[production.meta["job id"]]
+                        if production.meta['scheduler']["job id"] in job_list.jobs:
+                            job = job_list.jobs[production.meta['scheduler']["job id"]]
                         else:
                             job = None
                     else:
@@ -167,7 +167,7 @@ def monitor(ctx, event, update, dry_run, chain):
                             "  \t  "
                             + click.style("●", "green")
                             + f" Postprocessing for {production.name} is running"
-                            + f" (condor id: {production.meta['job id']})"
+                            + f" (condor id: {production.job_id})"
                         )
 
                     elif (
@@ -177,7 +177,7 @@ def monitor(ctx, event, update, dry_run, chain):
                         click.echo(
                             "  \t  "
                             + click.style("●", "green")
-                            + f" {production.name} is postprocessing (condor id: {production.meta['job id']})"
+                            + f" {production.name} is postprocessing (condor id: {production.job_id})"
                         )
                         production.meta["postprocessing"]["status"] = "running"
 
@@ -185,7 +185,7 @@ def monitor(ctx, event, update, dry_run, chain):
                         click.echo(
                             "  \t  "
                             + click.style("●", "green")
-                            + f" {production.name} is running (condor id: {production.meta['job id']})"
+                            + f" {production.name} is running (condor id: {production.job_id})"
                         )
                         if "profiling" not in production.meta:
                             production.meta["profiling"] = {}
@@ -205,7 +205,7 @@ def monitor(ctx, event, update, dry_run, chain):
                             "  \t  "
                             + click.style("●", "yellow")
                             + f" {production.name} is held on the scheduler"
-                            + f" (condor id: {production.meta['job id']})"
+                            + f" (condor id: {production.job_id})"
                         )
                         production.status = "stuck"
                         stuck += 1
@@ -251,7 +251,7 @@ def monitor(ctx, event, update, dry_run, chain):
                                 "  \t  "
                                 + click.style("●", "green")
                                 + f" {production.name} has finished and post-processing"
-                                + f" is stuck ({production.meta['job id']})"
+                                + f" is stuck ({production.job_id})"
                             )
                             production.meta["postprocessing"]["status"] = "stuck"
                     elif (
@@ -273,9 +273,9 @@ def monitor(ctx, event, update, dry_run, chain):
                         try:
                             config.get("condor", "scheduler")
                             production.meta["profiling"] = condor.collect_history(
-                                production.meta["job id"]
+                                production.job_id
                             )
-                            production.meta["job id"] = None
+                            production.meta['scheduler']['job id'] = None
                         except (configparser.NoOptionError, configparser.NoSectionError):
                             logger.warning("Could not collect condor profiling data as no scheduler was specified in the config file.")
                         except ValueError as e:
