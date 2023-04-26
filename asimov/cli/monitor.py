@@ -144,10 +144,10 @@ def monitor(ctx, event, update, dry_run, chain):
 
             # Get the condor jobs
             try:
-                if "job id" in production.meta['scheduler']:
+                if "job id" in production.meta:
                     if not dry_run:
-                        if production.meta['scheduler']["job id"] in job_list.jobs:
-                            job = job_list.jobs[production.meta['scheduler']["job id"]]
+                        if production.meta['scheduler'] in job_list.jobs:
+                            job = job_list.jobs[production.meta['scheduler']]
                         else:
                             job = None
                     else:
@@ -213,7 +213,7 @@ def monitor(ctx, event, update, dry_run, chain):
                     else:
                         running += 1
 
-            except (ValueError, AttributeError):
+            except (ValueError, AttributeError) as :
                 if production.pipeline:
 
                     pipe = production.pipeline
@@ -276,7 +276,7 @@ def monitor(ctx, event, update, dry_run, chain):
                             production.meta["profiling"] = condor.collect_history(
                                 production.job_id
                             )
-                            production.meta['scheduler']['job id'] = None
+                            production.meta['job id'] = None
                         except (configparser.NoOptionError, configparser.NoSectionError):
                             logger.warning("Could not collect condor profiling data as no scheduler was specified in the config file.")
                         except ValueError as e:
