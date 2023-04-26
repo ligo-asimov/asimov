@@ -146,8 +146,8 @@ def monitor(ctx, event, update, dry_run, chain):
             try:
                 if "job id" in production.meta:
                     if not dry_run:
-                        if production.meta['scheduler'] in job_list.jobs:
-                            job = job_list.jobs[production.meta['scheduler']]
+                        if production.meta['job id'] in job_list.jobs:
+                            job = job_list.jobs[production.meta['job id']]
                         else:
                             job = None
                     else:
