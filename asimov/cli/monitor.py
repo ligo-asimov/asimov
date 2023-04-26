@@ -3,6 +3,7 @@ import configparser
 import os
 import sys
 import click
+from copy import deepcopy
 
 from asimov import condor, config, logger, LOGGER_LEVEL
 from asimov import current_ledger as ledger
@@ -337,7 +338,7 @@ def monitor(ctx, event, update, dry_run, chain):
             discovered_hooks = entry_points(group="asimov.hooks.postmonitor")
             for hook in discovered_hooks:
                 if hook.name in list(ledger.data["hooks"]["postmonitor"].keys()):
-                    hook.load()(ledger).run()
+                    hook.load()(deepcopy(ledger)).run()
 
         if chain:
             ctx.invoke(report.html)
