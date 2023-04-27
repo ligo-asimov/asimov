@@ -855,7 +855,7 @@ class Production:
             dictionary.pop("ledger")
         if "pipelines" in dictionary:
             dictionary.pop("pipelines")
-        if "productions" in self.meta:
+        if "productions" in dictionary:
             self.meta.pop("productions")
 
         
