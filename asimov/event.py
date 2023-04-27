@@ -856,7 +856,7 @@ class Production:
         if "pipelines" in dictionary:
             dictionary.pop("pipelines")
         if "productions" in dictionary:
-            self.meta.pop("productions")
+            dictionary.pop("productions")
 
         
         if not event:
