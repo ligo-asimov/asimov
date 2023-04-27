@@ -847,7 +847,10 @@ class Production:
             dictionary.pop("pipelines")
 
         # Remove duplicates of pipeline defaults
-        defaults = deepcopy(self.event.ledger.data["pipelines"][self.pipeline.name.lower()])
+        if self.pipeline.name.lower() in self.event.ledger.data["pipelines"]:
+            defaults = deepcopy(self.event.ledger.data["pipelines"][self.pipeline.name.lower()])
+        else:
+            defaults = {}
         defaults = update(defaults, deepcopy(self.event.meta))
 
         dictionary = diff_dict(dictionary, defaults)
