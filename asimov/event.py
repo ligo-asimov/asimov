@@ -843,7 +843,7 @@ class Production:
             defaults = {}
         defaults = update(defaults, deepcopy(self.event.meta))
 
-        dictionary = diff_dict(dictionary, defaults)
+        #dictionary = diff_dict(dictionary, defaults)
 
         
         for key, value in self.meta.items():
@@ -855,7 +855,6 @@ class Production:
             dictionary.pop("ledger")
         if "pipelines" in dictionary:
             dictionary.pop("pipelines")
-
         
         if not event:
             output = dictionary
