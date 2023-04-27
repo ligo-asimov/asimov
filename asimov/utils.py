@@ -73,3 +73,26 @@ def update(d, u, inplace=True):
         else:
             d[k] = v
     return d
+
+# The following function adapted from https://stackoverflow.com/a/69908295
+def diff_dict(d1, d2):
+    d1_keys = set(d1.keys())
+    d2_keys = set(d2.keys())
+    shared_keys = d1_keys.intersection(d2_keys)
+    shared_deltas = {o: (d1[o], d2[o]) for o in shared_keys if d1[o] != d2[o]}
+    added_keys = d2_keys - d1_keys
+    added_deltas = {o: (None, d2[o]) for o in added_keys}
+    deltas = {**shared_deltas, **added_deltas}
+    return parse_deltas(deltas)
+
+# The following function adapted from https://stackoverflow.com/a/69908295
+def parse_deltas(deltas: dict):
+    res = {}
+    for k, v in deltas.items():
+        if isinstance(v[0], dict):
+            tmp = diff_dict(v[0], v[1])
+            if tmp:
+                res[k] = tmp
+        else:
+            res[k] = v[1]
+    return res

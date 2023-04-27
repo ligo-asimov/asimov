@@ -18,7 +18,7 @@ from liquid import Liquid
 from asimov import config, logger, LOGGER_LEVEL
 from asimov.pipelines import known_pipelines
 from asimov.storage import Store
-from asimov.utils import update
+from asimov.utils import update, diff_dict
 
 from .git import EventRepo
 from .ini import RunConfiguration
@@ -846,6 +846,12 @@ class Production:
         if "pipelines" in dictionary:
             dictionary.pop("pipelines")
 
+        # Remove duplicates of pipeline defaults
+        defaults = deepcopy(self.event.ledger.data["pipelines"][self.pipeline.name.lower()])
+        defaults = update(defaults, deepcopy(self.event.meta))
+
+        dictionary = diff_dict(dictionary, defaults)
+        
         if not event:
             output = dictionary
         else:
