@@ -841,9 +841,16 @@ class Production:
             defaults = deepcopy(self.event.ledger.data["pipelines"][self.pipeline.name.lower()])
         else:
             defaults = {}
+
+        if "postprocessing" in self.event.ledger.data:
+            defaults["postprocessing"] = deepcopy(
+                self.event.ledger.data["postprocessing"]
+            )
+
+            
         defaults = update(defaults, deepcopy(self.event.meta))
 
-        dictionary = diff_dict(dictionary, defaults)
+        dictionary = diff_dict(defaults, dictionary)
 
         
         for key, value in self.meta.items():
@@ -855,9 +862,10 @@ class Production:
             dictionary.pop("ledger")
         if "pipelines" in dictionary:
             dictionary.pop("pipelines")
+
+            
         if "productions" in dictionary:
             dictionary.pop("productions")
-
         
         if not event:
             output = dictionary
