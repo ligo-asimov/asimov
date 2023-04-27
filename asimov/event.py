@@ -835,7 +835,17 @@ class Production:
             dictionary["waveform"] = self.meta["waveform"]
         dictionary['needs'] = self.dependencies
         dictionary['job id'] = self.job_id
-            
+
+        # Remove duplicates of pipeline defaults
+        if self.pipeline.name.lower() in self.event.ledger.data["pipelines"]:
+            defaults = deepcopy(self.event.ledger.data["pipelines"][self.pipeline.name.lower()])
+        else:
+            defaults = {}
+        defaults = update(defaults, deepcopy(self.event.meta))
+
+        dictionary = diff_dict(dictionary, defaults)
+
+        
         for key, value in self.meta.items():
             if key == "operations":
                 continue
@@ -846,14 +856,6 @@ class Production:
         if "pipelines" in dictionary:
             dictionary.pop("pipelines")
 
-        # Remove duplicates of pipeline defaults
-        if self.pipeline.name.lower() in self.event.ledger.data["pipelines"]:
-            defaults = deepcopy(self.event.ledger.data["pipelines"][self.pipeline.name.lower()])
-        else:
-            defaults = {}
-        defaults = update(defaults, deepcopy(self.event.meta))
-
-        dictionary = diff_dict(dictionary, defaults)
         
         if not event:
             output = dictionary
