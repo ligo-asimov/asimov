@@ -31,6 +31,7 @@ def start(dry_run):
     submit_description = {
         "executable": shutil.which("asimov"),
         "arguments": "monitor --chain",
+        "accounting_group_user": config.get('condor', 'user'),
         "accounting_group": config.get("pipelines", "accounting"),
         "output": os.path.join(".asimov", "asimov_cron.out"),
         "accounting_group_user": config.get('condor', 'user'),
