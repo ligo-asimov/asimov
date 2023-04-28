@@ -435,7 +435,7 @@ class PESummaryPipeline(PostPipeline):
             "getenv": "true",
             "batch_name": f"PESummary/{self.production.event.name}/{self.production.name}",
             "request_memory": "8192MB",
-            "should_transfer_files": "YES",
+            #"should_transfer_files": "YES",
             "request_disk": "8192MB",
             "+flock_local": "True",
             "+DESIRED_Sites": "nogrid",
