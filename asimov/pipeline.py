@@ -437,8 +437,8 @@ class PESummaryPipeline(PostPipeline):
             "request_memory": "8192MB",
             #"should_transfer_files": "YES",
             "request_disk": "8192MB",
-            "+flock_local": "False",
-            "+DESIRED_Sites": "nogrid",
+            "+flock_local": "True",
+            "+DESIRED_Sites": htcondor.classad.quote("nogrid"),
         }
         
         if dryrun:
