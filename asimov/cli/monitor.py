@@ -44,6 +44,8 @@ def start(dry_run):
         "batch_name": f"asimov/monitor/{ledger.data['project']['name']}",
         "request_memory": "8192MB",
         "request_disk": "8192MB",
+        "+flock_local": "False",
+        "+DESIRED_Sites": "nogrid",
     }
     cluster = condor.submit_job(submit_description)
     ledger.data["cronjob"] = cluster
