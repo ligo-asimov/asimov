@@ -440,7 +440,7 @@ class PESummaryPipeline(PostPipeline):
             "+flock_local": "False",
             "+DESIRED_Sites": "nogrid",
         }
-
+        
         if dryrun:
             print("SUBMIT DESCRIPTION")
             print("------------------")
@@ -449,6 +449,10 @@ class PESummaryPipeline(PostPipeline):
         if not dryrun:
             hostname_job = htcondor.Submit(submit_description)
 
+            with utils.set_directory(self.production.rundir):
+                with open(f"pesummary.sub", "w") as subfile:
+                    subfile.write(hostname_job.__str__())
+            
             try:
                 # There should really be a specified submit node, and if there is, use it.
                 schedulers = htcondor.Collector().locate(
