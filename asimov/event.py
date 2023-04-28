@@ -259,7 +259,7 @@ class Event:
 
         self.productions.append(production)
         self.graph.add_node(production)
-        
+
         if production.dependencies:
             dependencies = production.dependencies
             dependencies = [
@@ -402,7 +402,7 @@ class Event:
         destination : str
            The location in the repository for this file.
         """
-        
+
         if "gid" in self.meta:
             gid = self.meta["gid"]
         else:
@@ -565,7 +565,7 @@ class Production:
         self.event = event if isinstance(event, Event) else event[0]
         self.subject = self.event
         self.name = name
-        
+
         pathlib.Path(
             os.path.join(config.get("logging", "directory"), self.event.name, name)
         ).mkdir(parents=True, exist_ok=True)
@@ -697,6 +697,13 @@ class Production:
         # Gather the appropriate prior data for this production
         if "priors" in self.meta:
             self.priors = self.meta["priors"]
+            if (
+                "amplitude order" in self.meta["priors"]
+                and "pn amplitude order" not in self.meta["waveform"]
+            ):
+                self.meta["waveform"]["pn amplitude order"] = self.meta["priors"][
+                    "amplitude order"
+                ]
 
     def __hash__(self):
         return int(f"{hash(self.name)}{abs(hash(self.event.name))}")
@@ -833,12 +840,14 @@ class Production:
             dictionary["priors"] = self.meta["priors"]
         if "waveform" in self.meta:
             dictionary["waveform"] = self.meta["waveform"]
-        dictionary['needs'] = self.dependencies
-        dictionary['job id'] = self.job_id
+        dictionary["needs"] = self.dependencies
+        dictionary["job id"] = self.job_id
 
         # Remove duplicates of pipeline defaults
         if self.pipeline.name.lower() in self.event.ledger.data["pipelines"]:
-            defaults = deepcopy(self.event.ledger.data["pipelines"][self.pipeline.name.lower()])
+            defaults = deepcopy(
+                self.event.ledger.data["pipelines"][self.pipeline.name.lower()]
+            )
         else:
             defaults = {}
 
@@ -847,12 +856,10 @@ class Production:
                 self.event.ledger.data["postprocessing"]
             )
 
-            
         defaults = update(defaults, deepcopy(self.event.meta))
 
         dictionary = diff_dict(defaults, dictionary)
 
-        
         for key, value in self.meta.items():
             if key == "operations":
                 continue
@@ -863,10 +870,9 @@ class Production:
         if "pipelines" in dictionary:
             dictionary.pop("pipelines")
 
-            
         if "productions" in dictionary:
             dictionary.pop("productions")
-        
+
         if not event:
             output = dictionary
         else:
@@ -1058,11 +1064,11 @@ class Production:
         # If the PSDs are specifically provided in the ledger,
         # use those.
 
-        if format=="ascii":
+        if format == "ascii":
             keyword = "psds"
-        elif format=="xml":
+        elif format == "xml":
             keyword = "xml psds"
-        
+
         if keyword in self.meta:
             if self.meta["likelihood"]["sample rate"] in self.meta[keyword]:
                 psds = self.meta[keyword][self.meta["likelihood"]["sample rate"]]
@@ -1123,7 +1129,7 @@ class Production:
 
         self.psds = self._collect_psds()
         self.xml_psds = self._collect_psds(format="xml")
-        
+
         if "template" in self.meta:
             template = f"{self.meta['template']}.ini"
         else:
