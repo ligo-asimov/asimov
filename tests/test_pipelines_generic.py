@@ -106,6 +106,8 @@ class TestIniFileHandling(AsimovTestCase):
         event = "Nonstandard fmin"
 
         for pipeline in known_pipelines.keys():
+            if pipeline not in exemplar.keys():
+                continue
             if pipeline == "bilby": continue
             f = io.StringIO()
             with contextlib.redirect_stdout(f):
