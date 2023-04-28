@@ -82,7 +82,11 @@ def make_project(
     python_loc = shutil.which("python").split("/")[:-2]
     config.set("pipelines", "environment", os.path.join("/", *python_loc))
     config.set("rift", "environment", os.path.join("/", *python_loc))
-    config.set("pesummary", "executable", shutil.which("summarypages"))
+
+    try:
+        config.set("pesummary", "executable", shutil.which("summarypages"))
+    except Exception:
+        pass
 
     # Set the default condor user
     if not user:
