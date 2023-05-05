@@ -135,6 +135,10 @@ class BayesWave(Pipeline):
             f"--trigger-time={gps_time}",
         ]
 
+        if "copy frames" in self.production.meta["scheduler"]:
+            if self.production.meta["scheduler"]["copy frames"]:
+                command += ["--copy-frames"]
+        
         if "osg" in self.production.meta["scheduler"]:
             if self.production.meta["scheduler"]["osg"]:
                 command += ["--osg-deploy", "--transfer-files"]
