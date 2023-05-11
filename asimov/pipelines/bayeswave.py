@@ -141,7 +141,12 @@ class BayesWave(Pipeline):
         
         if "osg" in self.production.meta["scheduler"]:
             if self.production.meta["scheduler"]["osg"]:
-                command += ["--osg-deploy", "--transfer-files"]
+                command += ["--transfer-files"]
+
+                if "copy frames" not in self.production.meta['scheduler']:
+                    if not self.production.meta["scheduler"]["copy frames"]:
+                        command += ["--osg-deploy"]
+                
         command += [
             "-r",
             self.production.rundir,
