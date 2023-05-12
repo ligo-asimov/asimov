@@ -47,8 +47,8 @@ exemplar = {
         "segment length": "4",
         "psd length": "108.6",
         "ifo list": "['H1', 'L1', 'V1']",
-        "data channels": "{ H1:H1:WeirdChannel,L1:L1:WeirdChannel,V1:V1:OddChannel, }",
-        "data frames": "{ H1:NonstandardFrame,L1:NonstandardFrameL1,V1:UnusualFrameType, }",
+        "data channels": '{ "H1":"H1:WeirdChannel","L1":"L1:WeirdChannel","V1":"V1:OddChannel", }',
+        "data frames": '{ "H1":"NonstandardFrame","L1":"NonstandardFrameL1","V1":"UnusualFrameType", }',
         "window length": "71",
     },
     "lalinference": {
