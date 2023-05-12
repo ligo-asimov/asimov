@@ -43,7 +43,7 @@ exemplar = {
         "window length": "71",
     },
     "rift": {
-        "minimum frequency": "{ H1:62,L1:92,V1:62, }",
+        "minimum frequency": '{ "H1":62,"L1":92,"V1":62, }',
         "segment length": "4",
         "psd length": "108.6",
         "ifo list": "['H1', 'L1', 'V1']",
