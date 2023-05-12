@@ -144,6 +144,8 @@ class BayesWave(Pipeline):
                 command += ["--transfer-files"]
 
                 if "copy frames" not in self.production.meta['scheduler']:
+                    command += ["--osg-deploy"]
+                if "copy frames" in self.production.meta['scheduler']:
                     if not self.production.meta["scheduler"]["copy frames"]:
                         command += ["--osg-deploy"]
                 
@@ -169,7 +171,7 @@ class BayesWave(Pipeline):
                 self.logger.error("Could not create a DAG file")
                 self.logger.info(f"{command}")
                 self.logger.debug(out)
-                self.logger.debug(err)
+                self.logger.debug(eqrr)
                 raise PipelineException("The DAG file could not be created.")
             else:
                 self.logger.info("DAG file created")

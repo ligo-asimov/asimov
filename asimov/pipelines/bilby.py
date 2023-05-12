@@ -352,7 +352,17 @@ class Bilby(Pipeline):
 
     def html(self):
         """Return the HTML representation of this pipeline."""
+        pages_dir = os.path.join(self.production.event.name, self.production.name, pesummary)
         out = ""
+        if self.production.status in {"uploaded"}:
+            out += """<div class="asimov-pipeline">"""
+            out += (
+                f"""<p><a href="{pages_dir}/home.html">Summary Pages</a></p>"""
+            )
+            out += f"""<img height=200 src="{pages_dir}/plots/{self.production.name}_psd_plot.png"</src>"""
+            out += f"""<img height=200 src="{pages_dir}/plots/{self.production.name}_waveform_time_domain.png"</src>"""
+
+            out += """</div>"""
 
         return out
 
