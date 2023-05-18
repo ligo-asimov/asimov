@@ -281,7 +281,10 @@ def calibration(event, calibration):
         print(event.name)
         time = event.meta["event time"]
         if not calibration[0]:
-            calibrations = find_calibrations(time)
+            try:
+                calibrations = find_calibrations(time)
+            except ValueError:
+                calibrations = {}
         else:
             calibrations = {}
             for cal in calibration:
