@@ -666,7 +666,9 @@ class Production:
             self.quality = self.meta["quality"]
 
         if ("quality" in self.meta) and ("event time" in self.meta):
-            if "segment start" not in self.meta["quality"]:
+            if ("segment start" not in self.meta["quality"]) and (
+                "segment length" in self.meta["data"]
+            ):
                 self.meta["likelihood"]["segment start"] = (
                     self.meta["event time"] - self.meta["data"]["segment length"] + 2
                 )
