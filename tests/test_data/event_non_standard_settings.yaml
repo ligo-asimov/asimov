@@ -41,4 +41,6 @@ likelihood:
 priors:
   mass ratio: [10, 78]
   mass 1: [60, 70]
-  luminosity distance: 100
+  luminosity distance:
+    type: PowerLaw
+    maximum: 100
