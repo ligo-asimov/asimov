@@ -78,7 +78,7 @@ print_formatter = logging.Formatter("[%(levelname)s] %(message)s", "%Y-%m-%d %H:
 ch.setFormatter(print_formatter)
 ch.setLevel(PRINT_LEVEL)
 
-logfile = os.path.join("asimov.log")
+logfile = "asimov.log"
 fh = logging.FileHandler(logfile)
 formatter = logging.Formatter(
     "%(asctime)s [%(name)s][%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S"
