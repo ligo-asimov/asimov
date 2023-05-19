@@ -228,7 +228,7 @@ def clone(location):
     # Make the ledger
     if config.get("ledger", "engine") == "yamlfile":
         shutil.copyfile(
-            os.path.join(location, config.get("ledger", "location")), ".asimov/ledger.yml"
+            os.path.join(location, config.get("ledger", "location")), os.path.join(".asimov", "ledger.yml")
         )
     elif config.get("ledger", "engine") == "gitlab":
         raise NotImplementedError(
@@ -236,7 +236,7 @@ def clone(location):
         )
 
     config.set("ledger", "engine", "yamlfile")
-    config.set("ledger", "location", ".asimov/ledger.yml")
+    config.set("ledger", "location", os.path.join(".asimov", "ledger.yml")
 
     with open(os.path.join(".asimov", "asimov.conf"), "w") as config_file:
         config.write(config_file)
