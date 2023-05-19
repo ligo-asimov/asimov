@@ -3,6 +3,8 @@ Reporting functions
 """
 from datetime import datetime
 
+import os
+
 import click
 import pytz
 import yaml
