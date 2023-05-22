@@ -10,6 +10,8 @@ quality:
 waveform:
   approximant: IMRPhenomD
   non-spin: True
+scheduler:
+    accounting group: test
 sampler:
   cip fit method: rf
   cip sampler method: GMM
