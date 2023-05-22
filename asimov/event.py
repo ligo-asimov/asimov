@@ -180,7 +180,7 @@ class Event:
 
         self._check_required()
 
-        if ("interferometers" in self.meta) and ("calibration" in self.meta):
+        if ("interferometers" in self.meta) and ("calibration" in self.meta) and ("data" in self.meta):
             try:
                 self._check_calibration()
             except DescriptionException:
