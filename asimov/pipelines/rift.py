@@ -179,7 +179,7 @@ class Rift(Pipeline):
             self.production.set_meta("user", user)
 
         os.environ["LIGO_USER_NAME"] = f"{user}"
-        os.environ["LIGO_ACCOUNTING"] = f"{config.get('pipelines', 'accounting')}"
+        os.environ["LIGO_ACCOUNTING"] = f"{self.production.meta['scheduler']['accounting group']}"
 
         try:
             calibration = config.get("general", "calibration")
