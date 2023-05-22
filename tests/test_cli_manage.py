@@ -44,7 +44,7 @@ class TestBuild(unittest.TestCase):
                                ['Test Project', '--root', f"{self.cwd}/tests/tmp/project"])
         assert result.exit_code == 0
         assert result.output == '● New project created successfully!\n'
-        self.ledger = YAMLLedger("ledger.yml")
+        self.ledger = YAMLLedger(".asimov/ledger.yml")
 
         f = io.StringIO()
         with contextlib.redirect_stdout(f):
@@ -57,7 +57,7 @@ class TestBuild(unittest.TestCase):
 
     def test_build_all_events(self):
         """Check that multiple events can be built at once"""
-        with patch("asimov.current_ledger", new=YAMLLedger("ledger.yml")):
+        with patch("asimov.current_ledger", new=YAMLLedger(".asimov/ledger.yml")):
             reload(asimov)
             reload(manage)
             runner = CliRunner()
@@ -72,7 +72,7 @@ class TestBuild(unittest.TestCase):
 
     def test_build_dryruns(self):
         """Check that multiple events can be built at once"""
-        with patch("asimov.current_ledger", new=YAMLLedger("ledger.yml")):
+        with patch("asimov.current_ledger", new=YAMLLedger(".asimov/ledger.yml")):
             reload(asimov)
             reload(manage)
             runner = CliRunner()
@@ -84,7 +84,7 @@ class TestBuild(unittest.TestCase):
 
     def test_check_running_events_ignored(self):
         """Check that multiple events can be built at once"""
-        with patch("asimov.current_ledger", new=YAMLLedger("ledger.yml")):
+        with patch("asimov.current_ledger", new=YAMLLedger(".asimov/ledger.yml")):
             reload(asimov)
             reload(manage)
             runner = CliRunner()
@@ -125,7 +125,7 @@ class TestSubmit(unittest.TestCase):
                                ['Test Project', '--root', f"{self.cwd}/tests/tmp/project"])
         assert result.exit_code == 0
         assert result.output == '● New project created successfully!\n'
-        self.ledger = YAMLLedger("ledger.yml")
+        self.ledger = YAMLLedger(".asimov/ledger.yml")
 
         f = io.StringIO()
         with contextlib.redirect_stdout(f):
@@ -138,7 +138,7 @@ class TestSubmit(unittest.TestCase):
 
     def test_buildsubmit_all_events(self):
         """Check that multiple events can be built at once"""
-        with patch("asimov.current_ledger", new=YAMLLedger("ledger.yml")):
+        with patch("asimov.current_ledger", new=YAMLLedger(".asimov/ledger.yml")):
             reload(asimov)
             reload(manage)
             runner = CliRunner()
@@ -153,7 +153,7 @@ class TestSubmit(unittest.TestCase):
 
     def test_build_submit_dryruns(self):
         """Check that multiple events can be built at once"""
-        with patch("asimov.current_ledger", new=YAMLLedger("ledger.yml")):
+        with patch("asimov.current_ledger", new=YAMLLedger(".asimov/ledger.yml")):
             reload(asimov)
             reload(manage)
             runner = CliRunner()
@@ -184,7 +184,7 @@ status: restart
                 """)
         apply_page(os.path.join(self.cwd, "tests", "tmp", "project", "test_ledger_page.yaml"), event=event, ledger=self.ledger)
 
-        with patch("asimov.current_ledger", new=YAMLLedger("ledger.yml")):
+        with patch("asimov.current_ledger", new=YAMLLedger(".asimov/ledger.yml")):
             reload(asimov)
             reload(manage)
             
@@ -196,7 +196,7 @@ status: restart
     @unittest.skip("I can't get the mocking to work properly.")
     def test_submit_failure(self):
         """Check that failed submits are caught"""
-        with patch("asimov.current_ledger", new=YAMLLedger("ledger.yml")):
+        with patch("asimov.current_ledger", new=YAMLLedger(".asimov/ledger.yml")):
             reload(asimov)
             reload(manage)
             runner = CliRunner()

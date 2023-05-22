@@ -33,7 +33,7 @@ class BilbyTests(unittest.TestCase):
                                ['Test Project', '--root', f"{self.cwd}/tests/tmp/project"])
         assert result.exit_code == 0
         assert result.output == '● New project created successfully!\n'
-        self.ledger = YAMLLedger(f"ledger.yml")
+        self.ledger = YAMLLedger(f".asimov/ledger.yml")
 
     def tearDown(self):
         os.chdir(self.cwd)

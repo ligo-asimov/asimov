@@ -24,7 +24,7 @@ class TestGravitationalWaveEvents(unittest.TestCase):
         os.makedirs(f"{self.cwd}/tests/tmp/project")
         os.chdir(f"{self.cwd}/tests/tmp/project")
         make_project(name="Test project", root=f"{self.cwd}/tests/tmp/project")
-        self.ledger = YAMLLedger(f"ledger.yml")
+        self.ledger = YAMLLedger(f".asimov/ledger.yml")
         apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
 
     def tearDown(self):

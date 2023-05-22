@@ -31,7 +31,7 @@ config = configparser.ConfigParser()
 
 config.read_string(default_config.decode("utf8"))
 config_locations = [
-    os.path.join(os.curdir, "{}.conf".format(__packagename__)),
+    os.path.join(os.curdir, ".asimov", "{}.conf".format(__packagename__)),
     os.path.join(
         os.path.expanduser("~"),
         ".config",
