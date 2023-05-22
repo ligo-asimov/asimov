@@ -32,7 +32,7 @@ def start(dry_run):
         "executable": shutil.which("asimov"),
         "arguments": "monitor --chain",
         "accounting_group_user": config.get('condor', 'user'),
-        "accounting_group": config.get("pipelines", "accounting"),
+        "accounting_group": config.get("condor", "accounting"),
         "output": os.path.join(".asimov", "asimov_cron.out"),
         "accounting_group_user": config.get('condor', 'user'),
         "on_exit_remove": "false",
