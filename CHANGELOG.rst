@@ -11,7 +11,7 @@ This release is not believed to introduce any backwards-incompatible changes.
 Bugs Fixed
 ----------
 
-:bug: `ligo#125 <https://git.ligo.org/asimov/asimov/-/issues/125>`_
++ `ligo#125 <https://git.ligo.org/asimov/asimov/-/issues/125>`_
 
 0.4.0
 =====
