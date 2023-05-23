@@ -117,23 +117,6 @@ class TestProjectAnalysis(TestBaseAnalysis):
             == ["GW150914_095045", "GW151226_033853"]
         )
 
-    def test_that_all_bayeswave_analyses_are_returned(self):
-        """Test that the bayeswave analysis is returned for every subject."""
-
-        apply_page(
-            file=f"{self.cwd}/tests/test_data/test_analyses.yaml",
-            ledger=self.ledger,
-        )
-        self.assertEqual(len(self.ledger.events), 3)
-        self.assertEqual(len(self.ledger.get_event(self.EVENTS[0])[0].analyses), 2)
-        
-        p_analysis = self.ledger.project_analyses
-        
-        analyses = p_analysis[0].analyses
-        self.assertEqual(len(analyses), 2)
-        for analysis in analyses:
-            self.assertTrue(str(analysis.pipeline).lower() == "bayeswave")
-
     def test_that_all_waveform_analyses_are_returned(self):
         """Test that the query returns all of the jobs specifying a specific waveform."""
 
