@@ -39,10 +39,6 @@ class DAGTests(unittest.TestCase):
         del(self.ledger)
         shutil.rmtree(f"{self.cwd}/tests/tmp/project")
 
-    def tearDown(self):
-        del(self.ledger)
-        shutil.rmtree(f"{self.cwd}/tests/tmp/project")
-
     def test_dependency_list(self):
         """Check that all jobs are run when the dependencies are a chain."""
         self.assertTrue(len(self.ledger.get_event('GW150914_095045')[0].productions)==0)

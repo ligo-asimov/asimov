@@ -34,23 +34,6 @@ status_map = {
     "stopped": "light",
 }
 
-
-status_map = {
-    "cancelled": "light",
-    "finished": "success",
-    "uploaded": "success",
-    "processing": "primary",
-    "running": "primary",
-    "stuck": "warning",
-    "restart": "secondary",
-    "ready": "secondary",
-    "wait": "light",
-    "stop": "danger",
-    "manual": "light",
-    "stopped": "light",
-}
-
-
 class DescriptionException(Exception):
     """Exception for event description problems."""
 

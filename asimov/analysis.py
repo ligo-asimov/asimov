@@ -993,7 +993,3 @@ class GravitationalWaveTransient(SimpleAnalysis):
             raise ValueError("This isn't a valid ini file")
 
         return ini
-
-
-class Production(SimpleAnalysis):
-    pass
