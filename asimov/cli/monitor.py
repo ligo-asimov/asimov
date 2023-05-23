@@ -442,6 +442,7 @@ def monitor(ctx, event, update, dry_run, chain):
                pipe.run()
                ledger.data['postprocessing'][name] = pipe.to_dict()
                ledger.save()
+               click.echo(f"""{pipe.name} ({pipe.pipeline}) - {"fresh" if pipe.fresh else "stale"} - {pipe.status}""")
                 
         if chain:
             ctx.invoke(report.html)
