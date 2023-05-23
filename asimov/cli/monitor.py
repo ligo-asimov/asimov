@@ -3,7 +3,6 @@ import configparser
 import sys
 import click
 from copy import deepcopy
-import logging
 
 from asimov import condor, config, logger, LOGGER_LEVEL
 from asimov import current_ledger as ledger
@@ -11,6 +10,12 @@ from asimov.cli import ACTIVE_STATES, manage, report
 
 logger = logger.getChild("cli").getChild("monitor")
 logger.setLevel(LOGGER_LEVEL)
+
+
+if sys.version_info < (3, 10):
+    from importlib_metadata import entry_points
+else:
+    from importlib.metadata import entry_points
 
 
 @click.option("--dry-run", "-n", "dry_run", is_flag=True)
@@ -173,7 +178,7 @@ def monitor(ctx, event, update, dry_run, chain):
                             + click.style("●", "green")
                             + f" {production.name} is in the queue (condor id: {production.job_id})"
                         )
-                        
+
                     elif job.status.lower() == "running":
                         click.echo(
                             "  \t  "

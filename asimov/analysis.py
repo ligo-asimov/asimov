@@ -814,7 +814,8 @@ class ProjectAnalysis(Analysis):
         output = dictionary
 
         return output
-    
+
+
 class GravitationalWaveTransient(SimpleAnalysis):
     """
     A single subject, single pipeline analysis for a gravitational wave transient.

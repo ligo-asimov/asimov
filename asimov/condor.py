@@ -19,6 +19,7 @@ UTC = tz.tzutc()
 logger = logger.getChild("condor")
 logger.setLevel(LOGGER_LEVEL)
 
+
 def datetime_from_epoch(dt, tzinfo=UTC):
     """Returns the `datetime.datetime` for a given Unix epoch
 
@@ -36,6 +37,7 @@ def datetime_from_epoch(dt, tzinfo=UTC):
         the datetime that represents the given Unix epoch
     """
     return datetime.datetime.utcfromtimestamp(dt).replace(tzinfo=tzinfo)
+
 
 def submit_job(submit_description):
     """

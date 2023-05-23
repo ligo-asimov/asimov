@@ -64,7 +64,6 @@ def find_calibrations(time):
     }
 
 
-
 def update(d, u, inplace=True):
     """Recursively update a dictionary."""
     if not inplace:
@@ -77,6 +76,7 @@ def update(d, u, inplace=True):
             d[k] = v
     return d
 
+
 # The following function adapted from https://stackoverflow.com/a/69908295
 def diff_dict(d1, d2):
     d1_keys = set(d1.keys())
@@ -87,6 +87,7 @@ def diff_dict(d1, d2):
     added_deltas = {o: (None, d2[o]) for o in added_keys}
     deltas = {**shared_deltas, **added_deltas}
     return parse_deltas(deltas)
+
 
 # The following function adapted from https://stackoverflow.com/a/69908295
 def parse_deltas(deltas: dict):

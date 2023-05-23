@@ -12,9 +12,6 @@ import yaml
 from ligo.gracedb.rest import GraceDb, HTTPError
 
 from asimov import config, logger, LOGGER_LEVEL
-from asimov.pipelines import known_pipelines
-from asimov.storage import Store
-from asimov.utils import update, diff_dict
 from asimov.analysis import GravitationalWaveTransient
 
 from .git import EventRepo
@@ -33,6 +30,7 @@ status_map = {
     "manual": "light",
     "stopped": "light",
 }
+
 
 class DescriptionException(Exception):
     """Exception for event description problems."""
