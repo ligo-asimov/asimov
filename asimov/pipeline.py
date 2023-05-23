@@ -216,17 +216,6 @@ class Pipeline:
         else:
             return False
 
-    def detect_completion_processing(self):
-        files = f"{self.production.name}_pesummary.dat"
-        results = os.path.join(config.get('general', 'webroot'),
-                                   self.production.event.name,
-                                   self.production.name,
-                                   "results", "samples", files)
-        if os.path.exists(results):
-            return True
-        else:
-            return False
-            
     def after_processing(self):
         """
         Run the after processing jobs.

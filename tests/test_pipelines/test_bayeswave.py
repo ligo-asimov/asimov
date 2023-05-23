@@ -144,7 +144,6 @@ class BayeswaveTests(unittest.TestCase):
             mock_popen.return_value.communicate.return_value=(b"Blah blah blah To submit: just run this", b"Lots of stuff on stderr")
 
             production.pipeline.build_dag(dryrun=False)
-            os.makedirs(f"working/{production.event.name}/{production.name}")
 
         with contextlib.redirect_stdout(f):
 
@@ -174,7 +173,6 @@ class BayeswaveTests(unittest.TestCase):
                 production.make_config(f"{production.name}.ini")
             production.pipeline.build_dag(dryrun=True)
             self.assertTrue("bayeswave_pipe" in f.getvalue())
-        os.makedirs(os.path.join(config.get("general", "rundir_default"), event, production.name))
         with set_directory(os.path.join(config.get("general", "rundir_default"), event, production.name)):
             with open("bayeswave_post.sub", "w") as submit_file:
                 submit_file.write("This is some test text and is just garbage")

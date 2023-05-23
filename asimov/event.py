@@ -373,28 +373,29 @@ class Event:
             if isinstance(data['productions'], type(None)):
                 data['productions'] = []
         else:
-            data['productions'] = []
+            data["productions"] = []
 
-            
         if "interferometers" in data and "event time" in data:
-            
-            if calibration.keys() != data['interferometers']:
+
+            if calibration.keys() != data["interferometers"]:
                 # We need to fetch the calibration data
                 from asimov.utils import find_calibrations
+
                 try:
-                    data['data']["calibration"] = find_calibrations(data['event time'])
+                    data["data"]["calibration"] = find_calibrations(data["event time"])
                 except ValueError:
-                    data['data']["calibration"] = {}
+                    data["data"]["calibration"] = {}
                     logger.warning("Could not find calibration files for data['name']")
 
-        if not "working directory" in data:
-            data['working directory'] = os.path.join(config.get("general", "rundir_default"),
-                                                     data['name'])
-                
+        if "working directory" not in data:
+            data["working directory"] = os.path.join(
+                config.get("general", "rundir_default"), data["name"]
+            )
+
         if not repo and "repository" in data:
             data.pop("repository")
         event = cls.from_dict(data, issue=issue, update=update, ledger=ledger)
-        
+
         if issue:
             event.issue_object = issue
             event.from_notes()
