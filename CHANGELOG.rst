@@ -1,3 +1,70 @@
+0.5.0
+=====
+
+This is a minor feature release designed to implement new functionality required for running LIGO's O4a parameter estimation workflows.
+
+Breaking changes
+-----------------
+
+This release is not believed to introduce any backwards-incompatible changes.
+
+Merges
+------
+
++ `ligo!51 <https://git.ligo.org/asimov/asimov/-/merge_requests/51>`_: Updates to the RIFT ini file
++ `ligo!71 <https://git.ligo.org/asimov/asimov/-/merge_requests/71>`_: Introduces monitor and application hooks
++ `ligo!72 <https://git.ligo.org/asimov/asimov/-/merge_requests/72>`_: Changes to the handling of state vectors
++ `ligo!73 <https://git.ligo.org/asimov/asimov/-/merge_requests/73>`_: Changes to allow bilby to use new likelihood models
++ `ligo!74 <https://git.ligo.org/asimov/asimov/-/merge_requests/74>`_: Changes to the handling of priors in bilby, removal of prior files
++ `ligo!76 <https://git.ligo.org/asimov/asimov/-/merge_requests/76>`_: Improvements to ledger file handling
++ `ligo!77 <https://git.ligo.org/asimov/asimov/-/merge_requests/77>`_: Fixes a bug with profiling data collection
++ `ligo!78 <https://git.ligo.org/asimov/asimov/-/merge_requests/78>`_: Allow ROQ use in bilby
++ `ligo!79 <https://git.ligo.org/asimov/asimov/-/merge_requests/79>`_: Fix a bug where accounting information is omitted from asimov-generated condor jobs
++ `ligo!86 <https://git.ligo.org/asimov/asimov/-/merge_requests/86>`_: Updates various bilby defaults
+  
+Major New Features
+------------------
+
+Hooks
+"""""
+
+Introduced in `ligo!71 <https://git.ligo.org/asimov/asimov/-/merge_requests/71>`_, asimov now allows plugins to interact with the monitor loop, and gain access to the ledger once the monitoring process has completed.
+It also allows external packages to provide new data via the `asimov apply` interface.
+
+ROQ bases in bilby
+""""""""""""""""""
+
+This version introduces support for ROQ bases in bilby.
+
+Review status
+-------------
+
+PENDING
+
+Getting ``asimov v0.5.0``
+-------------------------
+
+pypi
+""""
+You can install this preview directly from pypi using pip:
+``pip install --upgrade asimov==v0.5.0``
+
+git
+"""
+You can clone this repository and install from source by running
+
+::
+
+   git clone git@git.ligo.org:asimov/asimov.git
+   git checkout v0.5.0
+   pip install .
+
+What's next?
+------------
+
+You can find the most up to date O4 development roadmap `on the project wiki<https://git.ligo.org/asimov/asimov/-/wikis/o4-roadmap>`.
+
+
 0.4.1
 =====
 
