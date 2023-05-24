@@ -276,10 +276,10 @@ class Rift(Pipeline):
 
             command += ["--manual-initial-grid", bootstrap_file]
 
-            if "scheduler" in self.production.meta:
-                if "osg" in self.production.meta["scheduler"]:
-                    if self.production.meta["scheduler"]["osg"]:
-                        command += ["--use-osg-file-transfer"]
+        if "scheduler" in self.production.meta:
+            if "osg" in self.production.meta["scheduler"]:
+                if self.production.meta["scheduler"]["osg"]:
+                    command += ["--use-osg-file-transfer"]
 
         if dryrun:
             print(" ".join(command))
