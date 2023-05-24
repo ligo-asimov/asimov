@@ -44,12 +44,15 @@ class Rift(Pipeline):
             self.bootstrap = False
 
         self._create_ledger_entries()
-            
+
     def _create_ledger_entries(self):
         """Create entries in the ledger which might be required in the templating."""
         if "sampler" not in self.production.meta:
-            self.production.meta['sampler'] = {}
-        required_args = {"sampler": {"ile", "cip"}, "likelihood": {"marginalization", "assume"}}
+            self.production.meta["sampler"] = {}
+        required_args = {
+            "sampler": {"ile", "cip"},
+            "likelihood": {"marginalization", "assume"},
+        }
         for section in required_args.keys():
             section_data = self.production.meta[section]
             for section_arg in required_args[section]:
@@ -67,7 +70,7 @@ class Rift(Pipeline):
 
     def before_submit(self):
         pass
-        
+
     def before_config(self, dryrun=False):
         """
         Convert the text-based PSD to an XML psd if the xml doesn't exist already.
@@ -87,7 +90,9 @@ class Rift(Pipeline):
                     asset = f"{ifo.upper()}-psd.xml.gz"
                     self.logger.info(f"Conversion complete as {asset}")
                     git_location = os.path.join(category, "psds")
-                    saveloc = os.path.join(git_location, str(sample), f"psd_{ifo}.xml.gz")
+                    saveloc = os.path.join(
+                        git_location, str(sample), f"psd_{ifo}.xml.gz"
+                    )
                     self.production.event.repository.add_file(
                         asset,
                         saveloc,
@@ -150,10 +155,14 @@ class Rift(Pipeline):
                 print(
                     "Unable to download the coinc file because it was not possible to connect to GraceDB"
                 )
-                self.logger.warning("Could not download a coinc file for this event; could not connect to GraceDB.")
+                self.logger.warning(
+                    "Could not download a coinc file for this event; could not connect to GraceDB."
+                )
                 coinc_file = None
             except ValueError:
-                self.logger.warning("Could not download a coinc file for this event as no GraceDB ID was supplied.")
+                self.logger.warning(
+                    "Could not download a coinc file for this event as no GraceDB ID was supplied."
+                )
                 coinc_file = None
             try:
                 ini = self.production.get_configuration().ini_loc
@@ -179,7 +188,18 @@ class Rift(Pipeline):
             self.production.set_meta("user", user)
 
         os.environ["LIGO_USER_NAME"] = f"{user}"
-        os.environ["LIGO_ACCOUNTING"] = f"{self.production.meta['scheduler']['accounting group']}"
+        os.environ[
+            "LIGO_ACCOUNTING"
+        ] = f"{self.production.meta['scheduler']['accounting group']}"
+
+        if "singularity image" in self.production.meta["scheduler"]:
+            # Collect the correct information for the singularity image
+            os.environ[
+                "SINGULARITY_RIFT_IMAGE"
+            ] = f"{self.production.meta['scheduler']['singularity image']}"
+            os.environ[
+                "SINGULARITY_BASE_EXE_DIR"
+            ] = f"{self.production.meta['scheduler']['singularity base exe directory']}"
 
         try:
             calibration = config.get("general", "calibration")
@@ -189,7 +209,9 @@ class Rift(Pipeline):
         try:
             approximant = self.production.meta["waveform"]["approximant"]
         except KeyError:
-            self.logger.error("Could not find a waveform approximant specified for this job.")
+            self.logger.error(
+                "Could not find a waveform approximant specified for this job."
+            )
 
         if self.production.rundir:
             rundir = os.path.abspath(self.production.rundir)
@@ -209,12 +231,12 @@ class Rift(Pipeline):
                 "bin",
                 "util_RIFT_pseudo_pipe.py",
             ),
-            ]
+        ]
         if coinc_file:
             command += ["--use-coinc", coinc_file]
 
-        if "non-spin" in self.production.meta['waveform']:
-            if self.production.meta['waveform']['non-spin']:
+        if "non-spin" in self.production.meta["waveform"]:
+            if self.production.meta["waveform"]["non-spin"]:
                 command += ["--assume-nospin"]
 
         command += [
@@ -254,6 +276,11 @@ class Rift(Pipeline):
 
             command += ["--manual-initial-grid", bootstrap_file]
 
+            if "scheduler" in self.production.meta:
+                if "osg" in self.production.meta["scheduler"]:
+                    if self.production.meta["scheduler"]["osg"]:
+                        command += ["--use-osg-file-transfer"]
+
         if dryrun:
             print(" ".join(command))
 
@@ -284,7 +311,7 @@ class Rift(Pipeline):
                         )
                 else:
                     if self.production.event.repository:
-                        #with set_directory(os.path.abspath(self.production.rundir)):
+                        # with set_directory(os.path.abspath(self.production.rundir)):
                         for psdfile in self.production.get_psds("xml"):
                             ifo = psdfile.split("/")[-1].split("-")[1].split(".")[0]
                             os.system(f"cp {psdfile} {ifo}-psd.xml.gz")
@@ -346,11 +373,13 @@ class Rift(Pipeline):
             print(" ".join(command))
         else:
             for psdfile in self.production.get_psds("xml"):
-                os.system(f"cp {psdfile} {self.production.rundir}/{psdfile.split('/')[-1]}")
+                os.system(
+                    f"cp {psdfile} {self.production.rundir}/{psdfile.split('/')[-1]}"
+                )
 
             try:
                 with set_directory(self.production.rundir):
-                    
+
                     dagman = subprocess.Popen(
                         command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
                     )
