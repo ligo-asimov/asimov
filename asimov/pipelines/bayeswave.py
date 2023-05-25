@@ -135,6 +135,9 @@ class BayesWave(Pipeline):
             f"--trigger-time={gps_time}",
         ]
 
+        if len(self.production.meta['data']['data files']) > 0:
+            command += ["--skip-datafind"]
+        
         if "copy frames" in self.production.meta["scheduler"]:
             if self.production.meta["scheduler"]["copy frames"]:
                 command += ["--copy-frames"]
