@@ -40,13 +40,13 @@ Review status
 -------------
 
 The newly reviewed features in asimov 0.5.0 are: 
-- Monitor and apply hooks for `CBCflow<https://pypi.org/project/cbcflow/>`_
-- Integration of `peconfigurator<https://pypi.org/project/pe-configurator/>`_ via entry points
-- Integration of `asimov-gwdata<https://pypi.org/project/asimov-gwdata/>`_ via entry points
-- Reduced order quadrature support with `bilby<https://lscsoft.docs.ligo.org/bilby/index.html>`_ with the  `dynesty sampler<https://dynesty.readthedocs.io>`_
+- Monitor and apply hooks for `CBCflow <https://pypi.org/project/cbcflow/>`_
+- Integration of `peconfigurator <https://pypi.org/project/pe-configurator/>`_ via entry points
+- Integration of `asimov-gwdata <https://pypi.org/project/asimov-gwdata/>`_ via entry points
+- Reduced order quadrature support with `bilby <https://lscsoft.docs.ligo.org/bilby/index.html>`_ with the  `dynesty sampler <https://dynesty.readthedocs.io>`_
 
 The newly reviewed capabilities in asimov 0.5.0 are: 
-- Operability on the `Open Science Grid<https://osg-htc.org/>`_ (OSG)
+- Operability on the `Open Science Grid <https://osg-htc.org/>`_ (OSG)
 - Support for shared user accounts
 
 Additional reviewed updates:
