@@ -277,7 +277,7 @@ def monitor(ctx, event, update, dry_run, chain):
                             production.meta["profiling"] = condor.collect_history(
                                 production.job_id
                             )
-                            production.meta['job id'] = None
+                            production.meta["job id"] = None
                         except (configparser.NoOptionError, configparser.NoSectionError):
                             logger.warning("Could not collect condor profiling data as no scheduler was specified in the config file.")
                         except ValueError as e:
