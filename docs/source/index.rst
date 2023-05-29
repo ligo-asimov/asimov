@@ -13,9 +13,11 @@
 .. raw:: html
 
 	 <div class="d-flex flex-column flex-lg-row align-items-md-stretch justify-content-md-center gap-3 mb-4">
-	 <div class="d-inline-block v-align-middle fs-5">
-	 <pre>$ pip install asimov</pre>
-	 </div>
+	<div class="d-inline-block v-align-middle fs-5">
+	<div class="asimov-code">
+	<pre>$ pip install asimov</pre>
+	</div>
+	</div>
 	 <a class="btn btn-lg btn-primary d-flex align-items-center justify-content-center fw-semibold"
 	    href="getting-started.html"
 	 >
@@ -204,7 +206,18 @@ Python API
    state
    pipelines
    config
-	     
+
+LIGO Analysis Cookbook
+----------------------
+
+.. toctree::
+   :maxdepth: 1
+   :Caption: LIGO Analysis Cookbook
+
+   ligo-cookbook/bayeswave
+   ligo-cookbook/bilby
+   ligo-cookbook/working-with-gwosc
+   
 Indices and tables
 ------------------
 

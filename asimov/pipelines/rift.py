@@ -188,7 +188,18 @@ class Rift(Pipeline):
             self.production.set_meta("user", user)
 
         os.environ["LIGO_USER_NAME"] = f"{user}"
-        os.environ["LIGO_ACCOUNTING"] = f"{self.production.meta['scheduler']['accounting group']}"
+        os.environ[
+            "LIGO_ACCOUNTING"
+        ] = f"{self.production.meta['scheduler']['accounting group']}"
+
+        if "singularity image" in self.production.meta["scheduler"]:
+            # Collect the correct information for the singularity image
+            os.environ[
+                "SINGULARITY_RIFT_IMAGE"
+            ] = f"{self.production.meta['scheduler']['singularity image']}"
+            os.environ[
+                "SINGULARITY_BASE_EXE_DIR"
+            ] = f"{self.production.meta['scheduler']['singularity base exe directory']}"
 
         try:
             calibration = config.get("general", "calibration")
@@ -264,6 +275,11 @@ class Rift(Pipeline):
                 )
 
             command += ["--manual-initial-grid", bootstrap_file]
+
+        if "scheduler" in self.production.meta:
+            if "osg" in self.production.meta["scheduler"]:
+                if self.production.meta["scheduler"]["osg"]:
+                    command += ["--use-osg-file-transfer"]
 
         if dryrun:
             print(" ".join(command))
