@@ -25,10 +25,11 @@ Project analyses
 import os
 import configparser
 from copy import deepcopy
+import pathlib
 
 from functools import reduce
 import operator
-
+import logging
 from liquid import Liquid
 
 from asimov import config, logger, LOGGER_LEVEL
@@ -514,7 +515,6 @@ class SimpleAnalysis(Analysis):
 
         self.meta = update(self.meta, deepcopy(kwargs))
 
-
         if "sampler" not in self.meta:
             self.meta["sampler"] = {}
 
@@ -878,12 +878,6 @@ class GravitationalWaveTransient(SimpleAnalysis):
             # TODO: Should probably raise a deprecation warning
             self.meta["sampler"]["lmax"] = self.meta["lmax"]
 
-        if "review" in self.meta:
-            self.review = Review.from_dict(self.meta["review"], production=self)
-            self.meta.pop("review")
-        else:
-            self.review = Review()
-
         # Check that the upper frequency is included, otherwise calculate it
         if "quality" in self.meta:
             if ("maximum frequency" not in self.meta["quality"]) and (
@@ -896,16 +890,6 @@ class GravitationalWaveTransient(SimpleAnalysis):
                         0.875 * self.meta["likelihood"]["sample rate"] / 2
                     )
 
-        # Get the data quality recommendations
-        if "quality" in self.event.meta:
-            self.quality = self.event.meta["quality"]
-        else:
-            self.quality = {}
-
-        if "quality" in self.meta:
-            if "quality" in kwargs:
-                self.meta["quality"].update(kwargs["quality"])
-            self.quality = self.meta["quality"]
 
         if ("quality" in self.meta) and ("event time" in self.meta):
             if ("segment start" not in self.meta["quality"]) and (
@@ -937,17 +921,6 @@ class GravitationalWaveTransient(SimpleAnalysis):
 
         # Gather the PSDs for the job
         self.psds = self._collect_psds()
-
-        # Gather the appropriate prior data for this production
-        if "priors" in self.meta:
-            self.priors = self.meta["priors"]
-            if (
-                "amplitude order" in self.meta["priors"]
-                and "pn amplitude order" not in self.meta["waveform"]
-            ):
-                self.meta["waveform"]["pn amplitude order"] = self.meta["priors"][
-                    "amplitude order"
-                ]
         
     def _collect_psds(self, format="ascii"):
         """
