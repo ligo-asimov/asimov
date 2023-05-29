@@ -104,6 +104,45 @@ For example:
 A Blueprint for a project analysis
 ----------------------------------
 
+Creating a project analysis in asimov is very similar to a simple analysis, except that we can also provide a list of subjects which should be included in the analysis.
+For example, the ``gladia`` pipeline is used to perform a joint analysis between two gravitational waves.
+
+To create a ``gladia`` pipeline which analyses two events, ``GW150914`` and ``GW151012`` you need to add a ``subjects`` list to the blueprint, for example:
+
+.. code-block:: yaml
+
+		kind: projectanalysis
+		name: gladia-joint
+		pipeline: gladia
+		comment: An example joint analysis.
+		subjects:
+		  - GW150914
+		  - GW151012
+		    
 
 Creating a Project Analysis Pipeline
 ====================================
+
+For the most part a Project Analysis pipeline is similar to a simple analysis pipeline.
+The main difference will be how you access metadata from each event.
+
+In the template configuration file project analyses have access to the ``analysis.subjects`` property, which provides a list of subjects available to the analysis.
+These then give access to all of the metadata for each subject.
+
+The example below uses two subjects, and to make the sample template easier to read we've assigned each to its own liquid variable.
+
+.. code-block:: liquid
+
+		{%- assign subject_1 = analysis.subjects[0] -%}
+		{%- assign subject_2 = analysis.subjects[1] -%}
+
+		[event_1_settings]
+		{%- assign ifos = subject_1.meta['interferometers'] -%}
+		channel-dict = { {% for ifo in ifos %}{{ subject_1.meta['data']['channels'][ifo] }},{% endfor %} } 
+		psd-dict = { {% for ifo in ifos %}{{ifo}}:{{subject_1.psds[ifo]}},{% endfor %} }
+
+		[event_2_settings]
+		{%- assign ifos = subject_2.meta['interferometers'] -%}
+		channel-dict = { {% for ifo in ifos %}{{ subject_2.meta['data']['channels'][ifo] }},{% endfor %} } 
+		psd-dict = { {% for ifo in ifos %}{{ifo}}:{{subject_2.psds[ifo]}},{% endfor %} }
+
