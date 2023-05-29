@@ -468,8 +468,22 @@ class SimpleAnalysis(Analysis):
         self.event = self.subject = subject
         self.name = name
 
-        self.logger = logger.getChild("event").getChild(f"{self.name}")
+        pathlib.Path(
+            os.path.join(config.get("logging", "directory"), self.event.name, name)
+        ).mkdir(parents=True, exist_ok=True)
+        logfile = os.path.join(
+            config.get("logging", "directory"), self.event.name, name, "asimov.log"
+        )
+
+        self.logger = logger.getChild("analysis").getChild(
+            f"{self.event.name}/{self.name}"
+        )
         self.logger.setLevel(LOGGER_LEVEL)
+
+        fh = logging.FileHandler(logfile)
+        formatter = logging.Formatter("%(asctime)s - %(message)s", "%Y-%m-%d %H:%M:%S")
+        fh.setFormatter(formatter)
+        self.logger.addHandler(fh)
 
         if status:
             self.status_str = status.lower()
@@ -484,19 +498,32 @@ class SimpleAnalysis(Analysis):
                 self.meta = update(
                     self.meta, deepcopy(self.event.ledger.data["pipelines"][pipeline])
                 )
+            else:
+                self.meta = {}
+        else:
+            self.meta = {}
 
-        # if "postprocessing" in self.event.ledger.data:
-        #     self.meta["postprocessing"] = deepcopy(
-        #         self.event.ledger.data["postprocessing"]
-        #     )
+        if "postprocessing" in self.event.ledger.data:
+            self.meta["postprocessing"] = deepcopy(
+                self.event.ledger.data["postprocessing"]
+            )
 
         self.meta = update(self.meta, deepcopy(self.subject.meta))
         if "productions" in self.meta:
             self.meta.pop("productions")
 
         self.meta = update(self.meta, deepcopy(kwargs))
+
+
+        if "sampler" not in self.meta:
+            self.meta["sampler"] = {}
+
+        if "scheduler" not in self.meta:
+            self.meta["scheduler"] = {}
+        
         self.pipeline = pipeline.lower()
         self.pipeline = known_pipelines[pipeline.lower()](self)
+        
         if "needs" in self.meta:
             self._needs = self.meta.pop("needs")
         else:
@@ -832,6 +859,96 @@ class GravitationalWaveTransient(SimpleAnalysis):
         self.psds = self._collect_psds()
         self.xml_psds = self._collect_psds(format="xml")
 
+        if "cip jobs" in self.meta:
+            # TODO: Should probably raise a deprecation warning
+            self.meta["sampler"]["cip jobs"] = self.meta["cip jobs"]
+
+        if "scheduler" not in self.meta:
+            self.meta["scheduler"] = {}
+
+        if "likelihood" not in self.meta:
+            self.meta["likelihood"] = {}
+        if "marginalization" not in self.meta["likelihood"]:
+            self.meta["likelihood"]["marginalization"] = {}
+
+        if "data files" not in self.meta["data"]:
+            self.meta["data"]["data files"] = {}
+
+        if "lmax" in self.meta:
+            # TODO: Should probably raise a deprecation warning
+            self.meta["sampler"]["lmax"] = self.meta["lmax"]
+
+        if "review" in self.meta:
+            self.review = Review.from_dict(self.meta["review"], production=self)
+            self.meta.pop("review")
+        else:
+            self.review = Review()
+
+        # Check that the upper frequency is included, otherwise calculate it
+        if "quality" in self.meta:
+            if ("maximum frequency" not in self.meta["quality"]) and (
+                "sample rate" in self.meta["likelihood"]
+            ):
+                self.meta["quality"]["maximum frequency"] = {}
+                # Account for the PSD roll-off with the 0.875 factor
+                for ifo in self.meta["interferometers"]:
+                    self.meta["quality"]["maximum frequency"][ifo] = int(
+                        0.875 * self.meta["likelihood"]["sample rate"] / 2
+                    )
+
+        # Get the data quality recommendations
+        if "quality" in self.event.meta:
+            self.quality = self.event.meta["quality"]
+        else:
+            self.quality = {}
+
+        if "quality" in self.meta:
+            if "quality" in kwargs:
+                self.meta["quality"].update(kwargs["quality"])
+            self.quality = self.meta["quality"]
+
+        if ("quality" in self.meta) and ("event time" in self.meta):
+            if ("segment start" not in self.meta["quality"]) and (
+                "segment length" in self.meta["data"]
+            ):
+                self.meta["likelihood"]["segment start"] = (
+                    self.meta["event time"] - self.meta["data"]["segment length"] + 2
+                )
+                # self.event.meta['likelihood']['segment start'] = self.meta['data']['segment start']
+
+        # Update waveform data
+        if "waveform" not in self.meta:
+            self.logger.info("Didn't find waveform information in the metadata")
+            self.meta["waveform"] = {}
+        if "approximant" in self.meta:
+            self.logger.warn(
+                "Found deprecated approximant information, "
+                "moving to waveform area of ledger"
+            )
+            approximant = self.meta.pop("approximant")
+            self.meta["waveform"]["approximant"] = approximant
+        if "reference frequency" in self.meta["likelihood"]:
+            self.logger.warn(
+                "Found deprecated ref freq information, "
+                "moving to waveform area of ledger"
+            )
+            ref_freq = self.meta["likelihood"].pop("reference frequency")
+            self.meta["waveform"]["reference frequency"] = ref_freq
+
+        # Gather the PSDs for the job
+        self.psds = self._collect_psds()
+
+        # Gather the appropriate prior data for this production
+        if "priors" in self.meta:
+            self.priors = self.meta["priors"]
+            if (
+                "amplitude order" in self.meta["priors"]
+                and "pn amplitude order" not in self.meta["waveform"]
+            ):
+                self.meta["waveform"]["pn amplitude order"] = self.meta["priors"][
+                    "amplitude order"
+                ]
+        
     def _collect_psds(self, format="ascii"):
         """
         Collect the required psds for this production.
