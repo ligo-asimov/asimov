@@ -146,3 +146,5 @@ The example below uses two subjects, and to make the sample template easier to r
 		channel-dict = { {% for ifo in ifos %}{{ subject_2.meta['data']['channels'][ifo] }},{% endfor %} } 
 		psd-dict = { {% for ifo in ifos %}{{ifo}}:{{subject_2.psds[ifo]}},{% endfor %} }
 
+Postprocessing
+==============
