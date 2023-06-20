@@ -31,8 +31,6 @@ def start(dry_run):
     submit_description = {
         "executable": shutil.which("asimov"),
         "arguments": "monitor --chain",
-        "accounting_group_user": config.get('condor', 'user'),
-        "accounting_group": config.get("condor", "accounting"),
         "output": os.path.join(".asimov", "asimov_cron.out"),
         "accounting_group_user": config.get('condor', 'user'),
         "on_exit_remove": "false",
@@ -48,6 +46,16 @@ def start(dry_run):
         "+flock_local": "False",
         "+DESIRED_Sites": "nogrid",
     }
+
+    try:
+        submit_description["accounting_group_user"] = config.get('condor', 'user')
+        submit_description["accounting_group"] = self.meta["accounting group"],
+    except (configparser.NoOptionError, configparser.NoSectionError):
+        self.logger.warning(
+            "This asimov project does not supply any accounting information, which may prevent it running on some clusters."
+        )
+
+    
     cluster = condor.submit_job(submit_description)
     ledger.data["cronjob"] = cluster
     ledger.save()

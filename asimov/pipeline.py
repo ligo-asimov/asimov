@@ -422,12 +422,10 @@ class PESummaryPipeline(PostPipeline):
             print("PESUMMARY COMMAND")
             print("-----------------")
             print(command)
-
+            
         submit_description = {
             "executable": config.get("pesummary", "executable"),
             "arguments": " ".join(command),
-            "accounting_group_user": config.get('condor', 'user'),
-            "accounting_group": self.meta["accounting group"],
             "output": f"{self.production.rundir}/pesummary.out",
             "error": f"{self.production.rundir}/pesummary.err",
             "log": f"{self.production.rundir}/pesummary.log",
@@ -440,6 +438,14 @@ class PESummaryPipeline(PostPipeline):
             "+flock_local": "True",
             "+DESIRED_Sites": htcondor.classad.quote("nogrid"),
         }
+
+        if "accounting group" in self.meta:
+            submit_description["accounting_group_user"] = config.get('condor', 'user')
+            submit_description["accounting_group"] = self.meta["accounting group"],
+        else:
+            self.logger.warning(
+                "This PESummary Job does not supply any accounting information, which may prevent it running on some clusters."
+                )
         
         if dryrun:
             print("SUBMIT DESCRIPTION")
