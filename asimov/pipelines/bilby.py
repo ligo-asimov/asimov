@@ -139,7 +139,7 @@ class Bilby(Pipeline):
             f"{os.path.abspath(self.production.rundir)}",
         ]
         
-        if "accounting group" in self.meta:
+        if "accounting group" in self.production.meta:
             command += ["--accounting",
                         f"{self.production.meta['scheduler']['accounting group']}"]
         else:
