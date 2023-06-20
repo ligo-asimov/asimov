@@ -48,7 +48,7 @@ def start(dry_run):
 
     try:
         submit_description["accounting_group_user"] = config.get('condor', 'user')
-        submit_description["accounting_group"] = self.meta["accounting group"],
+        submit_description["accounting_group"] = config.get("asimov start", "accounting"),
     except (configparser.NoOptionError, configparser.NoSectionError):
         self.logger.warning(
             "This asimov project does not supply any accounting information, which may prevent it running on some clusters."
