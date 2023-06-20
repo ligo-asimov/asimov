@@ -32,7 +32,6 @@ def start(dry_run):
         "executable": shutil.which("asimov"),
         "arguments": "monitor --chain",
         "output": os.path.join(".asimov", "asimov_cron.out"),
-        "accounting_group_user": config.get('condor', 'user'),
         "on_exit_remove": "false",
         "universe": "local",
         "error": os.path.join(".asimov", "asimov_cron.err"),
