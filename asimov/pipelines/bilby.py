@@ -137,10 +137,17 @@ class Bilby(Pipeline):
             job_label,
             "--outdir",
             f"{os.path.abspath(self.production.rundir)}",
-            "--accounting",
-            f"{self.production.meta['scheduler']['accounting group']}",
         ]
+        
+        if "accounting group" in self.meta:
+            command += ["--accounting",
+                        f"{self.production.meta['scheduler']['accounting group']}"]
+        else:
+            self.logger.warning(
+                "This Bilby Job does not supply any accounting information, which may prevent it running on some clusters."
+                )
 
+        
         if dryrun:
             print(" ".join(command))
         else:
