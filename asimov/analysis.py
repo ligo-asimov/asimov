@@ -239,6 +239,7 @@ class Analysis:
         elif "working directory" in self.subject.meta:
             value = os.path.join(self.subject.meta["working directory"], self.name)
             self.meta["rundir"] = value
+            return self.meta["rundir"]
             # TODO: Make sure this is saved back to the ledger
         else:
             return None
