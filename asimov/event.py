@@ -1090,10 +1090,9 @@ class Production:
                 try:
                     # Check if the job provides PSDs as an asset and were produced with compatible settings
                     if keyword in productions[previous_job].pipeline.collect_assets():
-                        if self._check_compatible(productions[previous_job]):
-                            psds = productions[previous_job].pipeline.collect_assets()[
-                                keyword
-                            ]
+                        psds = productions[previous_job].pipeline.collect_assets()[
+                            keyword
+                        ]
                     else:
                         psds = {}
                 except Exception:
