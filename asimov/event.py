@@ -1076,8 +1076,8 @@ class Production:
             keyword = "xml psds"
 
         if keyword in self.meta:
-            if self.meta["likelihood"]["sample rate"] in self.meta[keyword]:
-                psds = self.meta[keyword][self.meta["likelihood"]["sample rate"]]
+            #if self.meta["likelihood"]["sample rate"] in self.meta[keyword]:
+            psds = self.meta[keyword]#[self.meta["likelihood"]["sample rate"]]
 
         # First look through the list of the job's dependencies
         # to see if they're provided by a job there.
