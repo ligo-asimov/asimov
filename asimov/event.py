@@ -545,7 +545,6 @@ class Event:
 
         card += """
         </div>
-        </div>
         """
 
         return card
@@ -1216,7 +1215,7 @@ class Production:
 </p>"""
 
         card += """&nbsp;"""
-        #card += """</div>"""
+        card += """</div>"""
 
         if len(self.review) > 0:
             for review in self.review:
