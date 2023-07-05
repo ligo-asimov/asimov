@@ -222,9 +222,9 @@ class Event:
         ):
             pass
         else:
-            raise DescriptionException(
-                f"""Some of the required calibration envelopes are missing from this issue."""
-                f"""{set(self.meta['interferometers']) - set(self.meta['data']['calibration'].keys())}"""
+            self.logger.warning(
+                f"""Some of the calibration envelopes are missing from this event. """
+                f"""{set(self.meta['interferometers']) - set(self.meta['data']['calibration'].keys())} are absent."""
             )
 
     def _check_psds(self):
@@ -342,7 +342,6 @@ class Event:
                 try:
                     data["data"]["calibration"] = find_calibrations(data["event time"])
                 except ValueError:
-                    data["data"]["calibration"] = {}
                     logger.warning(
                         f"Could not find calibration files for {data['name']}"
                     )

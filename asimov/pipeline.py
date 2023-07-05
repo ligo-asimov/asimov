@@ -329,12 +329,17 @@ class PESummaryPipeline(PostPipeline):
 
         psds = {ifo: os.path.abspath(psd) for ifo, psd in self.production.psds.items()}
 
-        calibration = [
-            os.path.abspath(os.path.join(self.production.repository.directory, cal))
-            if not cal[0] == "/"
-            else cal
-            for cal in self.production.meta["data"]["calibration"].values()
-        ]
+
+        if "calibration" in self.production.meta["data"]:
+            calibration = [
+                os.path.abspath(os.path.join(self.production.repository.directory, cal))
+                if not cal[0] == "/"
+                else cal
+                for cal in self.production.meta["data"]["calibration"].values()
+            ]
+        else:
+            calibration = None
+
         configfile = self.production.event.repository.find_prods(
             self.production.name, self.category
         )[0]
@@ -399,8 +404,9 @@ class PESummaryPipeline(PostPipeline):
         command += ["--samples"]
         command += self.production.pipeline.samples(absolute=True)
         # Calibration information
-        command += ["--calibration"]
-        command += calibration
+        if calibration:
+            command += ["--calibration"]
+            command += calibration
         # PSDs
         command += ["--psd"]
         for key, value in psds.items():
