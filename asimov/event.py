@@ -544,7 +544,7 @@ class Event:
         card += """</div>"""
 
         card += """
-        </div>
+        </div></div>
         """
 
         return card
