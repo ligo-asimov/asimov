@@ -329,12 +329,17 @@ class PESummaryPipeline(PostPipeline):
 
         psds = {ifo: os.path.abspath(psd) for ifo, psd in self.production.psds.items()}
 
-        calibration = [
-            os.path.abspath(os.path.join(self.production.repository.directory, cal))
-            if not cal[0] == "/"
-            else cal
-            for cal in self.production.meta["data"]["calibration"].values()
-        ]
+
+        if "calibration" in self.production.meta["data"]:
+            calibration = [
+                os.path.abspath(os.path.join(self.production.repository.directory, cal))
+                if not cal[0] == "/"
+                else cal
+                for cal in self.production.meta["data"]["calibration"].values()
+            ]
+        else:
+            calibration = None
+
         configfile = self.production.event.repository.find_prods(
             self.production.name, self.category
         )[0]
@@ -399,8 +404,9 @@ class PESummaryPipeline(PostPipeline):
         command += ["--samples"]
         command += self.production.pipeline.samples(absolute=True)
         # Calibration information
-        command += ["--calibration"]
-        command += calibration
+        if calibration:
+            command += ["--calibration"]
+            command += calibration
         # PSDs
         command += ["--psd"]
         for key, value in psds.items():
@@ -422,12 +428,10 @@ class PESummaryPipeline(PostPipeline):
             print("PESUMMARY COMMAND")
             print("-----------------")
             print(command)
-
+            
         submit_description = {
             "executable": config.get("pesummary", "executable"),
             "arguments": " ".join(command),
-            "accounting_group_user": config.get('condor', 'user'),
-            "accounting_group": self.meta["accounting group"],
             "output": f"{self.production.rundir}/pesummary.out",
             "error": f"{self.production.rundir}/pesummary.err",
             "log": f"{self.production.rundir}/pesummary.log",
@@ -440,6 +444,14 @@ class PESummaryPipeline(PostPipeline):
             "+flock_local": "True",
             "+DESIRED_Sites": htcondor.classad.quote("nogrid"),
         }
+
+        if "accounting group" in self.meta:
+            submit_description["accounting_group_user"] = config.get('condor', 'user')
+            submit_description["accounting_group"] = self.meta["accounting group"],
+        else:
+            self.logger.warning(
+                "This PESummary Job does not supply any accounting information, which may prevent it running on some clusters."
+                )
         
         if dryrun:
             print("SUBMIT DESCRIPTION")
