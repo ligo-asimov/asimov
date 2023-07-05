@@ -135,6 +135,11 @@ class BayesWave(Pipeline):
             f"--trigger-time={gps_time}",
         ]
 
+        if "cache files" in self.production.meta["data"]:
+            if len(self.production.meta["data"]["cache files"]) > 0:
+                # Skip the datafind step if the data is already provided.
+                command += ["--skip-datafind"]
+        
         if "copy frames" in self.production.meta["scheduler"]:
             if self.production.meta["scheduler"]["copy frames"]:
                 command += ["--copy-frames"]

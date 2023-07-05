@@ -119,7 +119,11 @@ def create(name=None, oldname=None, gid=None, superevent=None, repo=None, search
         event.meta["old superevent"] = oldname
     if gid:
         event.meta["event time"] = event_data["gpstime"]
-        event.meta["gid"] = gid
+
+    if not "ligo" in event.meta:
+        event.meta["ligo"] = {}
+        
+    event.meta["ligo"]["preferred event"] = gid
 
     working_dir = os.path.join(config.get("general", "rundir_default"), name)
 
