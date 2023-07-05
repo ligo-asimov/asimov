@@ -215,12 +215,17 @@ class Event:
         """
         Find the calibration envelope locations.
         """
-        if ("calibration" in self.meta["data"]) and (
+
+        if ("calibration" not in self.meta["data"]):
+            self.logger.warning("There are no calibration envelopes for this event.")
+
+        elif ("calibration" in self.meta["data"]) and (
             set(self.meta["interferometers"]).issubset(
                 set(self.meta["data"]["calibration"].keys())
             )
         ):
             pass
+
         else:
             self.logger.warning(
                 f"""Some of the calibration envelopes are missing from this event. """
