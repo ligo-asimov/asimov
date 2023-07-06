@@ -1,3 +1,22 @@
+0.5.1
+=====
+
+This is a bug-fix release, and doesn't introduce any new features.
+
+Breaking changes
+----------------
+
+This release is not believed to introduce any backwards-incompatible changes.
+
+Merges
+------
+
++ `ligo!98 <https://git.ligo.org/asimov/asimov/-/merge_requests/98>`_: Fixes to handling of preferred event data from LIGO GraceDB
++ `ligo!93 <https://git.ligo.org/asimov/asimov/-/merge_requests/93>`_: Fixes to allow code to run in environments where accounting tags are not required
++ `ligo!94 <https://git.ligo.org/asimov/asimov/-/merge_requests/94>`_: Fixes errors when calibration files are not available
++ `ligo!92 <https://git.ligo.org/asimov/asimov/-/merge_requests/92>`_: Fixes an issue with adding PSD files to some analyses
++ `ligo!90 <https://git.ligo.org/asimov/asimov/-/merge_requests/90>`_: Fixes an issue with bayeswave when data files are provided
+
 0.5.0
 =====
 
