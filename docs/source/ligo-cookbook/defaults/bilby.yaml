@@ -1,0 +1,13 @@
+kind: configuration
+pipelines:
+  bilby:
+    quality:
+      state vector:
+        L1: L1:DCS-CALIB_STATE_VECTOR_C01
+        H1: H1:DCS-CALIB_STATE_VECTOR_C01
+        V1: V1:DQ_ANALYSIS_STATE_VECTOR
+    sampler:
+      sampler: dynesty
+    scheduler:
+      accounting group: ligo.dev.o4.cbc.pe.bilby
+      request cpus: 4

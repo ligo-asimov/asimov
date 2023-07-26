@@ -8,6 +8,7 @@ import pathlib
 from copy import deepcopy
 import logging
 import configparser
+import subprocess
 
 import networkx as nx
 import yaml
@@ -17,7 +18,7 @@ from liquid import Liquid
 from asimov import config, logger, LOGGER_LEVEL
 from asimov.pipelines import known_pipelines
 from asimov.storage import Store
-from asimov.utils import update
+from asimov.utils import update, diff_dict
 
 from .git import EventRepo
 from .ini import RunConfiguration
@@ -180,7 +181,11 @@ class Event:
 
         self._check_required()
 
-        if ("interferometers" in self.meta) and ("calibration" in self.meta):
+        if (
+            ("interferometers" in self.meta)
+            and ("calibration" in self.meta)
+            and ("data" in self.meta)
+        ):
             try:
                 self._check_calibration()
             except DescriptionException:
@@ -218,7 +223,7 @@ class Event:
             pass
         else:
             raise DescriptionException(
-                f"""Some of the required calibration envelopes are missing from this event."""
+                f"""Some of the required calibration envelopes are missing from this issue."""
                 f"""{set(self.meta['interferometers']) - set(self.meta['data']['calibration'].keys())}"""
             )
 
@@ -402,7 +407,10 @@ class Event:
            The location in the repository for this file.
         """
 
-        gid = self.meta["gid"]
+        if "gid" in self.meta:
+            gid = self.meta["gid"]
+        else:
+            raise ValueError("No GID is included in this event's metadata.")
 
         try:
             client = GraceDb(service_url=config.get("gracedb", "url"))
@@ -410,6 +418,14 @@ class Event:
 
             with open("download.file", "w") as dest_file:
                 dest_file.write(file_obj.read().decode())
+
+            if "xml" in gfile:
+                # Convert to the new xml format
+                command = ["ligolw_no_ilwdchar", "download.file"]
+                pipe = subprocess.Popen(
+                    command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+                )
+                out, err = pipe.communicate()
 
             self.repository.add_file(
                 "download.file",
@@ -551,6 +567,7 @@ class Production:
 
     def __init__(self, event, name, status, pipeline, comment=None, **kwargs):
         self.event = event if isinstance(event, Event) else event[0]
+        self.subject = self.event
         self.name = name
 
         pathlib.Path(
@@ -593,7 +610,7 @@ class Production:
             )
 
         # Update with the event and project defaults
-        self.meta = update(self.meta, self.event.meta)
+        self.meta = update(self.meta, deepcopy(self.event.meta))
         if "productions" in self.meta:
             self.meta.pop("productions")
 
@@ -653,7 +670,9 @@ class Production:
             self.quality = self.meta["quality"]
 
         if ("quality" in self.meta) and ("event time" in self.meta):
-            if "segment start" not in self.meta["quality"]:
+            if ("segment start" not in self.meta["quality"]) and (
+                "segment length" in self.meta["data"]
+            ):
                 self.meta["likelihood"]["segment start"] = (
                     self.meta["event time"] - self.meta["data"]["segment length"] + 2
                 )
@@ -664,14 +683,14 @@ class Production:
             self.logger.info("Didn't find waveform information in the metadata")
             self.meta["waveform"] = {}
         if "approximant" in self.meta:
-            self.logger.warning(
+            self.logger.warn(
                 "Found deprecated approximant information, "
                 "moving to waveform area of ledger"
             )
             approximant = self.meta.pop("approximant")
             self.meta["waveform"]["approximant"] = approximant
         if "reference frequency" in self.meta["likelihood"]:
-            self.logger.warning(
+            self.logger.warn(
                 "Found deprecated ref freq information, "
                 "moving to waveform area of ledger"
             )
@@ -684,6 +703,13 @@ class Production:
         # Gather the appropriate prior data for this production
         if "priors" in self.meta:
             self.priors = self.meta["priors"]
+            if (
+                "amplitude order" in self.meta["priors"]
+                and "pn amplitude order" not in self.meta["waveform"]
+            ):
+                self.meta["waveform"]["pn amplitude order"] = self.meta["priors"][
+                    "amplitude order"
+                ]
 
     def __hash__(self):
         return int(f"{hash(self.name)}{abs(hash(self.event.name))}")
@@ -799,7 +825,7 @@ class Production:
            If set to True the output is designed to be included nested within an event.
            The event name is not included in the representation, and the production name is provided as a key.
         """
-        dictionary = {}
+        dictionary = deepcopy(self.meta)
         if not event:
             dictionary["event"] = self.event.name
             dictionary["name"] = self.name
@@ -818,14 +844,40 @@ class Production:
             dictionary["quality"] = self.meta["quality"]
         if "priors" in self.meta:
             dictionary["priors"] = self.meta["priors"]
+        if "waveform" in self.meta:
+            dictionary["waveform"] = self.meta["waveform"]
+        dictionary["needs"] = self.dependencies
+        dictionary["job id"] = self.job_id
+
+        # Remove duplicates of pipeline defaults
+        if self.pipeline.name.lower() in self.event.ledger.data["pipelines"]:
+            defaults = deepcopy(
+                self.event.ledger.data["pipelines"][self.pipeline.name.lower()]
+            )
+        else:
+            defaults = {}
+
+        if "postprocessing" in self.event.ledger.data:
+            defaults["postprocessing"] = deepcopy(
+                self.event.ledger.data["postprocessing"]
+            )
+
+        defaults = update(defaults, deepcopy(self.event.meta))
+
+        dictionary = diff_dict(defaults, dictionary)
+
         for key, value in self.meta.items():
-            dictionary[key] = value
+            if key == "operations":
+                continue
         if "repository" in self.meta:
             dictionary["repository"] = self.repository.url
         if "ledger" in dictionary:
             dictionary.pop("ledger")
         if "pipelines" in dictionary:
             dictionary.pop("pipelines")
+
+        if "productions" in dictionary:
+            dictionary.pop("productions")
 
         if not event:
             output = dictionary
@@ -946,11 +998,15 @@ class Production:
             return coinc
         except FileNotFoundError:
             self.logger.info("Could not find a coinc.xml file")
-            self.event.get_gracedb(
-                "coinc.xml",
+            savepath = os.path.abspath(
                 os.path.join(
                     self.event.repository.directory, self.category, "coinc.xml"
                 ),
+            )
+            print(savepath)
+            self.event.get_gracedb(
+                "coinc.xml",
+                savepath,
             )
             coinc = self.event.repository.find_coincfile(self.category)
             return coinc
@@ -1006,16 +1062,22 @@ class Production:
     def __repr__(self):
         return f"<Production {self.name} for {self.event} | status: {self.status}>"
 
-    def _collect_psds(self):
+    def _collect_psds(self, format="ascii"):
         """
         Collect the required psds for this production.
         """
         psds = {}
         # If the PSDs are specifically provided in the ledger,
         # use those.
-        if "psds" in self.meta:
-            if self.meta["likelihood"]["sample rate"] in self.meta["psds"]:
-                psds = self.meta["psds"][self.meta["likelihood"]["sample rate"]]
+
+        if format == "ascii":
+            keyword = "psds"
+        elif format == "xml":
+            keyword = "xml psds"
+
+        if keyword in self.meta:
+            if self.meta["likelihood"]["sample rate"] in self.meta[keyword]:
+                psds = self.meta[keyword][self.meta["likelihood"]["sample rate"]]
 
         # First look through the list of the job's dependencies
         # to see if they're provided by a job there.
@@ -1027,10 +1089,10 @@ class Production:
             for previous_job in self.dependencies:
                 try:
                     # Check if the job provides PSDs as an asset and were produced with compatible settings
-                    if "psds" in productions[previous_job].pipeline.collect_assets():
+                    if keyword in productions[previous_job].pipeline.collect_assets():
                         if self._check_compatible(productions[previous_job]):
                             psds = productions[previous_job].pipeline.collect_assets()[
-                                "psds"
+                                keyword
                             ]
                     else:
                         psds = {}
@@ -1072,6 +1134,7 @@ class Production:
         self.logger.info("Creating config file.")
 
         self.psds = self._collect_psds()
+        self.xml_psds = self._collect_psds(format="xml")
 
         if "template" in self.meta:
             template = f"{self.meta['template']}.ini"

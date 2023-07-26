@@ -1,3 +1,5 @@
+.. _project-guide:
+
 ===============
 Asimov Projects
 ===============
@@ -22,15 +24,20 @@ It is also possible to customise the project in a number of ways, including spec
 
 .. todo:: Add further information about customising project creation
 
+Adding default analysis settings
+--------------------------------
+
+.. todo:: Add documentation about default analysis settings.
+	  
 The structure of a project
 --------------------------
 
 When you run ``asimov init`` in a directory it will create a few files and directories which allow it to track information about the project and all of the analyses which you'll add to it.
 
-``ledger.yml``
+``.asimov/ledger.yml``
     This file is the *ledger*, which is a database of all of the analyses in the project.
 
-``asimov.conf``
+``.asimov/asimov.conf``
     This file is the configuration file for asimov, and contains information about the project itself and the computing environment.
 
 Asimov will create a number of new directories when it's creating a project.
@@ -54,7 +61,7 @@ Customising a project
 
 Sometimes it can be useful to change the default settings for a project.
 For example, you may want to move the ``pages`` directory to be located somewhere that is served by a web-server.
-The configuration of the project is handled by the ``asimov.conf`` file, and by editing the configuration values in this file you can change asimov's default behaviour.
+The configuration of the project is handled by the ``.asimov/asimov.conf`` file, and by editing the configuration values in this file you can change asimov's default behaviour.
 
 You can also set the locations of these directories when creating the project using ``asimov init``.
 
@@ -65,7 +72,8 @@ You can also set the locations of these directories when creating the project us
 
 		    $ asimov init --results /home/albert.einstein/results
 
-    It can also be changed in the configuration file, ``asimov.conf`` in the root directory of the project by editing the value of ``[storage]/results_store``
+    if your results directory should be located in ``/home/albert.einstein/results``, for example.
+    It can also be changed in the configuration file, ``.asimov/asimov.conf`` in the root directory of the project by editing the value of ``[storage]/results_store``
 
     .. code-block:: ini
 
@@ -90,11 +98,3 @@ To do this asimov allows you to *clone* an existing project by running
 		$ asimov clone path/to/project
 
 This will give you a local copy of most of that project, including results, but not the working directories and temporary files from the analyses.
-
-Command documentation
----------------------
-
-.. click:: asimov.olivaw:olivaw
-   :prog: asimov
-   :commands: init
-   :nested: full

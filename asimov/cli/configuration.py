@@ -1,5 +1,5 @@
 import click
-
+import os
 from asimov import config
 
 
@@ -36,5 +36,5 @@ def update(kwargs):
     section, key = key.split("/")
     section = section.replace("-", "")
     config.set(section, key, value)
-    with open("asimov.conf", "w") as config_file:
+    with open(os.path.join(".asimov", "asimov.conf"), "w") as config_file:
         config.write(config_file)

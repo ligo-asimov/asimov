@@ -1,7 +1,9 @@
 import shutil
 import configparser
+import os
 import sys
 import click
+from copy import deepcopy
 
 from asimov import condor, config, logger, LOGGER_LEVEL
 from asimov import current_ledger as ledger
@@ -10,6 +12,11 @@ from asimov.cli import ACTIVE_STATES, manage, report
 logger = logger.getChild("cli").getChild("monitor")
 logger.setLevel(LOGGER_LEVEL)
 
+if sys.version_info < (3, 10):
+    from importlib_metadata import entry_points
+else:
+    from importlib.metadata import entry_points
+
 
 @click.option("--dry-run", "-n", "dry_run", is_flag=True)
 @click.command()
@@ -17,7 +24,7 @@ def start(dry_run):
     """Set up a cron job on condor to monitor the project."""
 
     try:
-        minute_expression = config.get("asimov start", "cron_minute")
+        minute_expression = config.get("condor", "cron_minute")
     except (configparser.NoOptionError, configparser.NoSectionError):
         minute_expression = "*/15"
 
@@ -25,18 +32,21 @@ def start(dry_run):
         "executable": shutil.which("asimov"),
         "arguments": "monitor --chain",
         "accounting_group_user": config.get('condor', 'user'),
-        "accounting_group": config.get("asimov start", "accounting"),
-        "output": "asimov_cron.out",
+        "accounting_group": config.get("condor", "accounting"),
+        "output": os.path.join(".asimov", "asimov_cron.out"),
+        "accounting_group_user": config.get('condor', 'user'),
         "on_exit_remove": "false",
         "universe": "local",
-        "error": "asimov_cron.err",
-        "log": "asimov_cron.log",
+        "error": os.path.join(".asimov", "asimov_cron.err"),
+        "log": os.path.join(".asimov", "asimov_cron.log"),
         "request_cpus": "1",
         "cron_minute": minute_expression,
         "getenv": "true",
         "batch_name": f"asimov/monitor/{ledger.data['project']['name']}",
         "request_memory": "8192MB",
         "request_disk": "8192MB",
+        "+flock_local": "False",
+        "+DESIRED_Sites": "nogrid",
     }
     cluster = condor.submit_job(submit_description)
     ledger.data["cronjob"] = cluster
@@ -139,8 +149,8 @@ def monitor(ctx, event, update, dry_run, chain):
             try:
                 if "job id" in production.meta:
                     if not dry_run:
-                        if production.meta["job id"] in job_list.jobs:
-                            job = job_list.jobs[production.meta["job id"]]
+                        if production.meta['job id'] in job_list.jobs:
+                            job = job_list.jobs[production.meta['job id']]
                         else:
                             job = None
                     else:
@@ -161,25 +171,23 @@ def monitor(ctx, event, update, dry_run, chain):
                             "  \t  "
                             + click.style("●", "green")
                             + f" Postprocessing for {production.name} is running"
-                            + f" (condor id: {production.meta['job id']})"
+                            + f" (condor id: {production.job_id})"
                         )
 
-                    elif (
-                        job.status.lower() == "running"
-                        and production.status == "processing"
-                    ):
+                        production.meta["postprocessing"]["status"] = "running"
+
+                    elif job.status.lower() == "idle":
                         click.echo(
                             "  \t  "
                             + click.style("●", "green")
-                            + f" {production.name} is postprocessing (condor id: {production.meta['job id']})"
+                            + f" {production.name} is in the queue (condor id: {production.job_id})"
                         )
-                        production.meta["postprocessing"]["status"] = "running"
-
+                        
                     elif job.status.lower() == "running":
                         click.echo(
                             "  \t  "
                             + click.style("●", "green")
-                            + f" {production.name} is running (condor id: {production.meta['job id']})"
+                            + f" {production.name} is running (condor id: {production.job_id})"
                         )
                         if "profiling" not in production.meta:
                             production.meta["profiling"] = {}
@@ -199,7 +207,7 @@ def monitor(ctx, event, update, dry_run, chain):
                             "  \t  "
                             + click.style("●", "yellow")
                             + f" {production.name} is held on the scheduler"
-                            + f" (condor id: {production.meta['job id']})"
+                            + f" (condor id: {production.job_id})"
                         )
                         production.status = "stuck"
                         stuck += 1
@@ -245,7 +253,7 @@ def monitor(ctx, event, update, dry_run, chain):
                                 "  \t  "
                                 + click.style("●", "green")
                                 + f" {production.name} has finished and post-processing"
-                                + f" is stuck ({production.meta['job id']})"
+                                + f" is stuck ({production.job_id})"
                             )
                             production.meta["postprocessing"]["status"] = "stuck"
                     elif (
@@ -265,10 +273,13 @@ def monitor(ctx, event, update, dry_run, chain):
                         if "profiling" not in production.meta:
                             production.meta["profiling"] = {}
                         try:
+                            config.get("condor", "scheduler")
                             production.meta["profiling"] = condor.collect_history(
-                                production.meta["job id"]
+                                production.job_id
                             )
                             production.meta["job id"] = None
+                        except (configparser.NoOptionError, configparser.NoSectionError):
+                            logger.warning("Could not collect condor profiling data as no scheduler was specified in the config file.")
                         except ValueError as e:
                             logger.error("Could not collect condor profiling data.")
                             logger.exception(e)
@@ -322,6 +333,17 @@ def monitor(ctx, event, update, dry_run, chain):
             for production in others:
                 needs = ", ".join(production.meta["needs"])
                 click.echo(f"\t{production.name} which needs {needs}")
+
+        # Post-monitor hooks
+        if "hooks" in ledger.data:
+            if "postmonitor" in ledger.data["hooks"]:
+                discovered_hooks = entry_points(group="asimov.hooks.postmonitor")
+                for hook in discovered_hooks:
+                    if hook.name in list(ledger.data["hooks"]["postmonitor"].keys()):
+                        try:
+                            hook.load()(deepcopy(ledger)).run()
+                        except Exception:
+                            pass
 
         if chain:
             ctx.invoke(report.html)

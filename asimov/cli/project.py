@@ -73,13 +73,20 @@ def make_project(
     storage.Store.create(root=results, name=f"{project_name} storage")
     config.set("storage", "directory", results)
 
-    # Make the ledger
+    # Make the ledger and operative files
+    pathlib.Path('.asimov').mkdir(parents=True, exist_ok=True)
     config.set("ledger", "engine", "yamlfile")
-    config.set("ledger", "location", "ledger.yml")
+    config.set("ledger", "location", os.path.join(".asimov", "ledger.yml"))
 
     # Set the default environment
     python_loc = shutil.which("python").split("/")[:-2]
     config.set("pipelines", "environment", os.path.join("/", *python_loc))
+    config.set("rift", "environment", os.path.join("/", *python_loc))
+
+    try:
+        config.set("pesummary", "executable", shutil.which("summarypages"))
+    except Exception:
+        pass
 
     # Set the default condor user
     if not user:
@@ -87,10 +94,51 @@ def make_project(
     else:
         config.set("condor", "user", user)
 
-    Ledger.create(engine="yamlfile", name=project_name, location="ledger.yml")
+    Ledger.create(engine="yamlfile",
+                  name=project_name,
+                  location=os.path.join(".asimov", "ledger.yml"))
 
-    with open("asimov.conf", "w") as config_file:
+    with open(os.path.join(".asimov", "asimov.conf"), "w") as config_file:
         config.write(config_file)
+
+
+@click.command()
+@click.argument("name")
+@click.option(
+    "--root",
+    default=os.getcwd(),
+    help="Location to create the project, default is the current directory.",
+)
+@click.option(
+    "--working",
+    default="working",
+    help="""The location to store working directories,
+ default is a directory called 'working' inside the current directory.""",
+)
+@click.option(
+    "--checkouts",
+    default="checkouts",
+    help="The location to store cloned git repositories.",
+)
+@click.option(
+    "--results",
+    default="results",
+    help="The location where the results store should be created.",
+)
+@click.option(
+    "--user",
+    default=None,
+    help="The user account to be used for accounting purposes. Defaults to the current user if not set.",
+)
+def init(
+    name, root, working="working", checkouts="checkouts", results="results", user=None
+):
+    """
+    Roll-out a new project.
+    """
+    make_project(name, root, working=working, checkouts=checkouts, results=results)
+    click.echo(click.style("●", fg="green") + " New project created successfully!")
+    logger.info(f"A new project was created in {os.getcwd()}")
 
 
 @click.command()
@@ -180,7 +228,7 @@ def clone(location):
     # Make the ledger
     if config.get("ledger", "engine") == "yamlfile":
         shutil.copyfile(
-            os.path.join(location, config.get("ledger", "location")), "ledger.yml"
+            os.path.join(location, config.get("ledger", "location")), os.path.join(".asimov", "ledger.yml")
         )
     elif config.get("ledger", "engine") == "gitlab":
         raise NotImplementedError(
@@ -188,7 +236,7 @@ def clone(location):
         )
 
     config.set("ledger", "engine", "yamlfile")
-    config.set("ledger", "location", "ledger.yml")
+    config.set("ledger", "location", os.path.join(".asimov", "ledger.yml"))
 
-    with open("asimov.conf", "w") as config_file:
+    with open(os.path.join(".asimov", "asimov.conf"), "w") as config_file:
         config.write(config_file)

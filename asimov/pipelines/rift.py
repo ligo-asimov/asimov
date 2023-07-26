@@ -34,6 +34,7 @@ class Rift(Pipeline):
     def __init__(self, production, category=None):
         super(Rift, self).__init__(production, category)
         self.logger = logger
+        self.logger.info("Using the RIFT pipeline")
         if not production.pipeline.lower() == "rift":
             raise PipelineException
 
@@ -41,6 +42,22 @@ class Rift(Pipeline):
             self.bootstrap = self.production.meta["bootstrap"]
         else:
             self.bootstrap = False
+
+        self._create_ledger_entries()
+
+    def _create_ledger_entries(self):
+        """Create entries in the ledger which might be required in the templating."""
+        if "sampler" not in self.production.meta:
+            self.production.meta["sampler"] = {}
+        required_args = {
+            "sampler": {"ile", "cip"},
+            "likelihood": {"marginalization", "assume"},
+        }
+        for section in required_args.keys():
+            section_data = self.production.meta[section]
+            for section_arg in required_args[section]:
+                if section_arg not in section_data:
+                    section_data[section_arg] = {}
 
     def after_completion(self):
 
@@ -51,65 +68,37 @@ class Rift(Pipeline):
         self.production.meta["job id"] = int(cluster)
         self.production.status = "processing"
 
-    def _convert_psd(self, ascii_format, ifo):
-        """
-        Convert an ascii format PSD to XML.
+    def before_submit(self):
+        pass
 
-        Parameters
-        ----------
-        ascii_format : str
-           The location of the ascii format file.
-        ifo : str
-           The IFO which this PSD is for.
-        """
-        command = [
-            "convert_psd_ascii2xml",
-            "--fname-psd-ascii",
-            f"{ascii_format}",
-            "--conventional-postfix",
-            "--ifo",
-            f"{ifo}",
-        ]
-
-        pipe = subprocess.Popen(
-            command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-        )
-        out, err = pipe.communicate()
-        self.logger.info(command, production=self.production)
-        if err:
-            self.production.status = "stuck"
-            if hasattr(self.production.event, "issue_object"):
-                raise PipelineException(
-                    f"An XML format PSD could not be created.\n{command}\n{out}\n\n{err}",
-                    issue=self.production.event.issue_object,
-                    production=self.production.name,
-                )
-            else:
-                raise PipelineException(
-                    f"An XML format PSD could not be created.\n{command}\n{out}\n\n{err}",
-                    production=self.production.name,
-                )
-
-    def before_submit(self, dryrun=False):
+    def before_config(self, dryrun=False):
         """
         Convert the text-based PSD to an XML psd if the xml doesn't exist already.
         """
         event = self.production.event
         category = config.get("general", "calibration_directory")
+        self.logger.info("Checking for XML format PSDs")
         if len(self.production.get_psds("xml")) == 0 and "psds" in self.production.meta:
+            self.logger.info("Did not find XML format PSDs")
             for ifo in self.production.meta["interferometers"]:
                 with set_directory(f"{event.work_dir}"):
-                    sample = self.production.meta["quality"]["sample-rate"]
+                    sample = self.production.meta["likelihood"]["sample rate"]
+                    self.logger.info(f"Converting {ifo} {sample}-Hz PSD to XML")
                     self._convert_psd(
                         self.production.meta["psds"][sample][ifo], ifo, dryrun=dryrun
                     )
                     asset = f"{ifo.upper()}-psd.xml.gz"
+                    self.logger.info(f"Conversion complete as {asset}")
                     git_location = os.path.join(category, "psds")
+                    saveloc = os.path.join(
+                        git_location, str(sample), f"psd_{ifo}.xml.gz"
+                    )
                     self.production.event.repository.add_file(
                         asset,
-                        os.path.join(git_location, str(sample), f"psd_{ifo}.xml.gz"),
+                        saveloc,
                         commit_message=f"Added the xml format PSD for {ifo}.",
                     )
+                    self.logger.info(f"Saved at {saveloc}")
 
     def build_dag(self, user=None, dryrun=False):
         """
@@ -153,28 +142,36 @@ class Rift(Pipeline):
 
 
         """
+        self.before_build()
         cwd = os.getcwd()
         if self.production.event.repository:
+            self.logger.info("Checking for existence of coinc file in event repository")
             try:
-
                 coinc_file = self.production.get_coincfile()
                 calibration = config.get("general", "calibration_directory")
-                coinc_file = os.path.join(
-                    self.production.event.repository.directory, calibration, coinc_file
-                )
+                coinc_file = os.path.abspath(coinc_file)
+                self.logger.info(f"Coinc found at {coinc_file}")
             except HTTPError:
                 print(
                     "Unable to download the coinc file because it was not possible to connect to GraceDB"
                 )
-                coinc_file = "COINC MISSING"
-
+                self.logger.warning(
+                    "Could not download a coinc file for this event; could not connect to GraceDB."
+                )
+                coinc_file = None
+            except ValueError:
+                self.logger.warning(
+                    "Could not download a coinc file for this event as no GraceDB ID was supplied."
+                )
+                coinc_file = None
             try:
-
                 ini = self.production.get_configuration().ini_loc
                 calibration = config.get("general", "calibration_directory")
+                self.logger.info(f"Using the {calibration} calibration")
                 ini = os.path.join(
                     self.production.event.repository.directory, calibration, ini
                 )
+                ini = os.path.abspath(ini)
             except ValueError:
                 print(
                     "Unable to find the configuration file. Have you run `$ asimov manage build` yet?"
@@ -191,17 +188,33 @@ class Rift(Pipeline):
             self.production.set_meta("user", user)
 
         os.environ["LIGO_USER_NAME"] = f"{user}"
-        os.environ["LIGO_ACCOUNTING"] = f"{self.production.meta['scheduler']['accounting group']}"
+        os.environ[
+            "LIGO_ACCOUNTING"
+        ] = f"{self.production.meta['scheduler']['accounting group']}"
+
+        if "singularity image" in self.production.meta["scheduler"]:
+            # Collect the correct information for the singularity image
+            os.environ[
+                "SINGULARITY_RIFT_IMAGE"
+            ] = f"{self.production.meta['scheduler']['singularity image']}"
+            os.environ[
+                "SINGULARITY_BASE_EXE_DIR"
+            ] = f"{self.production.meta['scheduler']['singularity base exe directory']}"
 
         try:
             calibration = config.get("general", "calibration")
         except configparser.NoOptionError:
             calibration = "C01"
 
-        approximant = self.production.meta["waveform"]["approximant"]
+        try:
+            approximant = self.production.meta["waveform"]["approximant"]
+        except KeyError:
+            self.logger.error(
+                "Could not find a waveform approximant specified for this job."
+            )
 
         if self.production.rundir:
-            rundir = os.path.relpath(self.production.rundir, os.getcwd())
+            rundir = os.path.abspath(self.production.rundir)
         else:
             rundir = os.path.join(
                 os.path.expanduser("~"),
@@ -212,35 +225,25 @@ class Rift(Pipeline):
 
         # lmax = self.production.meta['priors']['amp order']
 
-        if "lmax" in self.production.meta:
-            lmax = self.production.meta["likelihood"]["lmax"]
-        elif "HM" in self.production.meta["waveform"]["approximant"]:
-            lmax = 4
-        else:
-            lmax = 2
-
-        if "cip jobs" in self.production.meta["sampler"]:
-            cip = self.production.meta["cip jobs"]
-        else:
-            cip = 3
-
         command = [
             os.path.join(
                 config.get("pipelines", "environment"),
                 "bin",
                 "util_RIFT_pseudo_pipe.py",
             ),
-            "--use-coinc",
-            coinc_file,
-            "--l-max",
-            f"{lmax}",
+        ]
+        if coinc_file:
+            command += ["--use-coinc", coinc_file]
+
+        if "non-spin" in self.production.meta["waveform"]:
+            if self.production.meta["waveform"]["non-spin"]:
+                command += ["--assume-nospin"]
+
+        command += [
             "--calibration",
             f"{calibration}",
-            "--add-extrinsic",
             "--approx",
             f"{approximant}",
-            "--cip-explode-jobs",
-            str(cip),
             "--use-rundir",
             rundir,
             "--ile-force-gpu",
@@ -273,11 +276,16 @@ class Rift(Pipeline):
 
             command += ["--manual-initial-grid", bootstrap_file]
 
+        if "scheduler" in self.production.meta:
+            if "osg" in self.production.meta["scheduler"]:
+                if self.production.meta["scheduler"]["osg"]:
+                    command += ["--use-osg-file-transfer"]
+
         if dryrun:
             print(" ".join(command))
 
         else:
-            self.logger.info(" ".join(command), production=self.production)
+            self.logger.info(" ".join(command))
 
             with set_directory(self.production.event.work_dir):
                 pipe = subprocess.Popen(
@@ -303,23 +311,23 @@ class Rift(Pipeline):
                         )
                 else:
                     if self.production.event.repository:
-                        with set_directory(self.production.rundir):
-                            for psdfile in self.production.get_psds("xml"):
-                                ifo = psdfile.split("/")[-1].split("_")[1].split(".")[0]
-                                os.system(f"cp {psdfile} {ifo}-psd.xml.gz")
+                        # with set_directory(os.path.abspath(self.production.rundir)):
+                        for psdfile in self.production.get_psds("xml"):
+                            ifo = psdfile.split("/")[-1].split("-")[1].split(".")[0]
+                            os.system(f"cp {psdfile} {ifo}-psd.xml.gz")
 
-                            # os.system("cat *_local.cache > local.cache")
+                        # os.system("cat *_local.cache > local.cache")
 
-                            if hasattr(self.production.event, "issue_object"):
-                                return PipelineLogger(
-                                    message=out,
-                                    issue=self.production.event.issue_object,
-                                    production=self.production.name,
-                                )
-                            else:
-                                return PipelineLogger(
-                                    message=out, production=self.production.name
-                                )
+                        if hasattr(self.production.event, "issue_object"):
+                            return PipelineLogger(
+                                message=out,
+                                issue=self.production.event.issue_object,
+                                production=self.production.name,
+                            )
+                        else:
+                            return PipelineLogger(
+                                message=out, production=self.production.name
+                            )
 
     def submit_dag(self, dryrun=False):
         """
@@ -346,57 +354,57 @@ class Rift(Pipeline):
         PipelineException
            This will be raised if the pipeline fails to submit the job.
         """
-        if not os.path.exists(self.production.rundir):
-            os.makedirs(self.production.rundir)
-
         self.before_submit()
-        with set_directory(self.production.rundir):
-            if not dryrun:
-                os.system("cat *_local.cache > local.cache")
+        for psdfile in self.production.get_psds("xml"):
+            ifo = psdfile.split("/")[-1].split("-")[1].split(".")[0]
+            os.system(f"cp {psdfile} {ifo}-psd.xml.gz")
 
+        command = [
+            "condor_submit_dag",
+            "-batch-name",
+            f"rift/{self.production.event.name}/{self.production.name}",
+            "marginalize_intrinsic_parameters_BasicIterationWorkflow.dag",
+        ]
+
+        if dryrun:
             for psdfile in self.production.get_psds("xml"):
-                ifo = psdfile.split("/")[-1].split("_")[1].split(".")[0]
-                os.system(f"cp {psdfile} {ifo}-psd.xml.gz")
+                print(f"cp {psdfile} {self.production.rundir}/{psdfile.split('/')[-1]}")
+            print("")
+            print(" ".join(command))
+        else:
+            for psdfile in self.production.get_psds("xml"):
+                os.system(
+                    f"cp {psdfile} {self.production.rundir}/{psdfile.split('/')[-1]}"
+                )
 
-            command = [
-                "condor_submit_dag",
-                "-batch-name",
-                f"rift/{self.production.event.name}/{self.production.name}",
-                os.path.join(
-                    self.production.rundir,
-                    "marginalize_intrinsic_parameters_BasicIterationWorkflow.dag",
-                ),
-            ]
+            try:
+                with set_directory(self.production.rundir):
 
-            if dryrun:
-                print(" ".join(command))
-            else:
-                try:
                     dagman = subprocess.Popen(
                         command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
                     )
                     self.logger.info(command, production=self.production)
-                except FileNotFoundError as exception:
-                    raise PipelineException(
-                        "It looks like condor isn't installed on this system.\n"
-                        f"""I wanted to run {" ".join(command)}."""
-                    ) from exception
+            except FileNotFoundError as exception:
+                raise PipelineException(
+                    "It looks like condor isn't installed on this system.\n"
+                    f"""I wanted to run {" ".join(command)}."""
+                ) from exception
 
-                stdout, stderr = dagman.communicate()
+            stdout, stderr = dagman.communicate()
 
-                if "submitted to cluster" in str(stdout):
-                    cluster = re.search(
-                        r"submitted to cluster ([\d]+)", str(stdout)
-                    ).groups()[0]
-                    self.production.status = "running"
-                    self.production.job_id = int(cluster)
-                    return cluster, PipelineLogger(stdout)
-                else:
-                    raise PipelineException(
-                        f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
-                        issue=self.production.event.issue_object,
-                        production=self.production.name,
-                    )
+            if "submitted to cluster" in str(stdout):
+                cluster = re.search(
+                    r"submitted to cluster ([\d]+)", str(stdout)
+                ).groups()[0]
+                self.production.status = "running"
+                self.production.job_id = int(cluster)
+                return cluster, PipelineLogger(stdout)
+            else:
+                raise PipelineException(
+                    f"The DAG file could not be submitted.\n\n{stdout}\n\n{stderr}",
+                    issue=self.production.event.issue_object,
+                    production=self.production.name,
+                )
 
     def resurrect(self):
         """

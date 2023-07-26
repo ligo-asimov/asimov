@@ -3,6 +3,8 @@ Reporting functions
 """
 from datetime import datetime
 
+import os
+
 import click
 import pytz
 import yaml
@@ -43,7 +45,7 @@ def html(event, webdir):
         author="Asimov",
         title="Asimov project report",
         theme_location=resource_filename("asimov.cli", "report-theme"),
-        config_file="asimov.conf",
+        config_file=os.path.join(".asimov", "asimov.conf"),
     )
     with report:
 

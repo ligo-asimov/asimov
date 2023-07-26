@@ -13,9 +13,11 @@
 .. raw:: html
 
 	 <div class="d-flex flex-column flex-lg-row align-items-md-stretch justify-content-md-center gap-3 mb-4">
-	 <div class="d-inline-block v-align-middle fs-5">
-	 <pre>$ pip install asimov</pre>
-	 </div>
+	<div class="d-inline-block v-align-middle fs-5">
+	<div class="asimov-code">
+	<pre>$ pip install asimov</pre>
+	</div>
+	</div>
 	 <a class="btn btn-lg btn-primary d-flex align-items-center justify-content-center fw-semibold"
 	    href="getting-started.html"
 	 >
@@ -122,7 +124,7 @@ Users' guide
 
 .. toctree::
    :maxdepth: 2
-   :caption: Users' guide
+   :caption: 📚 Users' guide
 
    getting-started
    installation
@@ -151,7 +153,10 @@ Advanced topics
 .. toctree::
    :maxdepth: 2
    :caption: Advanced topics
-	     
+
+   analyses
+   build-process
+   
    configuration
    test-interface
    clusters
@@ -170,18 +175,42 @@ Developers' Guide
    ledger   
    pipelines-dev
    
-Module documentation
---------------------
+   asimov-repository
+
+   code-overview
+	     
+   ledger   
+   pipelines-dev
+   hooks
+
+   building-docs
+   
+Python API
+----------
 
 .. toctree::
    :maxdepth: 1
-   :caption: Modules
+   :caption: Python API
 
+   api/asimov
+   api/condor
+   api/event
    api/git
    state
    pipelines
    config
-	     
+
+LIGO Analysis Cookbook
+----------------------
+
+.. toctree::
+   :maxdepth: 1
+   :Caption: LIGO Analysis Cookbook
+
+   ligo-cookbook/bayeswave
+   ligo-cookbook/bilby
+   ligo-cookbook/working-with-gwosc
+   
 Indices and tables
 ------------------
 

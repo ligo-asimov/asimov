@@ -69,20 +69,98 @@ and the boostrap grid should be named ``Prod8_bootstrap.xml.gz``.
 You should combine this with a ``needs`` instruction, so that the RIFT job isn't run until the bootstrapping job has completed.
 
 
+The settings below are all of the RIFT-specific settings which can be specified in blueprints provided for RIFT analyses, which can be specified in addition to the general set for all gravitational wave pipelines.
+
 ``sampler``
 ~~~~~~~~~~~
 
 These settings specifically affect the sampling process within RIFT.
+Within the sampler settings there is a further sub-division for each stage of the analysis.
 
-``cip jobs``
+CIP
+"""
+
+``explode jobs``
   This alters the number of jobs to be used in the CIP stage of sampling.
+  The higher this number the lower the likely runtime.
   If not provided it defaults to 3.
 
+``fitting method``
+  Determines the fitting method used in the CIP stage.
+  Can be either ``rf`` or ``gp``.
+  If not provided it defaults to ``rf``.
+
+``explode jobs auto``
+  TODO: Check what this does.
+
+``sampling method``
+  Determines the sampling method to be used in the CIP stage.
+  This can be ``default``, ``GMM``, or ``adaptive_cartesian_gpu``, and the latter does not require the use of GPUs during the CIP stage.
+  Default is ``default``
+
+``waveform``
+~~~~~~~~~~~~
+
+``maximum mode``
+  The maximum mode order to be used from the waveform model.
+  Note that if the ``likelihood>start frequency`` has not been set then it will be set as ``(2 / Lmax) * f_min``,
+  where ``Lmax`` is the maximum node set in this setting, and ``f_min`` is the value set in ``quality>minimum frequency``
+  Default is 2.
+  TODO: Double check this!
+
+``reference frequency``
+  The reference frequency for the waveform.
+  Quantities such as spin will be calculated at this frequency in the analysis.
+
+  
 ``likelihood``
 ~~~~~~~~~~~~~~
 
-These settings affect the likelihood function and the waveform generator.
+These settings affect the likelihood function, and are further subdivided.
 
-``lmax``
-  The maximum order of harmonic to use from the waveform.
-  Defaults to 2 for non-higher mode waveforms, and 4 if ``HM`` is contained within the name of the waveform.
+``marginalization``
+"""""""""""""""""""
+
+``distance``
+  If set to true, enables distance marginalization in the analysis.
+  Default is False
+
+``distance lookup``
+  If set provides a lookup table to the distance marginalization process.
+  If not set this is calculated during the analysis.
+  By default this is not set.
+
+``maximum distance``
+  This setting is required for distance marginalization, provided in megaparsecs.
+  This is the maximum distance to be considered in the analysis.
+  Defaults to 10000 Mpc
+
+``assume``
+""""""""""
+
+Arguments in this section force the behaviour of the analysis in certain ways by making assumptions about the behaviour of the system under analysis.
+Each assumption should be provided as an item in the ``assume`` list, for example
+
+.. code-block:: yaml
+
+   likelihood:
+     assume:
+       - no spin
+       - matter
+
+would set-up an analysis where both components were assumed to have matter effects but no spin.
+	 
+``no spin``
+  If provided, this forces the analysis to ignore spin, and assume both components of the binary are non-spinning.
+
+``precessing``
+  If provided, this forces the analysis to assume that both components may be spinning and may have non-aligned spins producing precession.
+
+``nonprecessing``
+  If provided, this forces the analysis to assume that both components' spins are aligned, and the system is not precessing.
+
+``matter``
+  If provided, this forces the analysis to assume that both components may have matter effects (e.g. a binary neutron star system).
+
+``matter secondary``
+  If provided, this forces the analysis to assume that only the secondary component will have matter effects (e.g. a black hole / neutron star system).

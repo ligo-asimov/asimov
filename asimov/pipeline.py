@@ -109,6 +109,18 @@ class Pipeline:
         """
         pass
 
+    def before_config(self, dryrun=False):
+        """
+        Define a hook to run before the config file for the pipeline is generated.
+        """
+        pass
+
+    def before_build(self, dryrun=False):
+        """
+        Define a hook to be run before the DAG is built.
+        """
+        pass
+    
     def before_submit(self, dryrun=False):
         """
         Define a hook to run before the DAG file is generated and submitted.
@@ -373,7 +385,7 @@ class PESummaryPipeline(PostPipeline):
         if "multiprocess" in self.meta:
             command += ["--multi_process", str(self.meta["multiprocess"])]
 
-        if "regenerate posteriors" in self.meta:
+        if "regenerate" in self.meta:
             command += ["--regenerate", " ".join(self.meta["regenerate posteriors"])]
 
         # Config file
@@ -397,11 +409,11 @@ class PESummaryPipeline(PostPipeline):
         with utils.set_directory(self.production.rundir):
             with open(f"{self.production.name}_pesummary.sh", "w") as bash_file:
                 bash_file.write(
-                    f"{config.get('pipelines', 'environment')}/bin/summarypages " + " ".join(command)
+                    f"{config.get('pesummary', 'executable')} " + " ".join(command)
                 )
 
         self.logger.info(
-            f"PE summary command: {config.get('pipelines', 'environment')}/bin/summarypages {' '.join(command)}",
+            f"PE summary command: {config.get('pesummary', 'executable')} {' '.join(command)}",
             production=self.production,
             channels=["file"],
         )
@@ -412,7 +424,7 @@ class PESummaryPipeline(PostPipeline):
             print(command)
 
         submit_description = {
-            "executable": os.path.join(config.get("pipelines", "environment"), "bin", "summarypages"),
+            "executable": config.get("pesummary", "executable"),
             "arguments": " ".join(command),
             "accounting_group_user": config.get('condor', 'user'),
             "accounting_group": self.meta["accounting group"],
@@ -423,10 +435,12 @@ class PESummaryPipeline(PostPipeline):
             "getenv": "true",
             "batch_name": f"PESummary/{self.production.event.name}/{self.production.name}",
             "request_memory": "8192MB",
-            "should_transfer_files": "YES",
+            #"should_transfer_files": "YES",
             "request_disk": "8192MB",
+            "+flock_local": "True",
+            "+DESIRED_Sites": htcondor.classad.quote("nogrid"),
         }
-
+        
         if dryrun:
             print("SUBMIT DESCRIPTION")
             print("------------------")
@@ -435,6 +449,10 @@ class PESummaryPipeline(PostPipeline):
         if not dryrun:
             hostname_job = htcondor.Submit(submit_description)
 
+            with utils.set_directory(self.production.rundir):
+                with open(f"pesummary.sub", "w") as subfile:
+                    subfile.write(hostname_job.__str__())
+            
             try:
                 # There should really be a specified submit node, and if there is, use it.
                 schedulers = htcondor.Collector().locate(

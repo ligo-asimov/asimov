@@ -11,7 +11,7 @@ import time
 
 from liquid import Liquid
 
-from asimov.utils import update
+from asimov.utils import update, set_directory
 
 from .. import config
 from ..pipeline import Pipeline, PipelineException, PipelineLogger, PESummaryPipeline
@@ -352,42 +352,18 @@ class Bilby(Pipeline):
 
     def html(self):
         """Return the HTML representation of this pipeline."""
-        pages_dir = os.path.join(self.production.event.name, self.production.name)
+        pages_dir = os.path.join(self.production.event.name, self.production.name, "pesummary")
         out = ""
-        out += """<div class="asimov-pipeline bilby">"""
-        out += """<ul>"""
-        out += f"""<li><a href="{pages_dir}/overview.html">Overview pages</a></li>"""
-        if self.production.status in {"finished", "uploaded"}:
-            if self.production.status == "uploaded":
-                out += f"""<li><a href="{pages_dir}/pesummary/home.html">Summary pages</a></li>"""
-        out += """</ul>"""
+        if self.production.status in {"uploaded"}:
+            out += """<div class="asimov-pipeline">"""
+            out += (
+                f"""<p><a href="{pages_dir}/home.html">Summary Pages</a></p>"""
+            )
+            out += f"""<img height=200 src="{pages_dir}/plots/{self.production.name}_psd_plot.png"</src>"""
+            out += f"""<img height=200 src="{pages_dir}/plots/{self.production.name}_waveform_time_domain.png"</src>"""
 
-        image_card = """<div class="card" style="width: 18rem;">
-<img class="card-img-top" src="{0}" alt="Card image cap">
-  <div class="card-body">
-    <p class="card-text">{1}</p>
-  </div>
-</div>
-        """
+            out += """</div>"""
 
-        plots = [
-            [
-                f"{pages_dir}/pesummary/plots/{self.production.name}_1d_posterior_luminosity_distance.png",
-                "luminosity distance",
-            ],
-            [
-                f"{pages_dir}/pesummary/plots/{self.production.name}_skymap.png",
-                "skymap",
-            ],
-        ]
-
-        out += """<div class="card-group">"""
-        for plot in plots:
-            if self.production.status in {"finished", "uploaded"}:
-                out += image_card.format(plot[0], plot[1])
-
-        out += """</div>"""  # Closes card-group
-        out += """</div>"""  # Closes the bilby div
         return out
 
     def resurrect(self):

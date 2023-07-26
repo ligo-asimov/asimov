@@ -47,7 +47,6 @@ def submit_job(submit_description):
     hostname_job = htcondor.Submit(submit_description)
 
     try:
-        logger.info(f"Trying to submit to {config.get('condor', 'scheduler')}")
         # There should really be a specified submit node, and if there is, use it.
         schedulers = htcondor.Collector().locate(
             htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler")
@@ -91,7 +90,6 @@ def collect_history(cluster_id):
             htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler")
         )
         schedd = htcondor.Schedd(schedulers)
-        logger.info(f"Found {schedd}")
     except:  # NoQA
         # If you can't find a specified scheduler, use the first one you find
         collectors = htcondor.Collector().locateAll(htcondor.DaemonTypes.Schedd)
@@ -166,10 +164,6 @@ class CondorJob(yaml.YAMLObject):
            The number of hosts currently processing the job.
         status: int
            The status condition for the job.
-
-        Examples
-        --------
-        job = CondorJob(346758)
         """
 
         self.idno = idno
@@ -281,7 +275,7 @@ class CondorJobList:
 
     def __init__(self):
         self.jobs = {}
-        cache = "_cache_jobs.yaml"
+        cache = os.path.join(".asimov", "_cache_jobs.yaml")
         if not os.path.exists(cache):
             self.refresh()
         else:
@@ -357,5 +351,5 @@ class CondorJobList:
                 else:
                     self.jobs[datum.idno] = datum.to_dict()
 
-        with open("_cache_jobs.yaml", "w") as f:
+        with open(os.path.join(".asimov", "_cache_jobs.yaml"), "w") as f:
             f.write(yaml.dump(self.jobs))

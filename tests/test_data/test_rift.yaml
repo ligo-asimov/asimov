@@ -1,0 +1,27 @@
+kind: analysis
+name: Prod1
+event: GW150914_095045
+pipeline: rift
+quality:
+  state vector:
+    L1: L1:DCS-CALIB_STATE_VECTOR_C01
+    H1: H1:DCS-CALIB_STATE_VECTOR_C01
+    V1: V1:DQ_ANALYSIS_STATE_VECTOR
+waveform:
+  approximant: IMRPhenomD
+  non-spin: True
+scheduler:
+    accounting group: test
+sampler:
+  cip fit method: rf
+  cip sampler method: GMM
+  cip explode jobs auto: True
+  cip explode jobs: 3  
+  use aligned phase coordinates: False
+  correlate default: True
+  ile jobs per worker: 200
+likelihood:
+  marginalization:
+    distance: True
+needs:
+  - Bayeswave
