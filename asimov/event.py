@@ -215,16 +215,21 @@ class Event:
         """
         Find the calibration envelope locations.
         """
-        if ("calibration" in self.meta["data"]) and (
+
+        if ("calibration" not in self.meta["data"]):
+            self.logger.warning("There are no calibration envelopes for this event.")
+
+        elif ("calibration" in self.meta["data"]) and (
             set(self.meta["interferometers"]).issubset(
                 set(self.meta["data"]["calibration"].keys())
             )
         ):
             pass
+
         else:
-            raise DescriptionException(
-                f"""Some of the required calibration envelopes are missing from this issue."""
-                f"""{set(self.meta['interferometers']) - set(self.meta['data']['calibration'].keys())}"""
+            self.logger.warning(
+                f"""Some of the calibration envelopes are missing from this event. """
+                f"""{set(self.meta['interferometers']) - set(self.meta['data']['calibration'].keys())} are absent."""
             )
 
     def _check_psds(self):
@@ -342,7 +347,6 @@ class Event:
                 try:
                     data["data"]["calibration"] = find_calibrations(data["event time"])
                 except ValueError:
-                    data["data"]["calibration"] = {}
                     logger.warning(
                         f"Could not find calibration files for {data['name']}"
                     )
@@ -540,8 +544,7 @@ class Event:
         card += """</div>"""
 
         card += """
-        </div>
-        </div>
+        </div></div>
         """
 
         return card
@@ -630,8 +633,11 @@ class Production:
         if "marginalization" not in self.meta["likelihood"]:
             self.meta["likelihood"]["marginalization"] = {}
 
+
+        if "data" not in self.meta:
+            self.meta["data"] = {}
         if "data files" not in self.meta["data"]:
-            self.meta["data"]["data files"] = {}
+                self.meta["data"]["data files"] = {}
 
         if "lmax" in self.meta:
             # TODO: Should probably raise a deprecation warning
@@ -1076,8 +1082,8 @@ class Production:
             keyword = "xml psds"
 
         if keyword in self.meta:
-            if self.meta["likelihood"]["sample rate"] in self.meta[keyword]:
-                psds = self.meta[keyword][self.meta["likelihood"]["sample rate"]]
+            #if self.meta["likelihood"]["sample rate"] in self.meta[keyword]:
+            psds = self.meta[keyword]#[self.meta["likelihood"]["sample rate"]]
 
         # First look through the list of the job's dependencies
         # to see if they're provided by a job there.
@@ -1090,10 +1096,9 @@ class Production:
                 try:
                     # Check if the job provides PSDs as an asset and were produced with compatible settings
                     if keyword in productions[previous_job].pipeline.collect_assets():
-                        if self._check_compatible(productions[previous_job]):
-                            psds = productions[previous_job].pipeline.collect_assets()[
-                                keyword
-                            ]
+                        psds = productions[previous_job].pipeline.collect_assets()[
+                            keyword
+                        ]
                     else:
                         psds = {}
                 except Exception:
