@@ -387,6 +387,10 @@ class PESummaryPipeline(PostPipeline):
         if "nrsur" in self.production.meta["waveform"]["approximant"].lower():
             command += ["--NRSur_fits"]
 
+        if "calculate" in self.meta:
+            if "precessing snr" in self.meta['calculate']:
+                command += ["--calculate_precessing_snr"]
+            
         if "multiprocess" in self.meta:
             command += ["--multi_process", str(self.meta["multiprocess"])]
 
