@@ -95,15 +95,15 @@ class Event:
         self.logger = logger.getChild("event").getChild(f"{self.name}")
         self.logger.setLevel(LOGGER_LEVEL)
 
-        pathlib.Path(os.path.join(config.get("logging", "directory"), name)).mkdir(
-            parents=True, exist_ok=True
-        )
-        logfile = os.path.join(config.get("logging", "directory"), name, "asimov.log")
+        #pathlib.Path(os.path.join(config.get("logging", "directory"), name)).mkdir(
+        #    parents=True, exist_ok=True
+        #)
+        #logfile = os.path.join(config.get("logging", "directory"), name, "asimov.log")
 
-        fh = logging.FileHandler(logfile)
-        formatter = logging.Formatter("%(asctime)s - %(message)s", "%Y-%m-%d %H:%M:%S")
-        fh.setFormatter(formatter)
-        self.logger.addHandler(fh)
+        #fh = logging.FileHandler(logfile)
+        #formatter = logging.Formatter("%(asctime)s - %(message)s", "%Y-%m-%d %H:%M:%S")
+        #fh.setFormatter(formatter)
+        #self.logger.addHandler(fh)
 
         if "working_directory" in kwargs:
             self.work_dir = kwargs["working_directory"]
@@ -543,9 +543,9 @@ class Event:
 
         card += """</div>"""
 
-        card += """
-        </div></div>
-        """
+        # card += """
+        # </div></div>
+        # """
 
         return card
 
@@ -585,10 +585,10 @@ class Production:
         )
         self.logger.setLevel(LOGGER_LEVEL)
 
-        fh = logging.FileHandler(logfile)
-        formatter = logging.Formatter("%(asctime)s - %(message)s", "%Y-%m-%d %H:%M:%S")
-        fh.setFormatter(formatter)
-        self.logger.addHandler(fh)
+        # fh = logging.FileHandler(logfile)
+        # formatter = logging.Formatter("%(asctime)s - %(message)s", "%Y-%m-%d %H:%M:%S")
+        # fh.setFormatter(formatter)
+        # self.logger.addHandler(fh)
 
         self.category = config.get("general", "calibration_directory")
 
