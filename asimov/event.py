@@ -1080,6 +1080,8 @@ class Production:
             keyword = "psds"
         elif format == "xml":
             keyword = "xml psds"
+        else:
+            raise ValueError(f"This PSD format ({format}) is not recognised.")
 
         if keyword in self.meta:
             #if self.meta["likelihood"]["sample rate"] in self.meta[keyword]:
