@@ -637,7 +637,7 @@ class Production:
         if "data" not in self.meta:
             self.meta["data"] = {}
         if "data files" not in self.meta["data"]:
-                self.meta["data"]["data files"] = {}
+            self.meta["data"]["data files"] = {}
 
         if "lmax" in self.meta:
             # TODO: Should probably raise a deprecation warning
