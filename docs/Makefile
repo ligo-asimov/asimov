@@ -3,7 +3,7 @@
 
 # You can set these variables from the command line, and also
 # from the environment for the first two.
-SPHINXOPTS    ?= -E
+SPHINXOPTS    ?=
 SPHINXBUILD   ?= sphinx-build
 SPHINXMULTI   ?= sphinx-multiversion 
 SOURCEDIR     = source
@@ -21,4 +21,4 @@ multi:
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
-	@$(SPHINXBUILD) -M $@ -t "lvk" "$(SOURCEDIR)" "$(BUILDDIR)/latest" $(SPHINXOPTS) $(O)
+	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)/latest" $(SPHINXOPTS) $(O)
