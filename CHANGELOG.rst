@@ -1,3 +1,39 @@
+0.5.3
+=====
+
+This is a bug-fix release, and doesn't introduce any new features.
+
+Breaking changes
+----------------
+
+This release is not believed to introduce any backwards-incompatible changes.
+
+Merges
+------
+
++ `ligo!105 <https://git.ligo.org/asimov/asimov/-/merge_requests/105>`_: Fixes an issue with accounting tags for the ``asimov start`` command.
++ `ligo!104 <https://git.ligo.org/asimov/asimov/-/merge_requests/104>`_: Restores ability to calculate the precessing SNR in a PESummary post-processing pipeline.
+
+0.5.2
+=====
+
+This is a bug-fix release, and doesn't introduce any new features.
+
+Breaking changes
+----------------
+
+This release is not believed to introduce any backwards-incompatible changes.
+
+Merges & changes
+----------------
+
++ `ligo!94 <https://git.ligo.org/asimov/asimov/-/merge_requests/94>`_: Enables pipeline jobs to run without calibration information
++ `ligo!102 <https://git.ligo.org/asimov/asimov/-/merge_requests/102>`_: Fixes to the distribution infrastructure for asimov for pypi and conda forge
++ *Accounting information* - Support was restored for clusters which do not require accounting information by making accounting data optional
++ *Preferred event data* - Preferred event data is now stored correctly as ``ligo>preferred event`` in the ledger when new event data is downloaded from GraceDB.
++ *Frame files* - Fixes are implemented in the Bayeswave interface to pass cache files rather than frame files to the pipeline. The Bayeswave interface was updated to explicitly skip the datafind step if cache files are provided.
+
+
 0.5.1
 =====
 
