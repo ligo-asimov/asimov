@@ -451,7 +451,7 @@ class PESummaryPipeline(PostPipeline):
 
         if "accounting group" in self.meta:
             submit_description["accounting_group_user"] = config.get('condor', 'user')
-            submit_description["accounting_group"] = self.meta["accounting group"],
+            submit_description["accounting_group"] = self.meta["accounting group"]
         else:
             self.logger.warning(
                 "This PESummary Job does not supply any accounting information, which may prevent it running on some clusters."

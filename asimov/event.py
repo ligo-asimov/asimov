@@ -216,7 +216,7 @@ class Event:
         Find the calibration envelope locations.
         """
 
-        if "calibration" not in self.meta["data"]:
+        if ("calibration" not in self.meta["data"]):
             self.logger.warning("There are no calibration envelopes for this event.")
 
         elif ("calibration" in self.meta["data"]) and (
@@ -636,7 +636,7 @@ class Production:
         if "data" not in self.meta:
             self.meta["data"] = {}
         if "data files" not in self.meta["data"]:
-            self.meta["data"]["data files"] = {}
+                self.meta["data"]["data files"] = {}
 
         if "lmax" in self.meta:
             # TODO: Should probably raise a deprecation warning
