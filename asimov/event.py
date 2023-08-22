@@ -95,15 +95,15 @@ class Event:
         self.logger = logger.getChild("event").getChild(f"{self.name}")
         self.logger.setLevel(LOGGER_LEVEL)
 
-        #pathlib.Path(os.path.join(config.get("logging", "directory"), name)).mkdir(
+        # pathlib.Path(os.path.join(config.get("logging", "directory"), name)).mkdir(
         #    parents=True, exist_ok=True
-        #)
-        #logfile = os.path.join(config.get("logging", "directory"), name, "asimov.log")
+        # )
+        # logfile = os.path.join(config.get("logging", "directory"), name, "asimov.log")
 
-        #fh = logging.FileHandler(logfile)
-        #formatter = logging.Formatter("%(asctime)s - %(message)s", "%Y-%m-%d %H:%M:%S")
-        #fh.setFormatter(formatter)
-        #self.logger.addHandler(fh)
+        # fh = logging.FileHandler(logfile)
+        # formatter = logging.Formatter("%(asctime)s - %(message)s", "%Y-%m-%d %H:%M:%S")
+        # fh.setFormatter(formatter)
+        # self.logger.addHandler(fh)
 
         if "working_directory" in kwargs:
             self.work_dir = kwargs["working_directory"]
@@ -216,7 +216,7 @@ class Event:
         Find the calibration envelope locations.
         """
 
-        if ("calibration" not in self.meta["data"]):
+        if "calibration" not in self.meta["data"]:
             self.logger.warning("There are no calibration envelopes for this event.")
 
         elif ("calibration" in self.meta["data"]) and (
@@ -632,7 +632,6 @@ class Production:
             self.meta["likelihood"] = {}
         if "marginalization" not in self.meta["likelihood"]:
             self.meta["likelihood"]["marginalization"] = {}
-
 
         if "data" not in self.meta:
             self.meta["data"] = {}
@@ -1084,8 +1083,8 @@ class Production:
             raise ValueError(f"This PSD format ({format}) is not recognised.")
 
         if keyword in self.meta:
-            #if self.meta["likelihood"]["sample rate"] in self.meta[keyword]:
-            psds = self.meta[keyword]#[self.meta["likelihood"]["sample rate"]]
+            # if self.meta["likelihood"]["sample rate"] in self.meta[keyword]:
+            psds = self.meta[keyword]  # [self.meta["likelihood"]["sample rate"]]
 
         # First look through the list of the job's dependencies
         # to see if they're provided by a job there.
@@ -1121,8 +1120,21 @@ class Production:
         """
         compatible = True
 
-        compatible = self.meta["likelihood"] == other_production.meta["likelihood"]
-        compatible = self.meta["data"] == other_production.meta["data"]
+        # Check that the sample rate of this analysis is equal or less than that of the preceeding analysis
+        # to ensure that PSDs have points at the correct frequencies.
+        compatible = self.meta.get("likelihood", {}).get(
+            "sample rate"
+        ) <= other_production.meta.get("likelihood", {}).get("sample rate")
+
+        tests = [
+            ("data", "channels"),
+            ("data", "frame types"),
+            ("data", "segment length"),
+        ]
+        for test in tests:
+            compatible = self.meta.get(test[0], {}).get(
+                test[1], None
+            ) == other_production.meta.get(test[0], {}).get(test[1], None)
         return compatible
 
     def make_config(self, filename, template_directory=None, dryrun=False):
