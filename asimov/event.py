@@ -1125,17 +1125,20 @@ class Production:
 
         # Check that the sample rate of this analysis is equal or less than that of the preceeding analysis
         # to ensure that PSDs have points at the correct frequencies.
-        compatible = self.meta.get("likelihood", {}).get(
-            "sample rate"
-        ) <= other_production.meta.get("likelihood", {}).get("sample rate")
-
+        try:
+            compatible = self.meta.get("likelihood", {}).get(
+                "sample rate", None
+            ) <= other_production.meta.get("likelihood", {}).get("sample rate", None)
+        except TypeError:
+            # One or more sample rates are missing so these can't be deemed compatible.
+            return False
         tests = [
             ("data", "channels"),
             ("data", "frame types"),
             ("data", "segment length"),
         ]
         for test in tests:
-            compatible = self.meta.get(test[0], {}).get(
+            compatible &= self.meta.get(test[0], {}).get(
                 test[1], None
             ) == other_production.meta.get(test[0], {}).get(test[1], None)
         return compatible
