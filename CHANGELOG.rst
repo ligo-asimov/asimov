@@ -33,7 +33,7 @@ Merges & changes
 + *Preferred event data* - Preferred event data is now stored correctly as ``ligo>preferred event`` in the ledger when new event data is downloaded from GraceDB.
 + *Frame files* (bayeswave) - Fixes are implemented in the Bayeswave interface to pass cache files rather than frame files to the pipeline, and ensure that these are associated to the correct interferometer. The Bayeswave interface was updated to explicitly skip the datafind step if cache files are provided.
 + *Frame files* (bilby) - A fix was added to ensure that the `data-dict` dictionary has the correct key:value format in the config file.
-
++ *PSD compatibility testing* - A bug was fixed whereby PSDs would fail to pass compatibility criteria because of flawed tests; these tests have been respecified to avoid the bug.
 
 0.5.1
 =====
