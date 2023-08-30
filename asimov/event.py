@@ -6,7 +6,6 @@ import glob
 import os
 import pathlib
 from copy import deepcopy
-import logging
 import configparser
 import subprocess
 
@@ -216,7 +215,7 @@ class Event:
         Find the calibration envelope locations.
         """
 
-        if ("calibration" not in self.meta["data"]):
+        if "calibration" not in self.meta["data"]:
             self.logger.warning("There are no calibration envelopes for this event.")
 
         elif ("calibration" in self.meta["data"]) and (
@@ -576,9 +575,6 @@ class Production:
         pathlib.Path(
             os.path.join(config.get("logging", "directory"), self.event.name, name)
         ).mkdir(parents=True, exist_ok=True)
-        logfile = os.path.join(
-            config.get("logging", "directory"), self.event.name, name, "asimov.log"
-        )
 
         self.logger = logger.getChild("analysis").getChild(
             f"{self.event.name}/{self.name}"
@@ -1097,12 +1093,14 @@ class Production:
                 try:
                     # Check if the job provides PSDs as an asset and were produced with compatible settings
                     if keyword in productions[previous_job].pipeline.collect_assets():
-                        if self._check_compatible(productions[previous_job]):                    
+                        if self._check_compatible(productions[previous_job]):
                             psds = productions[previous_job].pipeline.collect_assets()[
                                 keyword
                             ]
                         else:
-                            self.logger.info("The PSDs from {previous_job} are not compatible with this job.")
+                            self.logger.info(
+                                "The PSDs from {previous_job} are not compatible with this job."
+                            )
                     else:
                         psds = {}
                 except Exception:
