@@ -452,7 +452,7 @@ class BayesWave(Pipeline):
                 self.production.event.repository.directory,
                 self.production.category,
                 "psds",
-                self.production.meta['likelihood']['sample rate'],
+                f"{self.production.meta['likelihood']['sample rate']}",
                 f"{det.upper()}-psd.xml.gz"
             )
             if os.path.exists(asset):
