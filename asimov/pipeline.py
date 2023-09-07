@@ -422,9 +422,7 @@ class PESummaryPipeline(PostPipeline):
                 )
 
         self.logger.info(
-            f"PE summary command: {config.get('pesummary', 'executable')} {' '.join(command)}",
-            production=self.production,
-            channels=["file"],
+            f"PE summary command: {config.get('pesummary', 'executable')} {' '.join(command)}"
         )
 
         if dryrun:
