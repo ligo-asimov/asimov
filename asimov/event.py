@@ -648,16 +648,19 @@ class Production:
             self.review = Review()
 
         # Check that the upper frequency is included, otherwise calculate it
-        if "quality" in self.meta:
-            if ("maximum frequency" not in self.meta["quality"]) and (
-                "sample rate" in self.meta["likelihood"]
-            ):
-                self.meta["quality"]["maximum frequency"] = {}
-                # Account for the PSD roll-off with the 0.875 factor
-                for ifo in self.meta["interferometers"]:
-                    self.meta["quality"]["maximum frequency"][ifo] = int(
-                        0.875 * self.meta["likelihood"]["sample rate"] / 2
-                    )
+        if (
+            "quality" in self.meta
+            and ("maximum frequency" not in self.meta["quality"])
+            and ("sample rate" in self.meta["likelihood"])
+            and "interferometers" in self.meta
+            and len(self.meta["interferometers"]) > 0
+        ):
+            self.meta["quality"]["maximum frequency"] = {}
+            # Account for the PSD roll-off with the 0.875 factor
+            for ifo in self.meta["interferometers"]:
+                self.meta["quality"]["maximum frequency"][ifo] = int(
+                    0.875 * self.meta["likelihood"]["sample rate"] / 2
+                )
 
         # Get the data quality recommendations
         if "quality" in self.event.meta:
