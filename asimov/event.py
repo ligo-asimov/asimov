@@ -656,6 +656,7 @@ class Production:
         ) or (
             list(self.meta.get("quality", {}).get("maximum frequency", {}).keys())
             != self.meta.get("interferometers")
+            and ("sample rate" in self.meta["likelihood"])
         ):
             self.meta["quality"]["maximum frequency"] = {}
             # Account for the PSD roll-off with the 0.875 factor
