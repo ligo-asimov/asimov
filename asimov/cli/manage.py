@@ -10,7 +10,6 @@ from asimov import current_ledger as ledger
 import asimov
 from asimov import condor
 from asimov import LOGGER_LEVEL
-from asimov import condor
 from asimov.event import DescriptionException
 from asimov.pipeline import PipelineException
 
@@ -66,7 +65,9 @@ def build(event, dryrun):
                     )
                 continue  # I think this test might be unused
             try:
-                ini_loc = production.event.repository.find_prods(production.name, production.category)[0]
+                ini_loc = production.event.repository.find_prods(
+                    production.name, production.category
+                )[0]
                 if not os.path.exists(ini_loc):
                     raise KeyError
             except KeyError:

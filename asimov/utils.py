@@ -43,7 +43,9 @@ def find_calibrations(time):
         dir = "/home/cal/public_html/uncertainty/O3C01"
         virgo = "/home/cbc/pe/O3/calibrationenvelopes/Virgo/V_O3a_calibrationUncertaintyEnvelope_magnitude5percent_phase35milliradians10microseconds.txt"  # NoQA
     elif time > 1268306607:
-        raise ValueError("This method cannot be used to add calibration envelope data beyond O3.")
+        raise ValueError(
+            "This method cannot be used to add calibration envelope data beyond O3."
+        )
     data_llo = glob.glob(f"{dir}/L1/*LLO*FinalResults.txt")
     times_llo = {
         int(datum.split("GPSTime_")[1].split("_C0")[0]): datum for datum in data_llo
@@ -64,7 +66,6 @@ def find_calibrations(time):
     }
 
 
-
 def update(d, u, inplace=True):
     """Recursively update a dictionary."""
     if not inplace:
@@ -77,6 +78,7 @@ def update(d, u, inplace=True):
             d[k] = v
     return d
 
+
 # The following function adapted from https://stackoverflow.com/a/69908295
 def diff_dict(d1, d2):
     d1_keys = set(d1.keys())
@@ -87,6 +89,7 @@ def diff_dict(d1, d2):
     added_deltas = {o: (None, d2[o]) for o in added_keys}
     deltas = {**shared_deltas, **added_deltas}
     return parse_deltas(deltas)
+
 
 # The following function adapted from https://stackoverflow.com/a/69908295
 def parse_deltas(deltas: dict):

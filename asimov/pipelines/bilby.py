@@ -6,12 +6,7 @@ import re
 import subprocess
 import configparser
 
-import git.exc
 import time
-
-from liquid import Liquid
-
-from asimov.utils import update, set_directory
 
 from .. import config
 from ..pipeline import Pipeline, PipelineException, PipelineLogger, PESummaryPipeline
@@ -137,9 +132,19 @@ class Bilby(Pipeline):
             job_label,
             "--outdir",
             f"{os.path.abspath(self.production.rundir)}",
-            "--accounting",
-            f"{self.production.meta['scheduler']['accounting group']}",
         ]
+
+        if "accounting group" in self.production.meta:
+            command += [
+                "--accounting",
+                f"{self.production.meta['scheduler']['accounting group']}",
+            ]
+        else:
+            self.logger.warning(
+                "This Bilby Job does not supply any accounting"
+                " information, which may prevent it running"
+                " on some clusters."
+            )
 
         if dryrun:
             print(" ".join(command))
@@ -352,13 +357,13 @@ class Bilby(Pipeline):
 
     def html(self):
         """Return the HTML representation of this pipeline."""
-        pages_dir = os.path.join(self.production.event.name, self.production.name, "pesummary")
+        pages_dir = os.path.join(
+            self.production.event.name, self.production.name, "pesummary"
+        )
         out = ""
         if self.production.status in {"uploaded"}:
             out += """<div class="asimov-pipeline">"""
-            out += (
-                f"""<p><a href="{pages_dir}/home.html">Summary Pages</a></p>"""
-            )
+            out += f"""<p><a href="{pages_dir}/home.html">Summary Pages</a></p>"""
             out += f"""<img height=200 src="{pages_dir}/plots/{self.production.name}_psd_plot.png"</src>"""
             out += f"""<img height=200 src="{pages_dir}/plots/{self.production.name}_waveform_time_domain.png"</src>"""
 

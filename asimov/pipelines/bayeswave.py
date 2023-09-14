@@ -13,7 +13,7 @@ from asimov import config
 from asimov.utils import set_directory
 
 from ..git import AsimovFileNotFound
-from ..pipeline import Pipeline, PipelineException
+from ..pipeline import Pipeline, PipelineException, PipelineLogger
 from ..storage import AlreadyPresentException, Store
 
 
@@ -135,20 +135,25 @@ class BayesWave(Pipeline):
             f"--trigger-time={gps_time}",
         ]
 
+        if "cache files" in self.production.meta["data"]:
+            if len(self.production.meta["data"]["cache files"]) > 0:
+                # Skip the datafind step if the data is already provided.
+                command += ["--skip-datafind"]
+
         if "copy frames" in self.production.meta["scheduler"]:
             if self.production.meta["scheduler"]["copy frames"]:
                 command += ["--copy-frames"]
-        
+
         if "osg" in self.production.meta["scheduler"]:
             if self.production.meta["scheduler"]["osg"]:
                 command += ["--transfer-files"]
 
-                if "copy frames" not in self.production.meta['scheduler']:
+                if "copy frames" not in self.production.meta["scheduler"]:
                     command += ["--osg-deploy"]
-                if "copy frames" in self.production.meta['scheduler']:
+                if "copy frames" in self.production.meta["scheduler"]:
                     if not self.production.meta["scheduler"]["copy frames"]:
                         command += ["--osg-deploy"]
-                
+
         command += [
             "-r",
             self.production.rundir,
@@ -270,7 +275,7 @@ class BayesWave(Pipeline):
                     )
 
         self.production.meta.update(self.collect_assets())
-                    
+
         self.production.status = "uploaded"
 
     def before_submit(self):
@@ -289,7 +294,7 @@ class BayesWave(Pipeline):
             with open(py_file, "r") as f_handle:
                 original = f_handle.read()
             with open(py_file, "w") as f_handle:
-                self.logger.info(f"Fixing shebang")
+                self.logger.info("Fixing shebang")
                 path = os.path.join(
                     config.get("pipelines", "environment"), "bin", "python"
                 )
@@ -444,7 +449,11 @@ class BayesWave(Pipeline):
         xml_psds = {}
         for det in self.production.meta["interferometers"]:
             asset = os.path.join(
-                f"{self.production.event.repository.directory}/{self.production.category}/psds/{self.production.meta['likelihood']['sample rate']}/{det.upper()}-psd.xml.gz"
+                self.production.event.repository.directory,
+                self.production.category,
+                "psds",
+                f"{self.production.meta['likelihood']['sample rate']}",
+                f"{det.upper()}-psd.xml.gz"
             )
             if os.path.exists(asset):
                 xml_psds[det] = os.path.abspath(asset)
