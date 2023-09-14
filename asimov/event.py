@@ -658,12 +658,14 @@ class Production:
             != self.meta.get("interferometers")
             and ("sample rate" in self.meta["likelihood"])
         ):
-            self.meta["quality"]["maximum frequency"] = {}
+            if "maximum frequency" not in self.meta["quality"]:
+                self.meta["quality"]["maximum frequency"] = {}
             # Account for the PSD roll-off with the 0.875 factor
             for ifo in self.meta["interferometers"]:
-                self.meta["quality"]["maximum frequency"][ifo] = int(
-                    0.875 * self.meta["likelihood"]["sample rate"] / 2
-                )
+                if ifo not in self.meta["quality"]["maximum frequency"]:
+                    self.meta["quality"]["maximum frequency"][ifo] = int(
+                        0.875 * self.meta["likelihood"]["sample rate"] / 2
+                    )
 
         # Get the data quality recommendations
         if "quality" in self.event.meta:
