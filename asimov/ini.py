@@ -28,7 +28,7 @@ class RunConfiguration(object):
         ini = ConfigParser()
         ini.optionxform = str
 
-        if type(path) == dict:
+        if isinstance(path, dict):
             ini.read_dict(path)
         else:
 

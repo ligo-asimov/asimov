@@ -1,8 +1,6 @@
 """
 Code for the project ledger.
 """
-from functools import reduce
-
 import yaml
 
 import os
@@ -107,27 +105,17 @@ class YAMLLedger(Ledger):
         self.data["events"] = list(self.events.values())
         with set_directory(config.get("project", "root")):
             # First produce a backup of the ledger
-            shutil.copy(self.location, self.location+".bak")
-            with open(self.location+"_tmp", "w") as ledger_file:
+            shutil.copy(self.location, self.location + ".bak")
+            with open(self.location + "_tmp", "w") as ledger_file:
                 ledger_file.write(yaml.dump(self.data, default_flow_style=False))
                 ledger_file.flush()
-                #os.fsync(ledger_file.fileno())
-            os.replace(self.location+"_tmp", self.location)
+                # os.fsync(ledger_file.fileno())
+            os.replace(self.location + "_tmp", self.location)
 
     def add_event(self, event):
         if "events" not in self.data:
             self.data["events"] = []
 
-        self.events[event.name] = event.to_dict()
-        self.save()
-
-    def add_production(self, event, production):
-        event.add_production(production)
-        self.events[event.name] = event.to_dict()
-        self.save()
-
-    def add_production(self, event, production):
-        event.add_production(production)
         self.events[event.name] = event.to_dict()
         self.save()
 
@@ -253,28 +241,6 @@ class DatabaseLedger(Ledger):
         event_dict = self.db.query("event", "name", event)[0]
         return Event.from_dict(event_dict)
 
-    def get_productions(self, event, filters=None, query=None):
-        """
-        Get all of the productions for a given event.
-        """
-
-        if not filters and not query:
-            productions = self.db.query("production", "event", event)
-
-        else:
-            queries_1 = self.db.Q["event"] == event
-            queries = [
-                self.db.Q[parameter] == value for parameter, value in filters.items()
-            ]
-            productions = self.db.tables["production"].search(
-                queries_1 & reduce(lambda x, y: x & y, queries)
-            )
-
-        event = self.get_event(event)
-        return [
-            Production.from_dict(dict(production), event) for production in productions
-        ]
-
     def get_productions(self, event=None, filters=None):
         """Get a list of productions either for a single event or for all events.
 
@@ -303,11 +269,14 @@ class DatabaseLedger(Ledger):
                     productions.append(production)
 
         def apply_filter(productions, parameter, value):
-            productions = filter(lambda x: x.meta[parameter] == value
-                                 if (parameter in x.meta)
-                                 else (getattr(x, parameter) == value
-                                       if hasattr(x, parameter) else False),
-                                 productions)
+            productions = filter(
+                lambda x: x.meta[parameter] == value
+                if (parameter in x.meta)
+                else (
+                    getattr(x, parameter) == value if hasattr(x, parameter) else False
+                ),
+                productions,
+            )
             return productions
 
         if filters:

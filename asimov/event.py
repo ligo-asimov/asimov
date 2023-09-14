@@ -6,7 +6,6 @@ import glob
 import os
 import pathlib
 from copy import deepcopy
-import logging
 import configparser
 import subprocess
 
@@ -95,15 +94,15 @@ class Event:
         self.logger = logger.getChild("event").getChild(f"{self.name}")
         self.logger.setLevel(LOGGER_LEVEL)
 
-        pathlib.Path(os.path.join(config.get("logging", "directory"), name)).mkdir(
-            parents=True, exist_ok=True
-        )
-        logfile = os.path.join(config.get("logging", "directory"), name, "asimov.log")
+        # pathlib.Path(os.path.join(config.get("logging", "directory"), name)).mkdir(
+        #    parents=True, exist_ok=True
+        # )
+        # logfile = os.path.join(config.get("logging", "directory"), name, "asimov.log")
 
-        fh = logging.FileHandler(logfile)
-        formatter = logging.Formatter("%(asctime)s - %(message)s", "%Y-%m-%d %H:%M:%S")
-        fh.setFormatter(formatter)
-        self.logger.addHandler(fh)
+        # fh = logging.FileHandler(logfile)
+        # formatter = logging.Formatter("%(asctime)s - %(message)s", "%Y-%m-%d %H:%M:%S")
+        # fh.setFormatter(formatter)
+        # self.logger.addHandler(fh)
 
         if "working_directory" in kwargs:
             self.work_dir = kwargs["working_directory"]
@@ -215,16 +214,21 @@ class Event:
         """
         Find the calibration envelope locations.
         """
-        if ("calibration" in self.meta["data"]) and (
+
+        if "calibration" not in self.meta["data"]:
+            self.logger.warning("There are no calibration envelopes for this event.")
+
+        elif ("calibration" in self.meta["data"]) and (
             set(self.meta["interferometers"]).issubset(
                 set(self.meta["data"]["calibration"].keys())
             )
         ):
             pass
+
         else:
-            raise DescriptionException(
-                f"""Some of the required calibration envelopes are missing from this issue."""
-                f"""{set(self.meta['interferometers']) - set(self.meta['data']['calibration'].keys())}"""
+            self.logger.warning(
+                f"""Some of the calibration envelopes are missing from this event. """
+                f"""{set(self.meta['interferometers']) - set(self.meta['data']['calibration'].keys())} are absent."""
             )
 
     def _check_psds(self):
@@ -342,7 +346,6 @@ class Event:
                 try:
                     data["data"]["calibration"] = find_calibrations(data["event time"])
                 except ValueError:
-                    data["data"]["calibration"] = {}
                     logger.warning(
                         f"Could not find calibration files for {data['name']}"
                     )
@@ -539,10 +542,9 @@ class Event:
 
         card += """</div>"""
 
-        card += """
-        </div>
-        </div>
-        """
+        # card += """
+        # </div></div>
+        # """
 
         return card
 
@@ -573,19 +575,16 @@ class Production:
         pathlib.Path(
             os.path.join(config.get("logging", "directory"), self.event.name, name)
         ).mkdir(parents=True, exist_ok=True)
-        logfile = os.path.join(
-            config.get("logging", "directory"), self.event.name, name, "asimov.log"
-        )
 
         self.logger = logger.getChild("analysis").getChild(
             f"{self.event.name}/{self.name}"
         )
         self.logger.setLevel(LOGGER_LEVEL)
 
-        fh = logging.FileHandler(logfile)
-        formatter = logging.Formatter("%(asctime)s - %(message)s", "%Y-%m-%d %H:%M:%S")
-        fh.setFormatter(formatter)
-        self.logger.addHandler(fh)
+        # fh = logging.FileHandler(logfile)
+        # formatter = logging.Formatter("%(asctime)s - %(message)s", "%Y-%m-%d %H:%M:%S")
+        # fh.setFormatter(formatter)
+        # self.logger.addHandler(fh)
 
         self.category = config.get("general", "calibration_directory")
 
@@ -630,6 +629,8 @@ class Production:
         if "marginalization" not in self.meta["likelihood"]:
             self.meta["likelihood"]["marginalization"] = {}
 
+        if "data" not in self.meta:
+            self.meta["data"] = {}
         if "data files" not in self.meta["data"]:
             self.meta["data"]["data files"] = {}
 
@@ -647,13 +648,21 @@ class Production:
             self.review = Review()
 
         # Check that the upper frequency is included, otherwise calculate it
-        if "quality" in self.meta:
-            if ("maximum frequency" not in self.meta["quality"]) and (
-                "sample rate" in self.meta["likelihood"]
-            ):
+        if (
+            "quality" in self.meta
+            and ("maximum frequency" not in self.meta["quality"])
+            and ("sample rate" in self.meta["likelihood"])
+            and len(self.meta["interferometers"]) > 0
+        ) or (
+            list(self.meta.get("quality", {}).get("maximum frequency", {}).keys())
+            != self.meta.get("interferometers")
+            and ("sample rate" in self.meta["likelihood"])
+        ):
+            if "maximum frequency" not in self.meta["quality"]:
                 self.meta["quality"]["maximum frequency"] = {}
-                # Account for the PSD roll-off with the 0.875 factor
-                for ifo in self.meta["interferometers"]:
+            # Account for the PSD roll-off with the 0.875 factor
+            for ifo in self.meta["interferometers"]:
+                if ifo not in self.meta["quality"]["maximum frequency"]:
                     self.meta["quality"]["maximum frequency"][ifo] = int(
                         0.875 * self.meta["likelihood"]["sample rate"] / 2
                     )
@@ -1074,10 +1083,12 @@ class Production:
             keyword = "psds"
         elif format == "xml":
             keyword = "xml psds"
+        else:
+            raise ValueError(f"This PSD format ({format}) is not recognised.")
 
         if keyword in self.meta:
-            if self.meta["likelihood"]["sample rate"] in self.meta[keyword]:
-                psds = self.meta[keyword][self.meta["likelihood"]["sample rate"]]
+            # if self.meta["likelihood"]["sample rate"] in self.meta[keyword]:
+            psds = self.meta[keyword]  # [self.meta["likelihood"]["sample rate"]]
 
         # First look through the list of the job's dependencies
         # to see if they're provided by a job there.
@@ -1094,6 +1105,10 @@ class Production:
                             psds = productions[previous_job].pipeline.collect_assets()[
                                 keyword
                             ]
+                        else:
+                            self.logger.info(
+                                "The PSDs from {previous_job} are not compatible with this job."
+                            )
                     else:
                         psds = {}
                 except Exception:
@@ -1114,8 +1129,24 @@ class Production:
         """
         compatible = True
 
-        compatible = self.meta["likelihood"] == other_production.meta["likelihood"]
-        compatible = self.meta["data"] == other_production.meta["data"]
+        # Check that the sample rate of this analysis is equal or less than that of the preceeding analysis
+        # to ensure that PSDs have points at the correct frequencies.
+        try:
+            compatible = self.meta.get("likelihood", {}).get(
+                "sample rate", None
+            ) <= other_production.meta.get("likelihood", {}).get("sample rate", None)
+        except TypeError:
+            # One or more sample rates are missing so these can't be deemed compatible.
+            return False
+        tests = [
+            ("data", "channels"),
+            ("data", "frame types"),
+            ("data", "segment length"),
+        ]
+        for test in tests:
+            compatible &= self.meta.get(test[0], {}).get(
+                test[1], None
+            ) == other_production.meta.get(test[0], {}).get(test[1], None)
         return compatible
 
     def make_config(self, filename, template_directory=None, dryrun=False):

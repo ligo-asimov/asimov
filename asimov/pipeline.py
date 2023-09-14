@@ -120,7 +120,7 @@ class Pipeline:
         Define a hook to be run before the DAG is built.
         """
         pass
-    
+
     def before_submit(self, dryrun=False):
         """
         Define a hook to run before the DAG file is generated and submitted.
@@ -329,12 +329,16 @@ class PESummaryPipeline(PostPipeline):
 
         psds = {ifo: os.path.abspath(psd) for ifo, psd in self.production.psds.items()}
 
-        calibration = [
-            os.path.abspath(os.path.join(self.production.repository.directory, cal))
-            if not cal[0] == "/"
-            else cal
-            for cal in self.production.meta["data"]["calibration"].values()
-        ]
+        if "calibration" in self.production.meta["data"]:
+            calibration = [
+                os.path.abspath(os.path.join(self.production.repository.directory, cal))
+                if not cal[0] == "/"
+                else cal
+                for cal in self.production.meta["data"]["calibration"].values()
+            ]
+        else:
+            calibration = None
+
         configfile = self.production.event.repository.find_prods(
             self.production.name, self.category
         )[0]
@@ -382,6 +386,10 @@ class PESummaryPipeline(PostPipeline):
         if "nrsur" in self.production.meta["waveform"]["approximant"].lower():
             command += ["--NRSur_fits"]
 
+        if "calculate" in self.meta:
+            if "precessing snr" in self.meta["calculate"]:
+                command += ["--calculate_precessing_snr"]
+
         if "multiprocess" in self.meta:
             command += ["--multi_process", str(self.meta["multiprocess"])]
 
@@ -399,8 +407,9 @@ class PESummaryPipeline(PostPipeline):
         command += ["--samples"]
         command += self.production.pipeline.samples(absolute=True)
         # Calibration information
-        command += ["--calibration"]
-        command += calibration
+        if calibration:
+            command += ["--calibration"]
+            command += calibration
         # PSDs
         command += ["--psd"]
         for key, value in psds.items():
@@ -413,9 +422,7 @@ class PESummaryPipeline(PostPipeline):
                 )
 
         self.logger.info(
-            f"PE summary command: {config.get('pesummary', 'executable')} {' '.join(command)}",
-            production=self.production,
-            channels=["file"],
+            f"PE summary command: {config.get('pesummary', 'executable')} {' '.join(command)}"
         )
 
         if dryrun:
@@ -426,8 +433,6 @@ class PESummaryPipeline(PostPipeline):
         submit_description = {
             "executable": config.get("pesummary", "executable"),
             "arguments": " ".join(command),
-            "accounting_group_user": config.get('condor', 'user'),
-            "accounting_group": self.meta["accounting group"],
             "output": f"{self.production.rundir}/pesummary.out",
             "error": f"{self.production.rundir}/pesummary.err",
             "log": f"{self.production.rundir}/pesummary.log",
@@ -435,12 +440,22 @@ class PESummaryPipeline(PostPipeline):
             "getenv": "true",
             "batch_name": f"PESummary/{self.production.event.name}/{self.production.name}",
             "request_memory": "8192MB",
-            #"should_transfer_files": "YES",
+            # "should_transfer_files": "YES",
             "request_disk": "8192MB",
             "+flock_local": "True",
             "+DESIRED_Sites": htcondor.classad.quote("nogrid"),
         }
-        
+
+        if "accounting group" in self.meta:
+            submit_description["accounting_group_user"] = config.get("condor", "user")
+            submit_description["accounting_group"] = self.meta["accounting group"]
+        else:
+            self.logger.warning(
+                "This PESummary Job does not supply any accounting"
+                " information, which may prevent it running on"
+                " some clusters."
+            )
+
         if dryrun:
             print("SUBMIT DESCRIPTION")
             print("------------------")
@@ -450,9 +465,9 @@ class PESummaryPipeline(PostPipeline):
             hostname_job = htcondor.Submit(submit_description)
 
             with utils.set_directory(self.production.rundir):
-                with open(f"pesummary.sub", "w") as subfile:
+                with open("pesummary.sub", "w") as subfile:
                     subfile.write(hostname_job.__str__())
-            
+
             try:
                 # There should really be a specified submit node, and if there is, use it.
                 schedulers = htcondor.Collector().locate(
