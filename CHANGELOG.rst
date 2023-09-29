@@ -1,3 +1,18 @@
+0.5.4
+=====
+
+This is a bug-fix release, and doesn't introduce any new features.
+
+Breaking changes
+----------------
+
+This release is not believed to introduce any backwards-incompatible changes.
+
+Merges
+------
+
++ `ligo!109 <https://git.ligo.org/asimov/asimov/-/merge_requests/109>`_: Allows total mass priors to be specified in bilby jobs.
+
 0.5.3
 =====
 
