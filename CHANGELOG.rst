@@ -1,3 +1,21 @@
+0.5.4
+=====
+
+This is a bug-fix release, and doesn't introduce any new features.
+
+Breaking changes
+----------------
+
+This release is not believed to introduce any backwards-incompatible changes.
+
+Merges
+------
+
++ `ligo!107 <https://git.ligo.org/asimov/asimov/-/merge_requests/107>`_: Allows additional files to be specified for condor transfers of bilby jobs.
++ `ligo!110 <https://git.ligo.org/asimov/asimov/-/merge_requests/110>`_: Fixes a bug with bilby frame retrieval when no frame files are specified.
++ `ligo!109 <https://git.ligo.org/asimov/asimov/-/merge_requests/109>`_: Allows total mass priors to be specified in bilby jobs.
++ `ligo!113 <https://git.ligo.org/asimov/asimov/-/merge_requests/113>`_: Fixes a bug with asset retrieval in analyses with multiple requirements.
+
 0.5.3
 =====
 
