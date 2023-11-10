@@ -1105,9 +1105,10 @@ class Production:
                             psds = productions[previous_job].pipeline.collect_assets()[
                                 keyword
                             ]
+                            break
                         else:
                             self.logger.info(
-                                "The PSDs from {previous_job} are not compatible with this job."
+                                f"The PSDs from {previous_job} are not compatible with this job."
                             )
                     else:
                         psds = {}
