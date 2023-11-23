@@ -11,6 +11,11 @@ from asimov.cli import ACTIVE_STATES, manage, report
 logger = logger.getChild("cli").getChild("monitor")
 logger.setLevel(LOGGER_LEVEL)
 
+if sys.version_info < (3, 10):
+    from importlib_metadata import entry_points
+else:
+    from importlib.metadata import entry_points
+
 
 if sys.version_info < (3, 10):
     from importlib_metadata import entry_points
