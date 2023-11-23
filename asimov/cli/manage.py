@@ -42,6 +42,50 @@ def build(event, dryrun):
     """
     logger = asimov.logger.getChild("cli").getChild("manage.build")
     logger.setLevel(LOGGER_LEVEL)
+
+    for analysis in ledger.project_analyses:
+        if analysis.status in {"ready"}:
+            # Need to ensure a directory exists for these!
+            project_analysis_dir = os.path.join("checkouts",
+                                                "project_analyses",
+                                                )
+            if not os.path.exists(project_analysis_dir):
+                os.makedirs(project_analysis_dir)
+            click.echo(click.style("●", fg="green")
+                       + f" Building project analysis {analysis.name}")
+            try:
+                analysis.make_config(filename=os.path.join(project_analysis_dir,
+                                                           f"{analysis.name}.ini"),
+                                     dryrun=dryrun)
+                click.echo(click.style("●", fg="green")
+                           + f" Success!")
+            except Exception as e:
+                print(e)
+                click.echo(click.style("●", fg="red")
+                       + f" Failed to build project analysis {analysis.name}")
+
+    for analysis in ledger.project_analyses:
+        if analysis.status in {"ready"}:
+            # Need to ensure a directory exists for these!
+            project_analysis_dir = os.path.join("checkouts",
+                                                "project_analyses",
+                                                )
+            if not os.path.exists(project_analysis_dir):
+                os.makedirs(project_analysis_dir)
+            click.echo(click.style("●", fg="green")
+                       + f" Building project analysis {analysis.name}")
+            try:
+                analysis.make_config(filename=os.path.join(project_analysis_dir,
+                                                           f"{analysis.name}.ini"),
+                                     dryrun=dryrun)
+                click.echo(click.style("●", fg="green")
+                           + f" Success!")
+            except Exception as e:
+                print(e)
+                click.echo(click.style("●", fg="red")
+                       + f" Failed to build project analysis {analysis.name}")
+
+                
     for event in ledger.get_event(event):
 
         click.echo(f"● Working on {event.name}")
@@ -138,6 +182,63 @@ def submit(event, update, dryrun):
     """
     logger = asimov.logger.getChild("cli").getChild("manage.submit")
     logger.setLevel(LOGGER_LEVEL)
+
+
+    for analysis in ledger.project_analyses:
+        if analysis.status in {"ready"}:
+            # Need to ensure a directory exists for these!
+            project_analysis_dir = os.path.join("checkouts",
+                                                "project_analyses")
+            click.echo(click.style("●", fg="green")
+                       + f" Submitting project analysis {analysis.name}")
+            pipe = analysis.pipeline
+            try:
+                pipe.build_dag(dryrun=dryrun)
+            except PipelineException as e:
+                logger.error(
+                    "The pipeline failed to build a DAG file.",
+                )
+                logger.exception(e)
+                click.echo(
+                    click.style("●", fg="red")
+                    + f" Failed to submit {analysis.name}"
+                )
+            except ValueError as e:
+                print("ERROR", e)
+                logger.info("Unable to submit an unbuilt production")
+                click.echo(
+                    click.style("●", fg="red")
+                    + f" Unable to submit {analysis.name} as it hasn't been built yet."
+                )
+                click.echo("Try running `asimov manage build` first.")
+            try:
+                pipe.submit_dag(dryrun=dryrun)
+                if not dryrun:
+                    click.echo(
+                        click.style("●", fg="green")
+                        + f" Submitted {analysis.name}"
+                    )
+                    analysis.status = "running"
+
+            except PipelineException as e:
+                    analysis.status = "stuck"
+                    click.echo(
+                        click.style("●", fg="red")
+                        + f" Unable to submit {analysis.name}"
+                    )
+                    logger.exception(e)
+                    ledger.save()
+                    logger.error(
+                        f"The pipeline failed to submit the DAG file to the cluster. {e}",
+                    )
+            if not dryrun:
+                # Refresh the job list
+                job_list = condor.CondorJobList()
+                job_list.refresh()
+                # Update the ledger
+                ledger.save()
+            
+    
     for event in ledger.get_event(event):
         ready_productions = event.get_all_latest()
         for production in ready_productions:

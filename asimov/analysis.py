@@ -303,10 +303,8 @@ class Analysis:
                 from pkg_resources import resource_filename
 
                 template_file = resource_filename("asimov", f"configs/{template}")
-
         liq = Liquid(template_file)
-        rendered = liq.render(production=self, config=config)
-
+        rendered = liq.render(production=self, analysis=self, config=config)
         with open(filename, "w") as output_file:
             output_file.write(rendered)
 
@@ -713,6 +711,8 @@ class ProjectAnalysis(Analysis):
     A multi-subject analysis.
     """
 
+    meta_defaults = {"scheduler": {}, "sampler": {}, "review": {}}
+    
     def __init__(
             self, subjects, analyses, name, pipeline, comment=None, ledger=None, **kwargs
     ):
@@ -725,6 +725,7 @@ class ProjectAnalysis(Analysis):
         self.logger.setLevel(LOGGER_LEVEL)
 
         self.subjects = subjects
+        
         self.events = self.subjects
 
         self._analysis_spec = analyses
@@ -733,6 +734,7 @@ class ProjectAnalysis(Analysis):
 
         if ledger:
             self.ledger = ledger
+            
         self._subject_obs = []
         for subject in self.subjects:
             sub = self.ledger.get_event(subject)[0]
@@ -768,6 +770,18 @@ class ProjectAnalysis(Analysis):
         else:
             self.comment = None
 
+        self.meta = deepcopy(self.meta_defaults)
+
+        # Start by adding pipeline defaults
+        if "pipelines" in self.ledger.data:
+            if pipeline in self.ledger.data["pipelines"]:
+                self.meta = update(
+                    self.meta, deepcopy(self.ledger.data["pipelines"][pipeline])
+                )
+
+        self.meta = update(self.meta, deepcopy(kwargs))
+
+            
     def __repr__(self):
         """
         A human-friendly representation of this project.
@@ -795,6 +809,10 @@ class ProjectAnalysis(Analysis):
         name = parameters.pop("name")
         if "comment" not in parameters:
             parameters["comment"] = None
+
+        if "analyses" not in parameters:
+            parameters['analyses'] = []
+            
         return cls(name=name, pipeline=pipeline, ledger=ledger, **parameters)
 
     def to_dict(self):
@@ -850,12 +868,10 @@ class GravitationalWaveTransient(SimpleAnalysis):
     """
 
     def __init__(self, subject, name, pipeline, **kwargs):
-
         self.category = config.get("general", "calibration_directory")
-
         super().__init__(subject, name, pipeline, **kwargs)
-        self._add_missing_parameters()
         self._checks()
+
 
         self.psds = self._collect_psds()
         self.xml_psds = self._collect_psds(format="xml")
@@ -922,93 +938,29 @@ class GravitationalWaveTransient(SimpleAnalysis):
 
         # Gather the PSDs for the job
         self.psds = self._collect_psds()
-        
-    def _collect_psds(self, format="ascii"):
-        """
-        Collect the required psds for this production.
-        """
-        psds = {}
-        # If the PSDs are specifically provided in the ledger,
-        # use those.
 
-        if format == "ascii":
-            keyword = "psds"
-        elif format == "xml":
-            keyword = "xml psds"
 
-        if keyword in self.meta:
-            if self.meta["likelihood"]["sample rate"] in self.meta[keyword]:
-                psds = self.meta[keyword][self.meta["likelihood"]["sample rate"]]
-
-        # First look through the list of the job's dependencies
-        # to see if they're provided by a job there.
-        elif self.dependencies:
-            productions = {}
-            for production in self.event.productions:
-                productions[production.name] = production
-
-            for previous_job in self.dependencies:
-                try:
-                    # Check if the job provides PSDs as an asset and were produced with compatible settings
-                    if keyword in productions[previous_job].pipeline.collect_assets():
-                        if self._check_compatible(productions[previous_job]):
-                            psds = productions[previous_job].pipeline.collect_assets()[
-                                keyword
-                            ]
-                    else:
-                        psds = {}
-                except Exception:
-                    psds = {}
-        # Otherwise return no PSDs
-        else:
-            psds = {}
-
-        for ifo, psd in psds.items():
-            self.logger.debug(f"PSD-{ifo}: {psd}")
-
-        return psds
-
-    def _check_compatible(self, other_production):
-        """
-        Check that the data settings in two productions are sufficiently compatible
-        that one can be used as a dependency of the other.
-        """
-        compatible = True
-
-        # compatible = self.meta["likelihood"] == other_production.meta["likelihood"]
-        # compatible = self.meta["data"] == other_production.meta["data"]
-        return compatible
-
-    def _add_missing_parameters(self):
-        for parameter in {"quality", "waveform", "likelihood"}:
-            if parameter not in self.meta:
-                self.meta[parameter] = {}
-
-        for parameter in {"marginalization"}:
-            if parameter not in self.meta["likelihood"]:
-                self.meta["likelihood"][parameter] = {}
-
-        for parameter in {"maximum frequency"}:
-            if parameter not in self.meta["quality"]:
-                self.meta["quality"][parameter] = {}
 
     def _checks(self):
         """
         Carry-out a number of data consistency checks on the information from the ledger.
         """
         # Check that the upper frequency is included, otherwise calculate it
-
-        if "quality" in self.meta:
-            if ("maximum frequency" not in self.meta["quality"]) and (
-                "sample rate" in self.meta["likelihood"]
+        if self.quality:
+            if ("high-frequency" not in self.quality) and (
+                "sample-rate" in self.quality
             ):
-                self.meta["quality"]["maximum frequency"] = {}
                 # Account for the PSD roll-off with the 0.875 factor
-                for ifo in self.meta["interferometers"]:
-                    self.meta["quality"]["maximum frequency"][ifo] = int(
-                        0.875 * self.meta["likelihood"]["sample rate"] / 2
+                self.meta["quality"]["high-frequency"] = int(
+                    0.875 * self.meta["quality"]["sample-rate"] / 2
+                )
+            elif ("high-frequency" in self.quality) and ("sample-rate" in self.quality):
+                if self.meta["quality"]["high-frequency"] != int(
+                    0.875 * self.meta["quality"]["sample-rate"] / 2
+                ):
+                    warn(
+                        "The upper-cutoff frequency is not equal to 0.875 times the Nyquist frequency."
                     )
-                self.event.ledger.update_event(self.event)
 
     @property
     def quality(self):
@@ -1085,3 +1037,54 @@ class GravitationalWaveTransient(SimpleAnalysis):
             raise ValueError("This isn't a valid ini file")
 
         return ini
+    def _collect_psds(self, format="ascii"):
+        """
+        Collect the required psds for this production.
+        """
+        psds = {}
+        # If the PSDs are specifically provided in the ledger,
+        # use those.
+
+        if format == "ascii":
+            keyword = "psds"
+        elif format == "xml":
+            keyword = "xml psds"
+        else:
+            raise ValueError(f"This PSD format ({format}) is not recognised.")
+
+        if keyword in self.meta:
+            # if self.meta["likelihood"]["sample rate"] in self.meta[keyword]:
+            psds = self.meta[keyword]  # [self.meta["likelihood"]["sample rate"]]
+
+        # First look through the list of the job's dependencies
+        # to see if they're provided by a job there.
+        elif self.dependencies:
+            productions = {}
+            for production in self.event.productions:
+                productions[production.name] = production
+
+            for previous_job in self.dependencies:
+                try:
+                    # Check if the job provides PSDs as an asset and were produced with compatible settings
+                    if keyword in productions[previous_job].pipeline.collect_assets():
+                        if self._check_compatible(productions[previous_job]):
+                            psds = productions[previous_job].pipeline.collect_assets()[
+                                keyword
+                            ]
+                            break
+                        else:
+                            self.logger.info(
+                                f"The PSDs from {previous_job} are not compatible with this job."
+                            )
+                    else:
+                        psds = {}
+                except Exception:
+                    psds = {}
+        # Otherwise return no PSDs
+        else:
+            psds = {}
+
+        for ifo, psd in psds.items():
+            self.logger.debug(f"PSD-{ifo}: {psd}")
+
+        return psds
