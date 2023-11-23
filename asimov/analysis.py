@@ -289,16 +289,20 @@ class Analysis:
 
         if "template" in self.meta:
             template = f"{self.meta['template']}.ini"
+            
         else:
             template = f"{self.pipeline}.ini"
 
         pipeline = self.pipeline
+        
         if hasattr(pipeline, "config_template"):
             template_file = pipeline.config_template
+            
         else:
             try:
                 template_directory = config.get("templating", "directory")
                 template_file = os.path.join(f"{template_directory}", template)
+                
             except (configparser.NoOptionError, configparser.NoSectionError):
                 from pkg_resources import resource_filename
 
@@ -349,6 +353,7 @@ class Analysis:
             card += f"""<p class="asimov-attribute">Waveform approximant:
    <span class="asimov-approximant">{production.meta['approximant']}</span>
 </p>"""
+
 
         card += """&nbsp;"""
         card += """</div>"""
@@ -720,7 +725,6 @@ class ProjectAnalysis(Analysis):
         super().__init__()
 
         self.name = name  # if name else "unnamed project analysis"
-
         self.logger = logger.getChild("project analyses").getChild(f"{self.name}")
         self.logger.setLevel(LOGGER_LEVEL)
 
@@ -734,6 +738,17 @@ class ProjectAnalysis(Analysis):
 
         if ledger:
             self.ledger = ledger
+
+        # set up the working directory like is done for an event
+        if "working_directory" in kwargs:
+            self.work_dir = kwargs["working_directory"]
+        else:
+            subj_string = "_".join([f"{self.subjects[i]}" for i in range(len(self.subjects))])
+            self.work_dir = f"working/{subj_string}"
+        if not os.path.exists(self.work_dir):
+            os.makedirs(self.work_dir)
+
+        self.repository = None
             
         self._subject_obs = []
         for subject in self.subjects:
@@ -780,7 +795,6 @@ class ProjectAnalysis(Analysis):
                 )
 
         self.meta = update(self.meta, deepcopy(kwargs))
-
             
     def __repr__(self):
         """
@@ -860,7 +874,31 @@ class ProjectAnalysis(Analysis):
         output = dictionary
 
         return output
+    
+    @property
+    def rundir(self):
+        """
+        Returns the rundir for this event
+        """
 
+        if "rundir" in self.meta:
+            return self.meta["rundir"]
+        elif self.work_dir:
+            self.meta["rundir"] = self.work_dir
+            return self.meta["rundir"]
+        else:
+            return None
+
+    @rundir.setter
+    def rundir(self, value):
+        """
+        Set the run directory.
+        """
+        if "rundir" not in self.meta:
+            self.meta["rundir"] = value
+        else:
+            self.meta["rundir"] = value
+        
 
 class GravitationalWaveTransient(SimpleAnalysis):
     """

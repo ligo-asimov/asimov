@@ -447,14 +447,33 @@ class Event:
                 if production.finished is False
             ]
         )
-        ends = [
-            x
-            for x in unfinished.reverse().nodes()
-            if unfinished.reverse().out_degree(x) == 0
-        ]
-        return {
-            end for end in ends if end.status.lower() == "ready"
-        }  # only want to return one version of each production!
+
+        ends = [] 
+        for production in unfinished.reverse().nodes():
+            if unfinished.reverse().out_degree(production) == 0:
+                ends.append(production)
+            elif "min deps" in production.meta:
+                if "necessary deps" in production.meta:
+                    unfilled_deps = [ 
+                        edge[0].name for edge in unfinished.edges()
+                        if edge[1].name == production.name 
+                        ] 
+                    unfilled_necessary_deps = [ 
+                        dep for dep in unfilled_deps 
+                        if dep in production.meta["necessary deps"] 
+                        ]
+                else: 
+                    unfilled_necessary_deps = []
+
+                min_deps = production.meta['min deps']
+                if unfinished.reverse().out_degree(production)\
+                        <= min_deps and len(unfilled_necessary_deps) == 0:
+                    ends.append(production)
+        
+        ret_val = { end for end in ends if end.status.lower() == "ready" }
+
+        return set(ret_val) 
+        
 
     def build_report(self):
         for production in self.productions:

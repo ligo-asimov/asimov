@@ -12,6 +12,7 @@ from asimov import condor
 from asimov import LOGGER_LEVEL
 from asimov.event import DescriptionException
 from asimov.pipeline import PipelineException
+from asimov.git import EventRepo
 
 
 @click.group(chain=True)
@@ -46,14 +47,15 @@ def build(event, dryrun):
     for analysis in ledger.project_analyses:
         if analysis.status in {"ready"}:
             # Need to ensure a directory exists for these!
-            project_analysis_dir = os.path.join("checkouts",
-                                                "project_analyses",
-                                                )
+            subjects = analysis.subjects
+            subj_string = "_".join([f"{subjects[i]}" for i in range(len(subjects))])
+            project_analysis_dir = os.path.join("checkouts", subj_string,)
             if not os.path.exists(project_analysis_dir):
                 os.makedirs(project_analysis_dir)
             click.echo(click.style("●", fg="green")
                        + f" Building project analysis {analysis.name}")
             try:
+                analysis.pipeline.before_config()
                 analysis.make_config(filename=os.path.join(project_analysis_dir,
                                                            f"{analysis.name}.ini"),
                                      dryrun=dryrun)
@@ -64,28 +66,6 @@ def build(event, dryrun):
                 click.echo(click.style("●", fg="red")
                        + f" Failed to build project analysis {analysis.name}")
 
-    for analysis in ledger.project_analyses:
-        if analysis.status in {"ready"}:
-            # Need to ensure a directory exists for these!
-            project_analysis_dir = os.path.join("checkouts",
-                                                "project_analyses",
-                                                )
-            if not os.path.exists(project_analysis_dir):
-                os.makedirs(project_analysis_dir)
-            click.echo(click.style("●", fg="green")
-                       + f" Building project analysis {analysis.name}")
-            try:
-                analysis.make_config(filename=os.path.join(project_analysis_dir,
-                                                           f"{analysis.name}.ini"),
-                                     dryrun=dryrun)
-                click.echo(click.style("●", fg="green")
-                           + f" Success!")
-            except Exception as e:
-                print(e)
-                click.echo(click.style("●", fg="red")
-                       + f" Failed to build project analysis {analysis.name}")
-
-                
     for event in ledger.get_event(event):
 
         click.echo(f"● Working on {event.name}")
@@ -183,12 +163,25 @@ def submit(event, update, dryrun):
     logger = asimov.logger.getChild("cli").getChild("manage.submit")
     logger.setLevel(LOGGER_LEVEL)
 
-
+    # this should add the required repository field to the project analysis
+    # with the correct type
     for analysis in ledger.project_analyses:
         if analysis.status in {"ready"}:
             # Need to ensure a directory exists for these!
-            project_analysis_dir = os.path.join("checkouts",
-                                                "project_analyses")
+            subjects = analysis.subjects
+            subj_string = "_".join([f"{subjects[i]}" for i in range(len(subjects))])
+            project_analysis_dir = os.path.join("checkouts", subj_string,)
+            if analysis.repository is None:
+                analysis.repository = EventRepo.create(project_analysis_dir)
+            else:
+                if isinstance(analysis.repository, str):
+                    if "git@" in repository or "https://" in repository:
+                        analysis.repository = EventRepo.from_url(
+                        repository, self.name, directory=None, update=update
+                             )
+                    else:
+                        analysis.repository = EventRepo.create(repository)
+
             click.echo(click.style("●", fg="green")
                        + f" Submitting project analysis {analysis.name}")
             pipe = analysis.pipeline
@@ -219,6 +212,8 @@ def submit(event, update, dryrun):
                         + f" Submitted {analysis.name}"
                     )
                     analysis.status = "running"
+                    ledger.update_analysis_in_project_analysis(analysis)
+                    
 
             except PipelineException as e:
                     analysis.status = "stuck"
@@ -227,6 +222,7 @@ def submit(event, update, dryrun):
                         + f" Unable to submit {analysis.name}"
                     )
                     logger.exception(e)
+                    ledger.update_analysis_in_project_analysis(analysis)
                     ledger.save()
                     logger.error(
                         f"The pipeline failed to submit the DAG file to the cluster. {e}",

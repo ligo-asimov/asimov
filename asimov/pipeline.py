@@ -312,235 +312,185 @@ class Pipeline:
 
 
 class PostPipeline:
-    """This class describes post processing pipelines which are a
-    class of pipelines which can be run on multiple analyses for a
-    subject.
+    def __init__(self, production, category=None):
+        self.production = production
 
-    Postprocessing pipelines take the results of analyses and run
-    additional steps on them, and unlike a normal analysis they are
-    not immutable, and can be re-run each time a new analyis is
-    completed which satisfies the conditions of the postprocessing
-    job.
+        try:
+            self.category = category if category else production.category
+        except AttributeError:
+            # the command above is not working for a ProjectAnalysis
+            pass
+        self.logger = logger
+        self.meta = self.production.meta["postprocessing"][self.name.lower()]
 
+
+class PESummaryPipeline(PostPipeline):
+    """
+    A postprocessing pipeline add-in using PESummary.
     """
 
-    style = "multiplex"
+    name = "PESummary"
 
-    def __init__(self, subject, **kwargs):
+    def submit_dag(self, dryrun=False):
         """
-        Post processing pipeline factory class.
-
+        Run PESummary on the results of this job.
         """
 
-        if "ledger" in kwargs:
-            self.ledger = kwargs["ledger"]
+        psds = {ifo: os.path.abspath(psd) for ifo, psd in self.production.psds.items()}
+
+        if "calibration" in self.production.meta["data"]:
+            calibration = [
+                os.path.abspath(os.path.join(self.production.repository.directory, cal))
+                if not cal[0] == "/"
+                else cal
+                for cal in self.production.meta["data"]["calibration"].values()
+            ]
         else:
-            self.ledger = None
+            calibration = None
 
-        self.subject = subject
-        # self.category = category if category else production.category
-        self.logger = logger
-        # self.meta = self.production.meta["postprocessing"][self.name.lower()]
-        self.meta = kwargs
-
-        self.outputs = os.path.join(
-            config.get("project", "root"),
-            config.get("general", "webroot"),
-            self.subject.name,
-        )
-        if self.style == "simplex":
-            self.outputs = os.path.join(self.outputs, self.analyses[0].name)
-
-    def __repr__(self):
-        output = ""
-        output += "-------------------------------------------------------" + "\n"
-        output += "Asimov postprocessing pipeline" + "\n"
-        output += f"{self.name}" + "\n"
-        output += (
-            f"""Currently contains: {(chr(10)+"                    ").join(self.current_list)}"""
-            + "\n"
-        )
-        output += (
-            """Designed to contain: """
-            + f"""{(chr(10)+"                     ").join([analysis.name for analysis in self.analyses])}"""
-            + "\n"
-        )
-        output += f"""Is fresh?: {self.fresh}""" + "\n"
-        output += "-------------------------------------------------------" + "\n"
-        return output
-
-    def _process_analyses(self):
-        """
-        Process the analysis list for this production.
-
-        The dependencies can be provided either as the name of an analysis,
-        or a query against the analysis's attributes.
-
-        Parameters
-        ----------
-        needs : list
-           A list of all the analyses which this should be applied to
-
-        Returns
-        -------
-        list
-           A list of all the analysis specifiations processed for evaluation.
-        """
-        all_requirements = []
-        post_requirements = []
-        for need in self.meta["analyses"]:
-            try:
-                requirement = need.split(":")
-                requirement = [requirement[0].split("."), requirement[1]]
-            except IndexError:
-                requirement = [["name"], need]
-            if requirement[0][0] == "postprocessing" and requirement[0][1] == "name":
-                post_requirements.append(requirement)
-            else:
-                all_requirements.append(requirement)
-
-        analyses = []
-        post = []
-        if self.meta["analyses"]:
-            matches = set(self.subject.analyses)
-            for attribute, match in all_requirements:
-                filtered_analyses = list(
-                    filter(
-                        lambda x: x.matches_filter(attribute, match),
-                        self.subject.analyses,
-                    )
-                )
-                matches = set.intersection(matches, set(filtered_analyses))
-                for analysis in matches:
-                    analyses.append(analysis)
-
-            matches = set(self.ledger.postprocessing)
-            for attribute, match in post_requirements:
-                filtered_posts = list(
-                    filter(lambda x: x == match, self.ledger.postprocessing.keys())
-                )
-                matches = set.intersection(
-                    self.ledger.postprocessing, set(filtered_posts)
-                )
-                for analysis in matches:
-                    post.append(analysis)
-        return analyses
-
-    @property
-    def current_list(self):
-        """
-        Return the list of analyses which are included in the current results.
-        """
-        if "current list" in self.meta:
-            return self.meta["current list"]
-        else:
-            return []
-
-    @current_list.setter
-    def current_list(self, data):
-        """
-        Return the list of analyses which are included in the current results.
-        """
-        self.meta["current list"] = [analysis.name for analysis in data]
-        if self.ledger:
-            self.ledger.save()
-
-    @property
-    def fresh(self):
-        """
-        Check if the post-processing job is fresh.
-
-        Tries to work out if any of the samples which should have been
-        included for post-processing are newer than the most recent
-        files produced by this job.  If they are all older then the
-        results are fresh, otherwise they are stale, and the
-        post-processing will need to run again.
-
-        Returns
-        -------
-        bool
-           If the job is fresh True is returned.
-           Otherwise False.
-        """
-        # Check if there are any finished analyses
-        finished = []
-        for analysis in self.analyses:
-            if analysis.finished:
-                finished.append(analysis)
-        if len(finished) > 0:
-            if not all([os.path.exists(result) for result in self.results().values()]):
-                return False
-            try:
-                for analysis in self.analyses:
-                    self._check_ages(
-                        analysis.pipeline.samples(),
-                        self.results().values(),
-                    )
-            except AssertionError:
-                return False
-            return True
-        else:
-            return True
-
-    def _check_ages(self, listA, listB):
-        """
-        Check that the ages of all the samples from listA are younger than all the files from listB.
-        """
-
-        for sample in listA:
-            for comparison in listB:
-                assert os.stat(sample).st_mtime < os.stat(comparison).st_mtime
-
-    @property
-    def analyses(self):
-        """
-        Return a list of productions which this pipeline should apply to.
-
-        Post-processing pipelines can either apply to individual
-        analyses, or to a subset of all the analyses on a given
-        subject.  This property returns a list of all the productions
-        which this pipeline will be applied to.
-
-        Returns
-        -------
-        list
-           A list of all analyses which the pipeline will be applied to.
-        """
-        return self._process_analyses()
-
-    def run(self, dryrun=False):
-        """
-        Run all of the steps required to build and submit this pipeline.
-        """
-        cluster = self.submit_dag(dryrun=dryrun)
-        self.current_list = [
-            analysis for analysis in self.analyses if analysis.finished
+        configfile = self.production.event.repository.find_prods(
+            self.production.name, self.category
+        )[0]
+        command = [
+            "--webdir",
+            os.path.join(
+                config.get("project", "root"),
+                config.get("general", "webroot"),
+                self.production.event.name,
+                self.production.name,
+                "pesummary",
+            ),
+            "--labels",
+            self.production.name,
+            "--gw",
+            "--approximant",
+            self.production.meta["waveform"]["approximant"],
+            "--f_low",
+            str(min(self.production.meta["quality"]["minimum frequency"].values())),
+            "--f_ref",
+            str(self.production.meta["waveform"]["reference frequency"]),
         ]
-        self.meta["job id"] = cluster
-        self.meta["status"] = "running"
-        if self.ledger:
-            self.ledger.save()
 
-    def to_dict(self):
-        """
-        Convert this pipeline into a dictionary.
-        """
-        output = {}
-        output.update(deepcopy(self.meta))
-        output.pop("ledger")
-        output["pipeline"] = self.name
-        return output
+        if "cosmology" in self.meta:
+            command += [
+                "--cosmology",
+                self.meta["cosmology"],
+            ]
+        if "redshift" in self.meta:
+            command += ["--redshift_method", self.meta["redshift"]]
+        if "skymap samples" in self.meta:
+            command += [
+                "--nsamples_for_skymap",
+                str(
+                    self.meta["skymap samples"]
+                ),  # config.get('pesummary', 'skymap_samples'),
+            ]
 
-    @property
-    def status(self):
-        if "status" in self.meta:
-            return self.meta["status"]
+        if "evolve spins" in self.meta:
+            if "forwards" in self.meta["evolve spins"]:
+                command += ["--evolve_spins_fowards", "True"]
+            if "backwards" in self.meta["evolve spins"]:
+                command += ["--evolve_spins_backwards", "precession_averaged"]
+
+        if "nrsur" in self.production.meta["waveform"]["approximant"].lower():
+            command += ["--NRSur_fits"]
+
+        if "calculate" in self.meta:
+            if "precessing snr" in self.meta["calculate"]:
+                command += ["--calculate_precessing_snr"]
+
+        if "multiprocess" in self.meta:
+            command += ["--multi_process", str(self.meta["multiprocess"])]
+
+        if "regenerate" in self.meta:
+            command += ["--regenerate", " ".join(self.meta["regenerate posteriors"])]
+
+        # Config file
+        command += [
+            "--config",
+            os.path.join(
+                self.production.event.repository.directory, self.category, configfile
+            ),
+        ]
+        # Samples
+        command += ["--samples"]
+        command += self.production.pipeline.samples(absolute=True)
+        # Calibration information
+        if calibration:
+            command += ["--calibration"]
+            command += calibration
+        # PSDs
+        command += ["--psd"]
+        for key, value in psds.items():
+            command += [f"{key}:{value}"]
+
+        with utils.set_directory(self.production.rundir):
+            with open(f"{self.production.name}_pesummary.sh", "w") as bash_file:
+                bash_file.write(
+                    f"{config.get('pesummary', 'executable')} " + " ".join(command)
+                )
+
+        self.logger.info(
+            f"PE summary command: {config.get('pesummary', 'executable')} {' '.join(command)}"
+        )
+
+        if dryrun:
+            print("PESUMMARY COMMAND")
+            print("-----------------")
+            print(command)
+
+        submit_description = {
+            "executable": config.get("pesummary", "executable"),
+            "arguments": " ".join(command),
+            "output": f"{self.production.rundir}/pesummary.out",
+            "error": f"{self.production.rundir}/pesummary.err",
+            "log": f"{self.production.rundir}/pesummary.log",
+            "request_cpus": self.meta["multiprocess"],
+            "environment": "HDF5_USE_FILE_LOCKING=FAlSE OMP_NUM_THREADS=1 OMP_PROC_BIND=false",
+            "getenv": "CONDA_EXE,USER,LAL*,PATH",
+            "batch_name": f"PESummary/{self.production.event.name}/{self.production.name}",
+            "request_memory": "8192MB",
+            # "should_transfer_files": "YES",
+            "request_disk": "8192MB",
+            "+flock_local": "True",
+            "+DESIRED_Sites": htcondor.classad.quote("nogrid"),
+        }
+
+        if "accounting group" in self.meta:
+            submit_description["accounting_group_user"] = config.get("condor", "user")
+            submit_description["accounting_group"] = self.meta["accounting group"]
         else:
-            return None
+            self.logger.warning(
+                "This PESummary Job does not supply any accounting"
+                " information, which may prevent it running on"
+                " some clusters."
+            )
 
-    @property
-    def job_id(self):
-        if "job id" in self.meta:
-            return self.meta["job id"]
+        if dryrun:
+            print("SUBMIT DESCRIPTION")
+            print("------------------")
+            print(submit_description)
+
+        if not dryrun:
+            hostname_job = htcondor.Submit(submit_description)
+
+            with utils.set_directory(self.production.rundir):
+                with open("pesummary.sub", "w") as subfile:
+                    subfile.write(hostname_job.__str__())
+
+            try:
+                # There should really be a specified submit node, and if there is, use it.
+                schedulers = htcondor.Collector().locate(
+                    htcondor.DaemonTypes.Schedd, config.get("condor", "scheduler")
+                )
+                schedd = htcondor.Schedd(schedulers)
+            except:  # NoQA
+                # If you can't find a specified scheduler, use the first one you find
+                schedd = htcondor.Schedd()
+            with schedd.transaction() as txn:
+                cluster_id = hostname_job.queue(txn)
+
         else:
-            return None
+            cluster_id = 0
+
+        return cluster_id
