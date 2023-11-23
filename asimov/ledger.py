@@ -77,6 +77,17 @@ class YAMLLedger(Ledger):
         self.events[event.name] = event.to_dict()
         self.save()
 
+    def update_analysis_in_project_analysis(self, analysis):
+        """
+        Function to update an analysis contained in the project analyses
+        """
+        for i in range(len(self.data["project analyses"])):
+            if self.data["project analyses"][i]["name"] == analysis.name:
+                dict_to_save = analysis.to_dict().copy()
+                dict_to_save["status"] = analysis.status
+                self.data["project analyses"][i] = dict_to_save
+        self.save()
+
     def delete_event(self, event_name):
         """
         Remove an event from the ledger.

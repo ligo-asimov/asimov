@@ -215,7 +215,12 @@ class EventRepo:
         """
 
         self.update()
-        path = f"{os.path.join(os.getcwd(), self.directory, category)}/{name}.ini"
+        if category is not None:
+            path = f"{os.path.join(os.getcwd(), self.directory, category)}/{name}.ini"
+        else:
+            category = "project_analyses"
+            path = f"{os.path.join(os.getcwd(), self.directory)}/{name}.ini"
+        
         return [path]
 
     def upload_prod(
