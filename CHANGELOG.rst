@@ -12,9 +12,11 @@ Merges
 ------
 
 + `ligo!107 <https://git.ligo.org/asimov/asimov/-/merge_requests/107>`_: Allows additional files to be specified for condor transfers of bilby jobs.
-+ `ligo!110 <https://git.ligo.org/asimov/asimov/-/merge_requests/110>`_: Fixes a bug with bilby frame retrieval when no frame files are specified.
 + `ligo!109 <https://git.ligo.org/asimov/asimov/-/merge_requests/109>`_: Allows total mass priors to be specified in bilby jobs.
++ `ligo!111 <https://git.ligo.org/asimov/asimov/-/merge_requests/111>`_: Fixes a bug with bilby frame retrieval when no frame files are specified.
++ `ligo!112 <https://git.ligo.org/asimov/asimov/-/merge_requests/112>`_: Passes required environment variables to PESummary.
 + `ligo!113 <https://git.ligo.org/asimov/asimov/-/merge_requests/113>`_: Fixes a bug with asset retrieval in analyses with multiple requirements.
++ `ligo!115 <https://git.ligo.org/asimov/asimov/-/merge_requests/115>`_: Increases the default disk request for Bayeswave jobs.
 
 0.5.3
 =====
