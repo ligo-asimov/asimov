@@ -84,8 +84,8 @@ $ conda install -c conda-forge ligo-asimov
 
 Asimov also requires that you have `git` installed on your machine, and that you've set it up by running:
 ```
-  git config --global user.email "you@example.com"
-  git config --global user.name "Your Name"
+$ git config --global user.email "you@example.com"
+$ git config --global user.name "Your Name"
 ```
 
 It is also available on conda, and can be installed by running
@@ -120,9 +120,9 @@ We'll download the default configurations for jobs which are going to be run on 
 We do this using the `asimov apply` command, which pulls-in data from a file either locally or online.
 
 ```
-
 $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml
 ```
+
 and the load default priors the same way:
 ```
 $ asimov apply -f https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml

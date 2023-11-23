@@ -1,7 +1,7 @@
 from setuptools import setup
 
-# with open('README.rst') as readme_file:
-#     readme = readme_file.read()
+with open('README.md') as readme_file:
+    readme = readme_file.read()
 
 # with open('HISTORY.rst') as history_file:
 #     history = history_file.read()
@@ -20,7 +20,8 @@ setup(
     use_scm_version={"local_scheme": "no-local-version"},
     setup_requires=['setuptools_scm'],
     description="""A Python package for managing and interacting with data analysis jobs.""",
-    #long_description=readme + '\n\n' + history,
+    long_description=readme,
+    long_description_content_type="text/markdown",
     author="Daniel Williams",
     author_email='daniel.williams@ligo.org',
     url='https://git.ligo.org/asimov/asimov',

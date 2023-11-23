@@ -127,7 +127,14 @@ def make_project(
     default="results",
     help="The location where the results store should be created.",
 )
-def init(name, root, working="working", checkouts="checkouts", results="results"):
+@click.option(
+    "--user",
+    default=None,
+    help="The user account to be used for accounting purposes. Defaults to the current user if not set.",
+)
+def init(
+    name, root, working="working", checkouts="checkouts", results="results", user=None
+):
     """
     Roll-out a new project.
     """
@@ -184,7 +191,8 @@ def clone(location):
     # Make the ledger
     if config.get("ledger", "engine") == "yamlfile":
         shutil.copyfile(
-            os.path.join(location, config.get("ledger", "location")), os.path.join(".asimov", "ledger.yml")
+            os.path.join(location, config.get("ledger", "location")),
+            os.path.join(".asimov", "ledger.yml"),
         )
     elif config.get("ledger", "engine") == "gitlab":
         raise NotImplementedError(

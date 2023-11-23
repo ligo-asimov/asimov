@@ -4,7 +4,8 @@ Trigger handling code.
 
 import os
 import pathlib
-import logging
+from copy import deepcopy
+import configparser
 import subprocess
 
 import networkx as nx
@@ -75,15 +76,15 @@ class Event:
         self.logger = logger.getChild("event").getChild(f"{self.name}")
         self.logger.setLevel(LOGGER_LEVEL)
 
-        pathlib.Path(os.path.join(config.get("logging", "directory"), name)).mkdir(
-            parents=True, exist_ok=True
-        )
-        logfile = os.path.join(config.get("logging", "directory"), name, "asimov.log")
+        # pathlib.Path(os.path.join(config.get("logging", "directory"), name)).mkdir(
+        #    parents=True, exist_ok=True
+        # )
+        # logfile = os.path.join(config.get("logging", "directory"), name, "asimov.log")
 
-        fh = logging.FileHandler(logfile)
-        formatter = logging.Formatter("%(asctime)s - %(message)s", "%Y-%m-%d %H:%M:%S")
-        fh.setFormatter(formatter)
-        self.logger.addHandler(fh)
+        # fh = logging.FileHandler(logfile)
+        # formatter = logging.Formatter("%(asctime)s - %(message)s", "%Y-%m-%d %H:%M:%S")
+        # fh.setFormatter(formatter)
+        # self.logger.addHandler(fh)
 
         if "working_directory" in kwargs:
             self.work_dir = kwargs["working_directory"]
@@ -179,16 +180,21 @@ class Event:
         """
         Find the calibration envelope locations.
         """
-        if ("calibration" in self.meta["data"]) and (
+
+        if "calibration" not in self.meta["data"]:
+            self.logger.warning("There are no calibration envelopes for this event.")
+
+        elif ("calibration" in self.meta["data"]) and (
             set(self.meta["interferometers"]).issubset(
                 set(self.meta["data"]["calibration"].keys())
             )
         ):
             pass
+
         else:
-            raise DescriptionException(
-                f"""Some of the required calibration envelopes are missing from this issue."""
-                f"""{set(self.meta['interferometers']) - set(self.meta['data']['calibration'].keys())}"""
+            self.logger.warning(
+                f"""Some of the calibration envelopes are missing from this event. """
+                f"""{set(self.meta['interferometers']) - set(self.meta['data']['calibration'].keys())} are absent."""
             )
 
     def _check_psds(self):
@@ -299,7 +305,6 @@ class Event:
                 try:
                     data["data"]["calibration"] = find_calibrations(data["event time"])
                 except ValueError:
-                    data["data"]["calibration"] = {}
                     logger.warning(
                         f"Could not find calibration files for {data['name']}"
                     )
@@ -470,10 +475,9 @@ class Event:
 
         card += """</div>"""
 
-        card += """
-        </div>
-        </div>
-        """
+        # card += """
+        # </div></div>
+        # """
 
         return card
 

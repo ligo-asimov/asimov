@@ -13,7 +13,7 @@ from asimov import config
 from asimov.utils import set_directory
 
 from ..git import AsimovFileNotFound
-from ..pipeline import Pipeline, PipelineException
+from ..pipeline import Pipeline, PipelineException, PipelineLogger
 from ..storage import AlreadyPresentException, Store
 
 
@@ -135,6 +135,11 @@ class BayesWave(Pipeline):
             f"--trigger-time={gps_time}",
         ]
 
+        if "cache files" in self.production.meta["data"]:
+            if len(self.production.meta["data"]["cache files"]) > 0:
+                # Skip the datafind step if the data is already provided.
+                command += ["--skip-datafind"]
+
         if "copy frames" in self.production.meta["scheduler"]:
             if self.production.meta["scheduler"]["copy frames"]:
                 command += ["--copy-frames"]
@@ -143,9 +148,9 @@ class BayesWave(Pipeline):
             if self.production.meta["scheduler"]["osg"]:
                 command += ["--transfer-files"]
 
-                if "copy frames" not in self.production.meta['scheduler']:
+                if "copy frames" not in self.production.meta["scheduler"]:
                     command += ["--osg-deploy"]
-                if "copy frames" in self.production.meta['scheduler']:
+                if "copy frames" in self.production.meta["scheduler"]:
                     if not self.production.meta["scheduler"]["copy frames"]:
                         command += ["--osg-deploy"]
 
@@ -439,11 +444,11 @@ class BayesWave(Pipeline):
         xml_psds = {}
         for det in self.production.meta["interferometers"]:
             asset = os.path.join(
-                f"{self.production.event.repository.directory}",
-                f"{self.production.category}",
+                self.production.event.repository.directory,
+                self.production.category,
                 "psds",
                 f"{self.production.meta['likelihood']['sample rate']}",
-                f"{det.upper()}-psd.xml.gz",
+                f"{det.upper()}-psd.xml.gz"
             )
             if os.path.exists(asset):
                 xml_psds[det] = os.path.abspath(asset)

@@ -1,8 +1,6 @@
 """
 Code for the project ledger.
 """
-from functools import reduce
-
 import yaml
 
 import os

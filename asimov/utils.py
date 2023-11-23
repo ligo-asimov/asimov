@@ -43,7 +43,9 @@ def find_calibrations(time):
         dir = "/home/cal/public_html/uncertainty/O3C01"
         virgo = "/home/cbc/pe/O3/calibrationenvelopes/Virgo/V_O3a_calibrationUncertaintyEnvelope_magnitude5percent_phase35milliradians10microseconds.txt"  # NoQA
     elif time > 1268306607:
-        raise ValueError("This method cannot be used to add calibration envelope data beyond O3.")
+        raise ValueError(
+            "This method cannot be used to add calibration envelope data beyond O3."
+        )
     data_llo = glob.glob(f"{dir}/L1/*LLO*FinalResults.txt")
     times_llo = {
         int(datum.split("GPSTime_")[1].split("_C0")[0]): datum for datum in data_llo
