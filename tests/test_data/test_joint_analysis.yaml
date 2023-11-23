@@ -45,7 +45,7 @@ pipeline: JointPipe
 kind: ProjectAnalysis
 # This kind of analysis is used where multiple events need to be
 # analysed jointly.
-name: JointTestReview
+name: JointTestReview2
 subjects:
 - GW150914_095045
 - GW151226_033853

@@ -145,7 +145,13 @@ class YAMLLedger(Ledger):
         --------
         """
         if isinstance(analysis, ProjectAnalysis):
-            self.data["project analyses"].append(analysis.to_dict())
+            names = [ana["name"] for ana in self.data["project analyses"]]
+            if not analysis.name in names:
+                self.data["project analyses"].append(analysis.to_dict())
+            else:
+                raise ValueError(
+                    "An analysis with that name already exists in the ledger."
+                )
         else:
             event.add_production(analysis)
             self.events[event.name] = event.to_dict()
