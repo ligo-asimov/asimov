@@ -1,3 +1,21 @@
+0.5.5
+=====
+
+This is a bug-fix release, and doesn't introduce any new features.
+
+Breaking changes
+----------------
+
+This release is not believed to introduce any backwards-incompatible changes.
+
+Merges
+------
+
+
++ `ligo!115 <https://git.ligo.org/asimov/asimov/-/merge_requests/121>`_: Fixes a bug with bilby_pipe configurations when frame files are passed
++ `ligo!116 <https://git.ligo.org/asimov/asimov/-/merge_requests/116>`_: Allows configuration of a handful of bilby parameters and updates defaults to align with current bilby_pipe releases.
+
+
 0.5.4
 =====
 
