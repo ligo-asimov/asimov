@@ -11,7 +11,7 @@ This release is not believed to introduce any backwards-incompatible changes.
 Merges
 ------
 
-+ `ligo!115 <https://git.ligo.org/asimov/asimov/-/merge_requests/121>`_: Fixes a bug with bilby_pipe configurations when frame files are passed
++ `ligo!115 <https://git.ligo.org/asimov/asimov/-/merge_requests/115>`_: Fixes a bug with Bayeswave f_low specification 
 + `ligo!116 <https://git.ligo.org/asimov/asimov/-/merge_requests/116>`_: Allows configuration of a handful of bilby parameters and updates defaults to align with current bilby_pipe releases.
 + `ligo!121 <https://git.ligo.org/asimov/asimov/-/merge_requests/121>`_: Fixes a bug with bilby_pipe when frame files as specified in a frame_dict.
 
