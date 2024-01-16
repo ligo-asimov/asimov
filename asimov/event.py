@@ -683,7 +683,9 @@ class Production:
                 "segment length" in self.meta["data"]
             ):
                 self.meta["likelihood"]["segment start"] = (
-                    self.meta["event time"] - self.meta["data"]["segment length"] + 2
+                    self.meta["event time"]
+                    - self.meta["data"]["segment length"]
+                    + self.meta.get("likelihood", {}).get("post trigger time", 2)
                 )
                 # self.event.meta['likelihood']['segment start'] = self.meta['data']['segment start']
 

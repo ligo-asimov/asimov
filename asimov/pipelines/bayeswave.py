@@ -45,6 +45,9 @@ class BayesWave(Pipeline):
             self.category = "C01_offline"
             self.logger.info("Assuming C01_offline calibration.")
 
+        if not production.meta.get("quality", {}).get("lowest minimum frequency", None):
+            production.meta["quality"]["lowest minimum frequency"] = self.flow
+
     def build_dag(self, user=None, dryrun=False):
         """
         Construct a DAG file in order to submit a production to the
@@ -278,6 +281,17 @@ class BayesWave(Pipeline):
 
         self.production.status = "uploaded"
 
+    @property
+    def flow(self):
+        """
+        Calculate the lower frequency for the bayeswave job.
+
+        This is required as bayeswave needs to be passed the lowest
+        minimum frequency from the list of interferometer
+        lower frequencies.
+        """
+        return min(self.production.meta["quality"]["minimum frequency"].values())
+
     def before_submit(self):
         """
         Horribly hack the sub files to add `request_disk`
@@ -453,7 +467,7 @@ class BayesWave(Pipeline):
                 self.production.category,
                 "psds",
                 f"{self.production.meta['likelihood']['sample rate']}",
-                f"{det.upper()}-psd.xml.gz"
+                f"{det.upper()}-psd.xml.gz",
             )
             if os.path.exists(asset):
                 xml_psds[det] = os.path.abspath(asset)

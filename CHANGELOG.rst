@@ -1,3 +1,23 @@
+0.5.5
+=====
+
+This is a bug-fix release, and doesn't introduce any new features.
+
+Breaking changes
+----------------
+
+This release is not believed to introduce any backwards-incompatible changes.
+
+Merges
+------
+
++ `ligo!115 <https://git.ligo.org/asimov/asimov/-/merge_requests/121>`_: Fixes a bug with bilby_pipe configurations when frame files are passed
++ `ligo!116 <https://git.ligo.org/asimov/asimov/-/merge_requests/116>`_: Allows configuration of a handful of bilby parameters and updates defaults to align with current bilby_pipe releases.
++ `ligo!121 <https://git.ligo.org/asimov/asimov/-/merge_requests/121>`_: Fixes a bug with bilby_pipe when frame files as specified in a frame_dict.
++ `ligo!122 <https://git.ligo.org/asimov/asimov/-/merge_requests/122>`_: Adds a bayeswave_post disk request to the bayeswave config template.
++ `ligo!123 <https://git.ligo.org/asimov/asimov/-/merge_requests/123>`_: Fixes a bug related to filepaths and frame type specifications when bilby is using OSDF data retrieval.
+
+
 0.5.4
 =====
 
@@ -17,6 +37,7 @@ Merges
 + `ligo!112 <https://git.ligo.org/asimov/asimov/-/merge_requests/112>`_: Passes required environment variables to PESummary.
 + `ligo!113 <https://git.ligo.org/asimov/asimov/-/merge_requests/113>`_: Fixes a bug with asset retrieval in analyses with multiple requirements.
 + `ligo!115 <https://git.ligo.org/asimov/asimov/-/merge_requests/115>`_: Increases the default disk request for Bayeswave jobs.
+
 
 0.5.3
 =====
