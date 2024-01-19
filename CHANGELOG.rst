@@ -1,3 +1,19 @@
+0.5.6
+=====
+
+This is a bug-fix release, and doesn't introduce any new features.
+
+Breaking changes
+----------------
+
+This release is not believed to introduce any backwards-incompatible changes.
+
+Merges
+------
+
++ `ligo!124 <https://git.ligo.org/asimov/asimov/-/merge_requests/124>`_: Fixes a bug in the disk request for bayeswave_post in bayeswave_pipe.
+
+
 0.5.5
 =====
 
@@ -15,6 +31,7 @@ Merges
 + `ligo!116 <https://git.ligo.org/asimov/asimov/-/merge_requests/116>`_: Allows configuration of a handful of bilby parameters and updates defaults to align with current bilby_pipe releases.
 + `ligo!122 <https://git.ligo.org/asimov/asimov/-/merge_requests/122>`_: Adds a bayeswave_post disk request to the bayeswave config template.
 + `ligo!123 <https://git.ligo.org/asimov/asimov/-/merge_requests/123>`_: Fixes a bug related to filepaths and frame type specifications when bilby is using OSDF data retrieval.
+
 
 0.5.4
 =====
