@@ -1,6 +1,6 @@
 # This file defines the docker image for running olivaw.
 
-FROM python:3.7
+FROM python:3.10.14
 
 #WORKDIR /usr/src/app
 
