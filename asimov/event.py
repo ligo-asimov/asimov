@@ -670,6 +670,14 @@ class Production:
                         psd_rolloff * self.meta["likelihood"]["sample rate"] / 2
                     )
 
+        # Add a warning about roll-offs
+        if not ("roll off factor" in self.meta["likelihood"]) and (
+            "roll off time" in self.meta["likelihood"]
+        ):
+            self.logger.warning(
+                "Using the default roll off settings; note that these may result in spectral leakage."
+            )
+
         # Get the data quality recommendations
         if "quality" in self.event.meta:
             self.quality = self.event.meta["quality"]
