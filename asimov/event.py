@@ -671,9 +671,7 @@ class Production:
                     )
 
         # Add a warning about roll-offs
-        if not ("roll off factor" in self.meta["likelihood"]) and (
-            "roll off time" in self.meta["likelihood"]
-        ):
+        if not ("roll off time" in self.meta["likelihood"]):
             self.logger.warning(
                 "Using the default roll off settings; note that these may result in spectral leakage."
             )
