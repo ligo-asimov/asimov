@@ -662,10 +662,19 @@ class Production:
                 self.meta["quality"]["maximum frequency"] = {}
             # Account for the PSD roll-off with the 0.875 factor
             for ifo in self.meta["interferometers"]:
+                psd_rolloff = self.meta.get("likelihood", {}).get(
+                    "roll off factor", 0.875
+                )
                 if ifo not in self.meta["quality"]["maximum frequency"]:
                     self.meta["quality"]["maximum frequency"][ifo] = int(
-                        0.875 * self.meta["likelihood"]["sample rate"] / 2
+                        psd_rolloff * self.meta["likelihood"]["sample rate"] / 2
                     )
+
+        # Add a warning about roll-offs
+        if not ("roll off time" in self.meta["likelihood"]):
+            self.logger.warning(
+                "Using the default roll off settings (0.4-seconds); note that these may result in spectral leakage."
+            )
 
         # Get the data quality recommendations
         if "quality" in self.event.meta:
