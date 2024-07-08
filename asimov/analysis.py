@@ -133,13 +133,15 @@ class Analysis:
             template = f"{self.pipeline}.ini"
 
         pipeline = known_pipelines[self.pipeline]
-        if hasattr(pipeline, "config_template"):
-            template_file = pipeline.config_template
-        else:
-            try:
-                template_directory = config.get("templating", "directory")
-                template_file = os.path.join(f"{template_directory}", template)
-            except configparser.NoOptionError:
+
+        try:
+            template_directory = config.get("templating", "directory")
+            template_file = os.path.join(f"{template_directory}", template)
+
+        except (configparser.NoOptionError, configparser.NoSectionError):
+            if hasattr(pipeline, "config_template"):
+                template_file = pipeline.config_template
+            else:
                 from pkg_resources import resource_filename
 
                 template_file = resource_filename("asimov", f"configs/{template}")
