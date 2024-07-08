@@ -1,3 +1,20 @@
+0.5.7
+=====
+
+This is a bug-fix release, and doesn't introduce any new features.
+
+Breaking changes
+----------------
+
+This release is not believed to introduce any backwards-incompatible changes.
+
+Merges
+------
+
++ `ligo!133 <https://git.ligo.org/asimov/asimov/-/merge_requests/133>`_: Fix a bug with template discovery for pipeline plugins.
++ `ligo!144 <https://git.ligo.org/asimov/asimov/-/merge_requests/144>`_: Allow the PSD roll-off factor to be specified rather than hardcoded.
+
+  
 0.5.6
 =====
 
