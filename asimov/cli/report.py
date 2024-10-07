@@ -162,7 +162,7 @@ def status(event):
        The name of the event.
 
     """
-    for event in current_ledger.get_event(event):
+    for event in sorted(current_ledger.get_event(event), key=lambda e: e.name):
         click.secho(f"{event.name:30}", bold=True)
         if len(event.productions) > 0:
             click.secho("\tAnalyses", bold=True)
