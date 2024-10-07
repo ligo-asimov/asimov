@@ -104,6 +104,13 @@ def apply_via_plugin(event, hookname, **kwargs):
     for hook in discovered_hooks:
         if hook.name in hookname:
             hook.load()(ledger).run(event)
+            break
+    else:
+        click.echo(
+            click.style("●", fg="red")
+            + f"No hook found matching {hookname}. "
+            f"Installed hooks are {', '.join(discovered_hooks.names)}"
+        )
 
 
 @click.command()
