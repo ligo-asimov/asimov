@@ -2,11 +2,25 @@ import unittest
 import os
 import shutil
 import git
+
+from importlib import reload
+import contextlib
+import io
+from unittest.mock import patch
+
+from click.testing import CliRunner
+
+import asimov
+from asimov.event import Production
+from asimov.cli import review, project
+from asimov.ledger import YAMLLedger
 import asimov.event
 from asimov.cli.project import make_project
 from asimov.cli.application import apply_page
 from asimov.ledger import YAMLLedger
 
+EVENTS = ["GW150914_095045", "GW190924_021846", "GW190929_012149", "GW191109_010717"]
+pipelines = {"bayeswave"}
 
 TEST_YAML = """
 name: S000000xx
@@ -97,3 +111,96 @@ class ReviewTests(unittest.TestCase):
     def test_outputs_to_dict(self):
         """Check that dictionary output works"""
         self.assertEqual(self.event.productions[0].review.to_dicts()[0]['status'], 'REJECTED')
+
+
+class ReviewCliTests(unittest.TestCase):
+    """Test the CLI interfaces for review."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.cwd = os.getcwd()
+
+    def tearDown(self):
+        os.chdir(self.cwd)
+        shutil.rmtree(f"{self.cwd}/tests/tmp/")
+    
+    def setUp(self):
+        os.makedirs(f"{self.cwd}/tests/tmp/project")
+        os.chdir(f"{self.cwd}/tests/tmp/project")
+        runner = CliRunner()
+        result = runner.invoke(project.init,
+                               ['Test Project', '--root', f"{self.cwd}/tests/tmp/project"])
+        assert result.exit_code == 0
+        assert result.output == '● New project created successfully!\n'
+        self.ledger = YAMLLedger(".asimov/ledger.yml")
+
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):
+            apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe.yaml", event=None, ledger=self.ledger)
+            apply_page(file = "https://git.ligo.org/asimov/data/-/raw/main/defaults/production-pe-priors.yaml", event=None, ledger=self.ledger)
+            for event in EVENTS:
+                for pipeline in pipelines:
+                    apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{event}.yaml", event=None, ledger=self.ledger)
+                    apply_page(file = f"https://git.ligo.org/asimov/data/-/raw/main/tests/{pipeline}.yaml", event=event, ledger=self.ledger)
+
+    def test_add_review_to_event_reject(self):
+        """Check that the CLI can add an event review"""
+        with patch("asimov.current_ledger", new=YAMLLedger(".asimov/ledger.yml")):
+            reload(asimov)
+            reload(review)
+            runner = CliRunner()
+
+            for event in EVENTS:
+                result = runner.invoke(review.review,
+                                       ['add', event, "Prod0", "Rejected"])
+                self.assertTrue(f"{event}/Prod0 rejected" in result.output)     
+
+    def test_add_review_to_event_reject(self):
+        """Check that the CLI can add an event review"""
+        with patch("asimov.current_ledger", new=YAMLLedger(".asimov/ledger.yml")):
+            reload(asimov)
+            reload(review)
+            runner = CliRunner()
+
+            for event in EVENTS:
+                result = runner.invoke(review.review,
+                                       ['add', event, "Prod0", "Approved"])
+                self.assertTrue(f"{event}/Prod0 approved" in result.output)          
+
+    def test_add_review_to_event_unknown(self):
+        """Check that the CLI rejects an unknown review status"""
+        with patch("asimov.current_ledger", new=YAMLLedger(".asimov/ledger.yml")):
+            reload(asimov)
+            reload(review)
+            runner = CliRunner()
+
+            for event in EVENTS:
+                result = runner.invoke(review.review,
+                                       ['add', event, "Prod0", "Splorg"])
+                self.assertTrue(f"Did not understand the review status splorg" in result.output)                          
+
+    def test_show_review_no_review(self):
+        """Check that the CLI can show a review report with no reviews"""
+        with patch("asimov.current_ledger", new=YAMLLedger(".asimov/ledger.yml")):
+            reload(asimov)
+            reload(review)
+            runner = CliRunner()
+
+            for event in EVENTS:
+                result = runner.invoke(review.review,
+                                       ['status', event])
+                self.assertTrue(f"No review information exists for this production." in result.output)            
+
+    def test_show_review_with_review(self):
+        """Check that the CLI can show a review report with no reviews"""
+        with patch("asimov.current_ledger", new=YAMLLedger(".asimov/ledger.yml")):
+            reload(asimov)
+            reload(review)
+            runner = CliRunner()
+
+            for event in EVENTS:
+                result = runner.invoke(review.review,
+                                       ['add', event, "Prod0", "Approved"])                
+                result = runner.invoke(review.review,
+                                       ['status', event])
+                self.assertTrue(f"approved" in result.output)       
