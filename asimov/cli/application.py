@@ -104,6 +104,11 @@ def apply_via_plugin(event, hookname, **kwargs):
     for hook in discovered_hooks:
         if hook.name in hookname:
             hook.load()(ledger).run(event)
+            click.echo(
+                click.style("●", fg="green")
+                + f"{event} has been applied."
+            )
+
             break
     else:
         click.echo(
