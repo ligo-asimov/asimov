@@ -1,6 +1,7 @@
 """
 Review functions for asimov events.
 """
+
 import os
 
 import click
@@ -25,20 +26,41 @@ def add(event, production, status, message):
     """
     Add a review signoff or rejection to an event.
     """
+    valid = {"REJECTED", "APPROVED", "PREFERRED", "DEPRECATED"}
+    events = current_ledger.get_event(event)
+    if events is None:
+        click.echo(
+            click.style("●", fg="red") + f" Could not find an event called {event}"
+        )
+    else:
+        for event in events:
+            production = [
+                production_o
+                for production_o in event.productions
+                if production_o.name == production
+            ][0]
+            click.secho(event.name, bold=True)
 
-    for event in current_ledger.get_event(event):
-        production = [
-            production_o
-            for production_o in event.productions
-            if production_o.name == production
-        ][0]
-        click.secho(event.name, bold=True)
-        click.secho(production.name)
-        message = ReviewMessage(message=message, status=status, production=production)
-        production.review.add(message)
+            if status.upper() in valid:
+                message = ReviewMessage(
+                    message=message, status=status, production=production
+                )
+                production.review.add(message)
+            else:
+                click.echo(
+                    click.style("●", fg="red")
+                    + f" Did not understand the review status {status.lower()}."
+                    + " The review status must be one of "
+                    + "{APPROVED, REJECTED, PREFERRED, DEPRECATED}"
+                )
 
-        if hasattr(event, "issue_object"):
-            production.event.update_data()
+            if hasattr(event, "issue_object"):
+                production.event.update_data()
+            current_ledger.update_event(event)
+            click.echo(
+                click.style("●", fg="green")
+                + f" {event.name}/{production.name} {status.lower()}"
+            )
 
 
 @click.argument("production", default=None, required=False)
@@ -48,10 +70,8 @@ def status(event, production):
     """
     Show the review status of an event.
     """
-    if isinstance(event, str):
-        event = [event]
     for event in current_ledger.get_event(event):
-        click.secho(event.title, bold=True)
+        click.secho(event.name, bold=True)
         if production:
             productions = [
                 prod for prod in event.productions if prod.name == production
@@ -61,8 +81,8 @@ def status(event, production):
 
         for production in productions:
             click.secho(f"\t{production.name}", bold=True)
-            if "review" in production.meta:
-                click.echo(production.meta["review"])
+            if production.review:
+                click.echo(f"\t\t {production.review.status.lower()}")
             else:
                 click.secho("\t\tNo review information exists for this production.")
 
