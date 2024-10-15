@@ -51,7 +51,7 @@ where you should replace ``<REPLACE WITH EVENT>`` with the name of the event you
 		
 The job this creates will be called ``psd-generation``, so you'll need to specify this as a requirement in jobs which need the PSDs it produces as a dependency using the syntax
 
-.. clode-block:: yaml
+.. code-block:: yaml
 
 		 needs:
 		   - psd-generation

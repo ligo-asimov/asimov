@@ -11,14 +11,6 @@ asimov.git module
    :undoc-members:
    :show-inheritance:
 
-asimov.gitlab module
---------------------
-
-.. automodule:: asimov.gitlab
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 asimov.ini module
 -----------------
 

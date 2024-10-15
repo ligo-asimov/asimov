@@ -6,6 +6,28 @@ Installing Asimov
 There are lots of ways of installing ``asimov``, and the best way of getting access to it depends both on your local setup, and on whether you have access to IGWN computing resources.
 ``asimov`` was initially designed for use in analysing gravitational wave detector data, and so some of the information in this manual will be aimed directly at users from that background.
 
+.. note::
+   We generally recommend installing ``asimov`` using ``conda``, as this will give you access to all of the other packages it works with most easily.
+
+Installation using ``conda``
+----------------------------
+
+``asimov`` is packaged and available for use in conda environments via conda-forge.
+Because ``asimov`` is designed to work with many other packages it is normally easiest to create a new conda environment using our environment specification file:
+
+.. code-block:: console
+
+		$ conda create --name asimov --file https://git.ligo.org/asimov/asimov/-/raw/master/conda/environment.txt
+
+where you can choose whatever name you wish to replace ``asimov`` in the ``--name`` option.
+
+Alternatively you can install into an existing conda environment from conda forge.
+You can do this by ensuring that your conda environment is activated, and then running
+
+.. code-block:: console
+
+		$ conda install -c conda-forge asimov
+
 Installation using ``pip``
 --------------------------
 
@@ -34,16 +56,7 @@ You can then install asimov using ``pip``.
 		$ pip install asimov
 
 
-Installation using ``conda``
-----------------------------
-
-It is also possible to install asimov in a conda environment from conda forge.
-You can do this by ensuring that your conda environment is activated, and then running
-
-.. code-block:: console
-
-		$ conda install -c conda-forge ligo-asimov
-
+		
 Installation from source
 ------------------------
 
