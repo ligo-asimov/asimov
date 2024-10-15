@@ -1,4 +1,5 @@
 """Defines the interface with generic analysis pipelines."""
+
 import configparser
 import os
 import subprocess
@@ -331,9 +332,13 @@ class PESummaryPipeline(PostPipeline):
 
         if "calibration" in self.production.meta["data"]:
             calibration = [
-                os.path.abspath(os.path.join(self.production.repository.directory, cal))
-                if not cal[0] == "/"
-                else cal
+                (
+                    os.path.abspath(
+                        os.path.join(self.production.repository.directory, cal)
+                    )
+                    if not cal[0] == "/"
+                    else cal
+                )
                 for cal in self.production.meta["data"]["calibration"].values()
             ]
         else:
@@ -415,6 +420,15 @@ class PESummaryPipeline(PostPipeline):
         for key, value in psds.items():
             command += [f"{key}:{value}"]
 
+        if "keywords" in self.meta:
+            for key, argument in self.meta["keywords"]:
+                if argument is not None and len(key) > 1:
+                    command += [f"--{key}", f"{argument}"]
+                elif argument is not None and len(key) == 1:
+                    command += [f"-{key}", f"{argument}"]
+                else:
+                    command += [f"{key}"]
+
         with utils.set_directory(self.production.rundir):
             with open(f"{self.production.name}_pesummary.sh", "w") as bash_file:
                 bash_file.write(
@@ -428,7 +442,7 @@ class PESummaryPipeline(PostPipeline):
         if dryrun:
             print("PESUMMARY COMMAND")
             print("-----------------")
-            print(command)
+            print(" ".join(command))
 
         submit_description = {
             "executable": config.get("pesummary", "executable"),
