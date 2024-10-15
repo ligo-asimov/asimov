@@ -52,6 +52,10 @@ class YAMLLedger(Ledger):
             for event in self.data["events"]
         ]
         self.events = {ev["name"]: ev for ev in self.data["events"]}
+        self._all_events = [
+            Event(**self.events[event], ledger=self)
+            for event in self.events.keys()
+            ]
         self.data.pop("events")
 
     @classmethod
@@ -147,9 +151,7 @@ class YAMLLedger(Ledger):
         if event:
             return [Event(**self.events[event], ledger=self)]
         else:
-            return [
-                Event(**self.events[event], ledger=self) for event in self.events.keys()
-            ]
+            return self._all_events
 
     def get_productions(self, event=None, filters=None):
         """Get a list of productions either for a single event or for all events.

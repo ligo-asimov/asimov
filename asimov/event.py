@@ -609,6 +609,8 @@ class Production:
             )
 
         # Update with the event and project defaults
+        if "ledger" in self.event.meta:
+            self.event.meta.pop("ledger")
         self.meta = update(self.meta, deepcopy(self.event.meta))
         if "productions" in self.meta:
             self.meta.pop("productions")
@@ -710,7 +712,7 @@ class Production:
             approximant = self.meta.pop("approximant")
             self.meta["waveform"]["approximant"] = approximant
         if "reference frequency" in self.meta["likelihood"]:
-            self.logger.warn(
+            self.logger.warning(
                 "Found deprecated ref freq information, "
                 "moving to waveform area of ledger"
             )
@@ -881,6 +883,9 @@ class Production:
             defaults["postprocessing"] = deepcopy(
                 self.event.ledger.data["postprocessing"]
             )
+
+        if "ledger" in self.event.meta:
+            self.event.meta.pop("ledger")
 
         defaults = update(defaults, deepcopy(self.event.meta))
 
