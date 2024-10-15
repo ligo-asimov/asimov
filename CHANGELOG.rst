@@ -1,3 +1,42 @@
+0.5.8
+=====
+
+This is a bug-fix release, which does not introduce any new backwards-incompatible features, but provides a number of small quality-of-life improvements.
+These include bug-fixes to various aspects of the CLI, and improvements to make using the CLI easier.
+This release also allows keyword arguments to be specified more easily to PESummary, and allows the environment of bilby and bayeswave executables to be specified on a per-analysis basis.
+
+Breaking changes
+----------------
+
+This release is not believed to introduce any backwards-incompatible changes.
+
+Merges
+------
+
++ `ligo!140 <https://git.ligo.org/asimov/asimov/-/merge_requests/140>`_: Change CLI outputs to list events in alphanumeric order.
++ `ligo!145 <https://git.ligo.org/asimov/asimov/-/merge_requests/145>`_: Adds an error message if an unavailable pipeline is requested by an analysis.
++ `ligo!149 <https://git.ligo.org/asimov/asimov/-/merge_requests/149>`_: Fixes errors with various parts of the analysis review CLI, and improves error and information messages.
++ `ligo!151 <https://git.ligo.org/asimov/asimov/-/merge_requests/151>`_: Adds a confirmation message when a plugin is used to apply a new event to a project.
++ `ligo!152 <https://git.ligo.org/asimov/asimov/-/merge_requests/152>`_: Allows keyword arguments to be specified for summarypages jobs via a blueprint.
++ `ligo!153 <https://git.ligo.org/asimov/asimov/-/merge_requests/153>`_: Allows the analysis executable to be explicitly set from a blueprint for bilby and bayeswave.
+
+0.5.7
+=====
+
+This is a bug-fix release, and doesn't introduce any new features.
+
+Breaking changes
+----------------
+
+This release is not believed to introduce any backwards-incompatible changes.
+
+Merges
+------
+
++ `ligo!133 <https://git.ligo.org/asimov/asimov/-/merge_requests/133>`_: Fix a bug with template discovery for pipeline plugins.
++ `ligo!144 <https://git.ligo.org/asimov/asimov/-/merge_requests/144>`_: Allow the PSD roll-off factor to be specified rather than hardcoded.
+
+  
 0.5.6
 =====
 
