@@ -36,26 +36,6 @@ pylint:
       codequality: codeclimate.json
     when: always
 
-test-python-36:
-  stage: test
-  image: python:3.6
-  script:
-  - git config --global user.email "you@example.com"
-  - git config --global user.name "Your Name"
-  - pip install -r requirements.txt
-  - python setup.py install
-  - python -m unittest discover tests/
-
-test-python-37:
-  stage: test
-  image: python:3.7
-  script:
-  - git config --global user.email "you@example.com"
-  - git config --global user.name "Your Name"
-  - pip install -r requirements.txt
-  - python setup.py install
-  - python -m unittest discover tests/
-
 test-python-38:
   stage: test
   image: python:3.8
@@ -101,6 +81,31 @@ test-python-310:
     - python setup.py install
     - python -m unittest discover tests/
 
+test-python-311:
+  stage: test
+  allow_failure: True  
+  image: python:3.11
+  script:
+    - git config --global user.email "you@example.com"
+    - git config --global user.name "Your Name"
+    - pip install -r requirements.txt
+    - pip install coverage
+    - python setup.py install
+    - python -m unittest discover tests/
+
+test-python-312:
+  stage: test
+  allow_failure: True
+  image: python:3.12
+  script:
+    - git config --global user.email "you@example.com"
+    - git config --global user.name "Your Name"
+    - pip install -r requirements.txt
+    - pip install coverage
+    - python setup.py install
+    - python -m unittest discover tests/
+    
+    
 # Build docs for multiple code versions
 pages:
   stage: build

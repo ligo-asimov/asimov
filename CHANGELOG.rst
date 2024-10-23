@@ -5,6 +5,8 @@ This is a bug-fix release, which does not introduce any new backwards-incompatib
 These include bug-fixes to various aspects of the CLI, and improvements to make using the CLI easier.
 This release also allows keyword arguments to be specified more easily to PESummary, and allows the environment of bilby and bayeswave executables to be specified on a per-analysis basis.
 
+We have ceased testing 0.5.8 against python 3.6 and python 3.7, and will drop support for these entirely after the next release.
+
 Breaking changes
 ----------------
 
