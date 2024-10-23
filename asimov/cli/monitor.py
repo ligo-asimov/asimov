@@ -120,7 +120,7 @@ def monitor(ctx, event, update, dry_run, chain):
         )
         sys.exit()
 
-    for event in ledger.get_event(event):
+    for event in sorted(ledger.get_event(event), key=lambda e: e.name):
         stuck = 0
         running = 0
         finish = 0
