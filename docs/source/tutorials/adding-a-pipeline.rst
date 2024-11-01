@@ -189,8 +189,173 @@ There might be circumstances where simply checking for the existence of a file i
 Templating your config file
 ---------------------------
 
-Telling asimov about your pipeline
+The majority of the work required to configure your analysis goes into creating its configuration file. Configuration files can be very large, but in this tutorial I'll start by creating a simple one which you can build on.
+
+Let's have a look at (part of) one of pyRing's example configuration files.
+
+.. code-block:: toml
+
+   [input]
+
+   run-type=full
+   pesummary=0
+   screen-output=1
+   output=gw150914_DS_quick_example
+   data-H1=data/Real_data/GW150914/H-H1_GWOSC_4KHZ_R1-1126259447-32.txt
+   data-L1=data/Real_data/GW150914/L-L1_GWOSC_4KHZ_R1-1126259447-32.txt
+   trigtime=1126259462.4232266
+   detectors=H1,L1
+   template=Damped-sinusoids
+   # Number of: {"scalar", "vector", "tensor"} modes.
+   n-ds-modes={"s": 0, "v": 0, "t": 1}
+   sky-frame = equatorial
+
+Right now this is set up to work on GW150914_095045 only; we can start by templating some of these values so that Asimov can substitute the correct values for the event the analysis is working on. Asimov uses the ``liquid`` language for templating, which uses double curly brackets to indicate a substitution:
+
+.. code-block:: toml
+
+   trigtime={{ production.meta['event time'] }}
+
+Most of the information which we'll need are in the ``production.meta`` variable, which is a dictionary containing all of the data which Asimov knows about the analysis.
+
+Asimov can use the ``asimov-gwdata`` pipeline to retrieve GWOSC data, and then pass the paths of the frame files to Asimov. We can add this to the template like this:
+
+.. code-block:: toml
+
+   {%- assign ifos = production.meta['interferometers'] -%}
+   {%- if data['data files'].size > 0 %}
+   # Add data which asimov has already downloaded, e.g. via asimov-gwdata
+   {%- for ifo in ifos %}
+   data-{{ifo}}={{data['data files'][ifo]}}
+   {%- endfor %}
+   {%- else %}
+   # Download data for this analysis
+   download-data=1
+   {%- endif %}
+
+We can keep adding additional templated variables like this, and we'll end up with something like this:
+
+.. code-block:: toml
+
+   {%- if production.event.repository -%}
+   {%- assign repo_dir = production.event.repository.directory -%}
+   {%- else -%}
+   {%- assign repo_dir = "." -%}
+   {%- endif -%}
+   {%- assign meta = production.meta -%}
+   {%- assign sampler = production.meta['sampler'] -%}
+   {%- assign scheduler = production.meta['scheduler'] -%}
+   {%- assign likelihood = production.meta['likelihood'] -%}
+   {%- assign priors = production.meta['priors'] -%}
+   {%- assign data = production.meta['data'] -%}
+   {%- assign quality = production.meta['quality'] -%}
+   {%- assign ifos = production.meta['interferometers'] -%}
+
+
+   [input]
+
+   run-type=full
+   pesummary=0
+   {%- if data['data files'].size > 0 %}
+   # Add data which asimov has already downloaded, e.g. via asimov-gwdata
+   {%- for ifo in ifos %}
+   data-{{ifo}}={{data['data files'][ifo]}}
+   {%- endfor %}
+   {%- else %}
+   # Download data for this analysis
+   download-data=1
+   {%- endif %}
+
+   output={{ production.rundir }}
+
+   datalen-download={{ data['segment length'] | default: 64.0 }}
+   trigtime={{ production.meta['event time'] }}
+   detectors={% for ifo in ifos %}{{ifo}},{% endfor %}
+   template=Damped-sinusoids
+   # Number of: {"scalar", "vector", "tensor"} modes.
+   n-ds-modes={"s": 0, "v": 0, "t": 1}
+   sky-frame = equatorial
+   screen-output=1
+
+   [Sampler settings]
+   nlive=256
+   maxmcmc=256
+   seed=1234
+
+   [Priors]
+
+   mf-time-prior=67.9
+   #10Mf after the peaktime
+   fix-t=0.00335
+   fix-ra=1.1579
+   fix-dec=-1.1911
+   logA_t_0-min=-21
+   logA_t_0-max=-20.5
+   f_t_0-min=220
+   f_t_0-max=270
+   tau_t_0-min=0.001
+   tau_t_0-max=0.011
+
+   [Injection]
+
+   [Plot]
+
+   # imr-samples=data/Real_data/GW150914/GW150914_LAL_IMRPhenomP_O1_GWOSC_Mf_af_samples.txt
+
+We've still got more work to do, as there are a lot of hard-coded values left, but this should be able to get you started. You can have a look at more complete configuration templates like `this one <https://git.ligo.org/asimov/asimov/-/blob/review/asimov/configs/bilby.ini>`_ for bilby.
+
+We now need to save this as ``config_template.ini`` in the same directory as the ``asimov.py`` file.
+
+We'll need to make sure that this file gets packaged when we make the python package. We can do this by adding the file to the ``MANIFEST.in`` file (which is in the root of your project's repository):
+
+.. code-block:: toml
+
+   include pyRing/config_template.ini
+
+Telling Asimov about your pipeline
 ----------------------------------
+
+The final bit of engineering we'll need to do is to add some information to the installation script for the package. ``pyRing`` uses ``setup.py`` to do this, and we need to add an "entrypoint" so that Asimov can discover the pipeline. I've shortened the ``setup.py`` function here for clarity, but we just need to add some information to the ``entry_points`` variable in the ``setup()`` function:
+
+.. code-block:: python
+
+   setup(
+       # metadata
+       name="pyRingGW",
+       ...
+       entry_points={
+           "console_scripts": [
+               "pyRing = pyRing.pyRing:main",
+           ],
+           "asimov.pipelines": [
+                  "pyRing = pyRing.asimov:pyRing"
+              ]
+       },
+       ...
+       )
+
+The entry point needs to be ``asimov.pipelines``, and since we're only specifying a single pipeline we make a list with just one entry. The pipeline will be called ``pyRing`` by Asimov, and the class which describes it has an import path of ``pyRing.asimov`` and is called ``pyRing`` which gives is the rather complex-looking syntax above.
 
 Writing blueprints for your pipeline
 ------------------------------------
+
+We now have everything which we need to allow Asimov to set up analyses using the pyRing pipeline, but in order to create analyses using it we'll need to write a blueprint.
+
+If you've looked at the tutorials for running parameter estimation with bilby these should be fairly familiar, and at the very simplest for pyRing one will look something like this:
+
+.. code-block:: yaml
+
+   kind: analysis
+   pipeline: pyRing
+   comment: An example pyRing analysis
+   name: pyring-test
+
+Assuming that we've set everything up in a similar way to running PE on GW150914_095045, then we can simply add this analysis to the event by running
+
+.. code-block:: bash
+
+   $ asimov apply -f pyring-test.yaml -e GW150914_095045
+
+assuming that we saved the blueprint as ``pyring-test.yaml``.
+
+And that's the very basics of adding a new pipeline to Asimov.

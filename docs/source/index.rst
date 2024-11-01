@@ -141,7 +141,6 @@ Users' guide
    :maxdepth: 1
    :caption: Pipeline Guides
 
-   pipelines
    pipelines/lalinference
    pipelines/bilby
    pipelines/rift
