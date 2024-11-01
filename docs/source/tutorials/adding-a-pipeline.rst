@@ -1,6 +1,9 @@
 Integrating a new pipeline with Asimov
 ======================================
 
+.. note::
+   Tutorial by Daniel Williams, using ``asimov 0.5.8``.
+
 This guide is intended to help you to make your code with asimov.
 
 Asimov is able to automate the process of configuring, running, and monitoring analyses at scale, and can make managing large numbers of similar analyses easy while ensuring that everything is readily reproducible.
