@@ -165,6 +165,7 @@ Developers' Guide
 -----------------
 
 .. toctree::
+   :maxdepth: 1
    :caption: Development Guide
 
    contributing.rst
@@ -184,6 +185,16 @@ Developers' Guide
    hooks
 
    building-docs
+
+Tutorials
+---------
+
+.. toctree::
+   :maxdepth: 1
+   :Caption: Tutorials
+
+   tutorials/adding-a-pipeline.rst
+
    
 Python API
 ----------
@@ -210,7 +221,7 @@ LIGO Analysis Cookbook
    ligo-cookbook/bayeswave
    ligo-cookbook/bilby
    ligo-cookbook/working-with-gwosc
-   
+
 Indices and tables
 ------------------
 
