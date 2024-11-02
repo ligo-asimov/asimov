@@ -192,8 +192,9 @@ Tutorials
    :maxdepth: 1
    :Caption: Tutorials
 
-   tutorials/adding-a-pipeline.rst
-
+   tutorials/analysing-gw150914
+   tutorials/adding-a-pipeline
+   
    
 Python API
 ----------
