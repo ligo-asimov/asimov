@@ -1,6 +1,7 @@
 """
 Olivaw management commands
 """
+
 import os
 import pathlib
 
@@ -12,6 +13,7 @@ from asimov import condor
 from asimov import LOGGER_LEVEL
 from asimov.event import DescriptionException
 from asimov.pipeline import PipelineException
+from asimov.git import EventRepo
 
 
 @click.group(chain=True)
@@ -42,6 +44,32 @@ def build(event, dryrun):
     """
     logger = asimov.logger.getChild("cli").getChild("manage.build")
     logger.setLevel(LOGGER_LEVEL)
+
+    for analysis in ledger.project_analyses:
+        if analysis.status in {"ready"}:
+            # Need to ensure a directory exists for these!
+            subj_string = "_".join([f"{subject}" for subject in analysis._subjects])
+            project_analysis_dir = os.path.join(
+                "checkouts", "project-analyses", subj_string
+            )
+            if not os.path.exists(project_analysis_dir):
+                os.makedirs(project_analysis_dir)
+            click.echo(
+                click.style("●", fg="green")
+                + f" Building project analysis {analysis.name}"
+            )
+
+            analysis.pipeline.before_config()
+
+            analysis.make_config(
+                filename=os.path.join(project_analysis_dir, f"{analysis.name}.ini"),
+                dryrun=dryrun,
+            )
+            click.echo(
+                click.style("●", fg="green")
+                + f" Created configuration for {analysis.name}"
+            )
+
     for event in ledger.get_event(event):
 
         click.echo(f"● Working on {event.name}")
@@ -138,6 +166,210 @@ def submit(event, update, dryrun):
     """
     logger = asimov.logger.getChild("cli").getChild("manage.submit")
     logger.setLevel(LOGGER_LEVEL)
+
+    # this should add the required repository field to the project analysis
+    # with the correct type
+    # FIXME: for now, this only accountd for the case where we have multiple analysis
+    # done but not yet several productions for the same event and pipelines. This would
+    # require extra checks when adding to the dictionary
+    interest_dict = {}
+    for analysis in ledger.project_analyses:
+        if analysis.pipeline.name not in interest_dict.keys():
+            interest_dict[analysis.pipeline.name] = []
+        if "interest status" in analysis.meta.keys():
+            interest_dict[analysis.pipeline.name].append(
+                {
+                    "interest status": analysis.meta["interest status"],
+                    "subjects": set(analysis.subjects),
+                }
+            )
+
+    for analysis in ledger.project_analyses:
+        # need to change the logic of analysis set up as to account for
+        # dependencies
+        to_analyse = True
+        extra_prio = False
+        if analysis.status not in {"ready"}:
+            to_analyse = False
+        elif analysis._needs:
+            # check if the parent jobs are said to be interesting
+            # this does not account for the old logic in the project analyses
+            interested_pipelines = 0
+            for old_analysis in analysis._needs:
+                if old_analysis in interest_dict.keys():
+                    if len(interest_dict[old_analysis]) > 0:
+                        for cases in interest_dict[old_analysis]:
+                            if cases["interest status"] is True and cases[
+                                "subjects"
+                            ] == set(analysis.subjects):
+                                interested_pipelines += 1
+            if interested_pipelines < int(analysis.meta["needs settings"]["minimum"]):
+                to_analyse = False
+
+            # check if we need to account for extra priority comming from atlenstics
+            if "extra priority" in analysis.meta["needs settings"].keys():
+                if (
+                    analysis.meta["needs settings"]["extra priority"]
+                    == "atlenstics_compatibility"
+                ):
+                    # we need to verify if extra priority is needed
+                    if "atlenstics_compatibility" in interest_dict.keys():
+                        # need to add a check on the length of the list to avoid some failures
+                        if len(interest_dict["atlenstics_compatibility"]) > 0:
+                            if (
+                                interest_dict["atlenstics_compatibility"][0][
+                                    "interest status"
+                                ]
+                                is True
+                            ):
+                                extra_prio = True
+        running_and_requiring_priority_check = False
+        if analysis.status in {"running"} and analysis._needs:
+            if "needs settings" in analysis.meta.keys():
+                if "logic" in analysis.meta["needs settings"]:
+                    if analysis.meta["needs settings"]["logic"] == "add_priority":
+                        running_and_requiring_priority_check = True
+
+        if to_analyse:
+            # Need to ensure a directory exists for these!
+            subjects = analysis._subjects
+            subj_string = "_".join([f"{subjects[i]}" for i in range(len(subjects))])
+            project_analysis_dir = os.path.join(
+                "checkouts",
+                "project-analyses",
+                subj_string,
+            )
+            if analysis.repository is None:
+                analysis.repository = EventRepo.create(project_analysis_dir)
+            else:
+                if isinstance(analysis.repository, str):
+                    if (
+                        "git@" in analysis.repository
+                        or "https://" in analysis.repository
+                    ):
+                        analysis.repository = EventRepo.from_url(
+                            analysis.repository,
+                            analysis.event.name,
+                            directory=None,
+                            update=update,
+                        )
+                    else:
+                        analysis.repository = EventRepo.create(analysis.repository)
+
+            click.echo(
+                click.style("●", fg="green")
+                + f" Submitting project analysis {analysis.name}"
+            )
+            pipe = analysis.pipeline
+            try:
+                pipe.build_dag(dryrun=dryrun)
+            except PipelineException as e:
+                logger.error(
+                    "The pipeline failed to build a DAG file.",
+                )
+                logger.exception(e)
+                click.echo(
+                    click.style("●", fg="red") + f" Failed to submit {analysis.name}"
+                )
+            except ValueError:
+                logger.info("Unable to submit an unbuilt project analysis")
+                click.echo(
+                    click.style("●", fg="red")
+                    + f" Unable to submit {analysis.name} as it hasn't been built yet."
+                )
+                click.echo("Try running `asimov manage build` first.")
+            try:
+                pipe.submit_dag(dryrun=dryrun)
+                if not dryrun:
+                    click.echo(
+                        click.style("●", fg="green") + f" Submitted {analysis.name}"
+                    )
+                    analysis.status = "running"
+                    ledger.update_analysis_in_project_analysis(analysis)
+
+                    # directly add the extra priority related if needed
+                    if extra_prio:
+                        job_id = analysis.scheduler["job id"]
+                        extra_prio = 20
+                        condor.change_job_priority(job_id, extra_prio, use_old=False)
+
+            except PipelineException as e:
+                analysis.status = "stuck"
+                click.echo(
+                    click.style("●", fg="red") + f" Unable to submit {analysis.name}"
+                )
+                logger.exception(e)
+                ledger.update_analysis_in_project_analysis(analysis)
+                ledger.save()
+                logger.error(
+                    f"The pipeline failed to submit the DAG file to the cluster. {e}",
+                )
+            if not dryrun:
+                # Refresh the job list
+                job_list = condor.CondorJobList()
+                job_list.refresh()
+                # Update the ledger
+                ledger.save()
+
+        else:
+            click.echo(
+                click.style("●", fg="yellow")
+                + f"Project analysis {analysis.name} not ready to submit"
+            )
+
+        # addition to see if we need to adjust the priority of a running job
+        if running_and_requiring_priority_check:
+            # enquire about the old priority
+            try:
+                current_prio = int(
+                    condor.get_job_priority(analysis.meta["scheduler"]["job id"])
+                )
+            except TypeError:
+                # can happen when the job has done running
+                current_prio = 0
+
+            # calculate the priority it is expected to have
+            interested_pipelines = 0
+            for old_analysis in analysis._needs:
+                if old_analysis in interest_dict.keys():
+                    if len(interest_dict[old_analysis]) > 0:
+                        if interest_dict[old_analysis][-1]["interest status"] is True:
+                            interested_pipelines += 1
+            if interested_pipelines < 2:
+                theoretical_prio = 0
+            else:
+                theoretical_prio = int((interested_pipelines - 2) * 10)
+            extra_prio = False
+            if "extra priority" in analysis.meta["needs settings"].keys():
+                if (
+                    analysis.meta["needs settings"]["extra priority"]
+                    == "atlenstics_compatibility"
+                ):
+                    # we need to verify if extra priority is needed
+                    if "atlenstics_compatibility" in interest_dict.keys():
+                        if len(interest_dict["atlenstics_compatibility"]) > 0:
+                            if (
+                                interest_dict["atlenstics_compatibility"][0][
+                                    "interest status"
+                                ]
+                                is True
+                            ):
+                                extra_prio = True
+            if extra_prio:
+                theoretical_prio += 20
+
+            # check if we currently have the correct priority or if an adaptation is needed
+
+            if theoretical_prio != current_prio:
+                logger.info(
+                    f"Adjusting priority of {analysis.name} from {current_prio} to {theoretical_prio}"
+                )
+                condor.change_job_priority(
+                    analysis.meta["scheduler"]["job id"],
+                    theoretical_prio,
+                    use_old=False,
+                )
+
     for event in ledger.get_event(event):
         ready_productions = event.get_all_latest()
         for production in ready_productions:
@@ -178,15 +410,14 @@ def submit(event, update, dryrun):
                     pipe.build_dag(dryrun=dryrun)
                 except PipelineException as e:
                     logger.error(
-                        "The pipeline failed to build a DAG file.",
+                        "failed to build a DAG file.",
                     )
                     logger.exception(e)
                     click.echo(
                         click.style("●", fg="red")
                         + f" Unable to submit {production.name}"
                     )
-                except ValueError as e:
-                    print("ERROR", e)
+                except ValueError:
                     logger.info("Unable to submit an unbuilt production")
                     click.echo(
                         click.style("●", fg="red")
@@ -249,7 +480,6 @@ def results(event, update):
                     )
             except Exception:
                 click.echo("\t  (No results available)")
-            # print(production.results())
 
 
 @click.option(
@@ -287,4 +517,3 @@ def resultslinks(event, update, root):
                     )
             except AttributeError:
                 pass
-            # print(production.results())

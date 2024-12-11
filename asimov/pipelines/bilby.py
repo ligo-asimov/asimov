@@ -9,7 +9,10 @@ import configparser
 import time
 
 from .. import config
-from ..pipeline import Pipeline, PipelineException, PipelineLogger, PESummaryPipeline
+
+from ..pipeline import Pipeline, PipelineException, PipelineLogger
+from .. import auth
+from .pesummary import PESummary
 
 
 class Bilby(Pipeline):
@@ -30,10 +33,15 @@ class Bilby(Pipeline):
 
     def __init__(self, production, category=None):
         super(Bilby, self).__init__(production, category)
+        self.logger.warning(
+            "The Bilby interface built into asimov will be removed "
+            "in v0.7 of asimov, and replaced with an integration from an "
+            "external package."
+        )
         self.logger.info("Using the bilby pipeline")
 
         if not production.pipeline.lower() == "bilby":
-            raise PipelineException
+            raise PipelineException("Pipeline mismatch")
 
     def detect_completion(self):
         """
@@ -59,21 +67,14 @@ class Bilby(Pipeline):
             self.logger.info("No results directory found")
             return False
 
+    @auth.refresh_scitoken
     def before_submit(self):
         """
         Pre-submit hook.
         """
-        self.logger.info("Running the before_submit hook")
-        sub_files = glob.glob(f"{self.production.rundir}/submit/*.submit")
-        for sub_file in sub_files:
-            if "dag" in sub_file:
-                continue
-            with open(sub_file, "r") as f_handle:
-                original = f_handle.read()
-            with open(sub_file, "w") as f_handle:
-                self.logger.info(f"Adding preserve_relative_paths to {sub_file}")
-                f_handle.write("preserve_relative_paths = True\n" + original)
+        pass
 
+    @auth.refresh_scitoken
     def build_dag(self, psds=None, user=None, clobber_psd=False, dryrun=False):
         """
         Construct a DAG file in order to submit a production to the
@@ -202,8 +203,6 @@ class Bilby(Pipeline):
         self.before_submit()
 
         try:
-            # to do: Check that this is the correct name of the output DAG file for billby (it
-            # probably isn't)
             if "job label" in self.production.meta:
                 job_label = self.production.meta["job label"]
             else:
@@ -221,7 +220,6 @@ class Bilby(Pipeline):
                 print(" ".join(command))
             else:
 
-                # with set_directory(self.production.rundir):
                 self.logger.info(f"Working in {os.getcwd()}")
 
                 dagman = subprocess.Popen(
@@ -262,7 +260,12 @@ class Bilby(Pipeline):
         """
         Gather all of the results assets for this job.
         """
-        return {"samples": self.samples()}
+        return {
+            "samples": self.samples(),
+            "config": self.production.event.repository.find_prods(
+                self.production.name, self.category
+            )[0],
+        }
 
     def samples(self, absolute=False):
         """
@@ -279,7 +282,7 @@ class Bilby(Pipeline):
         ) + glob.glob(os.path.join(rundir, "result", "*_merge*_result.json"))
 
     def after_completion(self):
-        post_pipeline = PESummaryPipeline(production=self.production)
+        post_pipeline = PESummary(production=self.production)
         self.logger.info("Job has completed. Running PE Summary.")
         cluster = post_pipeline.submit_dag()
         self.production.meta["job id"] = int(cluster)
@@ -303,9 +306,9 @@ class Bilby(Pipeline):
                     message = message.split("\n")
                     messages[log.split("/")[-1]] = "\n".join(message[-100:])
             except FileNotFoundError:
-                messages[
-                    log.split("/")[-1]
-                ] = "There was a problem opening this log file."
+                messages[log.split("/")[-1]] = (
+                    "There was a problem opening this log file."
+                )
         return messages
 
     def check_progress(self):
@@ -329,9 +332,9 @@ class Bilby(Pipeline):
                             dlogz.group(),
                         )
             except FileNotFoundError:
-                messages[
-                    log.split("/")[-1]
-                ] = "There was a problem opening this log file."
+                messages[log.split("/")[-1]] = (
+                    "There was a problem opening this log file."
+                )
         return messages
 
     @classmethod
