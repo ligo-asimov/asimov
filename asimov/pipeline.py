@@ -6,9 +6,9 @@ import subprocess
 import time
 import warnings
 
+import asimov.analysis
+
 warnings.filterwarnings("ignore", module="htcondor")
-
-
 import htcondor  # NoQA
 
 from asimov import utils  # NoQA
@@ -42,15 +42,6 @@ Please fix the error and then remove the `pipeline-error` label from this issue.
 - [ ] Resolved
 """
         return text
-
-    def submit_comment(self):
-        """
-        Submit this exception as a comment on the gitlab
-        issue for the event.
-        """
-        if self.issue:
-            self.issue.add_label("pipeline-error", state=False)
-            self.issue.add_note(self.__repr__())
 
 
 class PipelineLogger:
@@ -94,11 +85,17 @@ class Pipeline:
     def __init__(self, production, category=None):
         self.production = production
 
-        self.category = production.category
+        try:
+            self.category = production.category
+        except AttributeError:
+            self.category = None
 
-        self.logger = logger.getChild(
-            f"analysis.{production.event.name}/{production.name}"
-        )
+        if isinstance(production, asimov.analysis.ProjectAnalysis):
+            full_name = f"ProjectAnalysis/{production.name}"
+        else:
+            full_name = f"analysis.{production.event.name}/{production.name}"
+
+        self.logger = logger.getChild(full_name)
         self.logger.setLevel(LOGGER_LEVEL)
 
     def __repr__(self):
@@ -141,7 +138,10 @@ class Pipeline:
         specific pipeline implementation if required.
         """
         self.production.status = "finished"
-        self.production.meta.pop("job id")
+
+        # Need to determine the correct list of post-processing jobs here
+
+        # self.production.meta.pop("job id")
 
     def collect_assets(self):
         """
@@ -276,6 +276,9 @@ class Pipeline:
         return out
 
     def collect_pages(self):
+        pass
+
+    def build(self):
         pass
 
     def build_report(self, reportformat="html"):
