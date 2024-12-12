@@ -687,6 +687,7 @@ class ProjectAnalysis(Analysis):
         self.logger = logger.getChild("project analyses").getChild(f"{self.name}")
         self.logger.setLevel(LOGGER_LEVEL)
         self.ledger = ledger
+        self.category = "project_analyses"
 
         self._subjects = kwargs["subjects"]
 
@@ -702,7 +703,8 @@ class ProjectAnalysis(Analysis):
         if "working_directory" in kwargs:
             self.work_dir = kwargs["working_directory"]
         else:
-            self.work_dir = os.path.join("working", "project analyses", f"{self.name}")
+            subj_string = "_".join([f"{subject}" for subject in self._subjects])
+            self.work_dir = os.path.join("working", "project-analyses", subj_string, f"{self.name}")
 
         if not os.path.exists(self.work_dir):
             os.makedirs(self.work_dir)
