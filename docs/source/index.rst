@@ -106,7 +106,10 @@ Quick installation
 
 Asimov is available on ``pypi`` and can be installed via ``pip install asimov``.
 
+Citing asimov
+-------------
 
+If you use asimov in a publication please consider consulting our :ref:`citation-guide`.
 
 ..
    Tutorials
@@ -136,7 +139,8 @@ Users' guide
    olivaw/reporting
    storage
    olivaw/review
-   
+   citing
+	     
 .. toctree::
    :maxdepth: 1
    :caption: Pipeline Guides
