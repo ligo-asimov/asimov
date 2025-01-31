@@ -355,15 +355,15 @@ def monitor(ctx, event, update, dry_run, chain):
                 click.echo(f"\t{production.name} which needs {needs}")
 
         # Post-monitor hooks
-        if "hooks" in ledger.data:
-            if "postmonitor" in ledger.data["hooks"]:
-                discovered_hooks = entry_points(group="asimov.hooks.postmonitor")
-                for hook in discovered_hooks:
-                    if hook.name in list(ledger.data["hooks"]["postmonitor"].keys()):
-                        try:
-                            hook.load()(deepcopy(ledger)).run()
-                        except Exception:
-                            pass
+    if "hooks" in ledger.data:
+        if "postmonitor" in ledger.data["hooks"]:
+            discovered_hooks = entry_points(group="asimov.hooks.postmonitor")
+            for hook in discovered_hooks:
+                if hook.name in list(ledger.data["hooks"]["postmonitor"].keys()):
+                    try:
+                        hook.load()(deepcopy(ledger)).run()
+                    except Exception:
+                        pass
 
-        if chain:
-            ctx.invoke(report.html)
+    if chain:
+        ctx.invoke(report.html)
