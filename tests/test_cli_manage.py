@@ -160,7 +160,7 @@ class TestSubmit(unittest.TestCase):
 
             result = runner.invoke(manage.manage, ['build', 'submit', '--dryrun'])
             for event in EVENTS:
-                    output = """bayeswave_pipe --trigger-time=1126259462.391 -r """
+                    output = """bayeswave_pipe --trigger-time=1126259462.391 --copy-frames --transfer-files -r """
                     self.assertTrue(output in result.output)
 
     def test_submit_no_build(self):
