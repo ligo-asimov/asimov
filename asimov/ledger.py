@@ -53,9 +53,8 @@ class YAMLLedger(Ledger):
         ]
         self.events = {ev["name"]: ev for ev in self.data["events"]}
         self._all_events = [
-            Event(**self.events[event], ledger=self)
-            for event in self.events.keys()
-            ]
+            Event(**self.events[event], ledger=self) for event in self.events.keys()
+        ]
         self.data.pop("events")
 
     @classmethod
@@ -149,7 +148,9 @@ class YAMLLedger(Ledger):
 
     def get_event(self, event=None):
         if event:
-            return [Event(**self.events[event], ledger=self)]
+            kwargs = self.events[event]
+            kwargs.pop("ledger", None)
+            return [Event(**kwargs, ledger=self)]
         else:
             return self._all_events
 
