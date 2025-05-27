@@ -1,3 +1,18 @@
+0.5.10
+======
+
+This is a bug-fix release, which does not introduce any new backwards-incompatible features, which fixes a critical bug when updating an event using the ``asimov apply --upgrade`` interface, where analyses were lost from the updated event.
+
+Breaking changes
+----------------
+
+This release is not believed to introduce any backwards-incompatible changes.
+
+Merges
+------
+
++ `ligo!166 <https://git.ligo.org/asimov/asimov/-/merge_requests/166>`_: Corrects an issue with application of event updates.
+
 0.5.9
 =====
 
