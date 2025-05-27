@@ -50,10 +50,12 @@ def apply_page(file, event, ledger=ledger, update_page=False):
             # Check if the event is in the ledger already
             if event.name in ledger.events and update_page is True:
                 old_event = deepcopy(ledger.events[event.name])
-                for key in ["productions", "working directory", "repository", "ledger"]:
+                for key in ["name", "productions", "working directory", "repository", "ledger"]:
                     old_event.pop(key, None)
                 analyses = [
-                    update(prod, old_event)
+                    # I appreciate this looks insane, but the way the yaml stores these
+                    # is poorly designed.
+                    {list(prod.keys())[0]: update(list(prod.values())[0], old_event)}
                     for prod in ledger.events[event.name]["productions"]
                 ]
 
@@ -67,9 +69,10 @@ def apply_page(file, event, ledger=ledger, update_page=False):
 
                 ledger.data["history"][event.name] = history
                 ledger.save()
-
                 update(ledger.events[event.name], event.meta)
                 ledger.events[event.name]["productions"] = analyses
+                ledger.events[event.name].pop("ledger", None)
+
                 click.echo(
                     click.style("●", fg="green") + f" Successfully updated {event.name}"
                 )
