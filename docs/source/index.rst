@@ -145,7 +145,6 @@ Users' guide
    :maxdepth: 1
    :caption: Pipeline Guides
 
-   pipelines
    pipelines/lalinference
    pipelines/bilby
    pipelines/rift
@@ -169,6 +168,7 @@ Developers' Guide
 -----------------
 
 .. toctree::
+   :maxdepth: 1
    :caption: Development Guide
 
    contributing.rst
@@ -188,6 +188,17 @@ Developers' Guide
    hooks
 
    building-docs
+
+Tutorials
+---------
+
+.. toctree::
+   :maxdepth: 1
+   :Caption: Tutorials
+
+   tutorials/analysing-gw150914
+   tutorials/adding-a-pipeline
+   
    
 Python API
 ----------
@@ -214,7 +225,7 @@ LIGO Analysis Cookbook
    ligo-cookbook/bayeswave
    ligo-cookbook/bilby
    ligo-cookbook/working-with-gwosc
-   
+
 Indices and tables
 ------------------
 
