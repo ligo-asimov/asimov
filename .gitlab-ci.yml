@@ -36,26 +36,15 @@ pylint:
       codequality: codeclimate.json
     when: always
 
-test-python-38:
-  stage: test
-  image: python:3.8
-  script:
-  - git config --global user.email "you@example.com"
-  - git config --global user.name "Your Name"
-  - pip install -r requirements.txt
-  - python setup.py install
-  - python -m unittest discover tests/
-
 test-python-39:
   stage: test
   image: python:3.9
   script:
     - git config --global user.email "you@example.com"
     - git config --global user.name "Your Name"
-    - pip install -r requirements.txt
     - pip install coverage
     - pip install unittest-xml-reporting
-    - python setup.py install
+    - pip install .
     - coverage run -m xmlrunner discover tests/ -o junit-reports
     - coverage report
     - coverage xml
@@ -76,9 +65,8 @@ test-python-310:
   script:
     - git config --global user.email "you@example.com"
     - git config --global user.name "Your Name"
-    - pip install -r requirements.txt
     - pip install coverage
-    - python setup.py install
+    - pip install .
     - python -m unittest discover tests/
 
 test-python-311:
@@ -88,9 +76,8 @@ test-python-311:
   script:
     - git config --global user.email "you@example.com"
     - git config --global user.name "Your Name"
-    - pip install -r requirements.txt
     - pip install coverage
-    - python setup.py install
+    - pip install .
     - python -m unittest discover tests/
 
 test-python-312:
@@ -100,19 +87,26 @@ test-python-312:
   script:
     - git config --global user.email "you@example.com"
     - git config --global user.name "Your Name"
-    - pip install -r requirements.txt
     - pip install coverage
-    - python setup.py install
+    - pip install .
     - python -m unittest discover tests/
-    
+
+test-python-313:
+  stage: test
+  allow_failure: True
+  image: python:3.13
+  script:
+    - git config --global user.email "you@example.com"
+    - git config --global user.name "Your Name"
+    - pip install coverage
+    - pip install .
+    - python -m unittest discover tests/    
     
 # Build docs for multiple code versions
 pages:
   stage: build
   script:
-  - pip install -r docs-requirements.txt
-  - pip install -r requirements.txt
-  - pip install .
+  - pip install .[docs]
   - sphinx-multiversion docs/source public
   - echo "<!DOCTYPE html><html><head><title>Redirecting to master branch</title><meta
     charset=\"utf-8\"><meta http-equiv=\"refresh\" content=\"0; url=./master/index.html\">    <link
@@ -124,35 +118,12 @@ pages:
   only:
   - master
 
-wheel-36:
-  image: python:3.6
+wheel-310:
+  image: python:3.9
   stage: build
   script:
-  - pip install wheel
-  - python setup.py bdist_wheel --universal
-  dependencies: []
-  artifacts:
-    expire_in: 3h
-    paths:
-    - dist
-wheel-37:
-  image: python:3.7
-  stage: build
-  script:
-  - pip install wheel
-  - python setup.py bdist_wheel --universal
-  dependencies: []
-  artifacts:
-    expire_in: 3h
-    paths:
-    - dist
-wheel-38:
-  image: python:3.8
-  stage: build
-  script:
-  - pip install wheel
-  - pip install twine
-  - python setup.py bdist_wheel --universal
+  - pip install wheel build twine
+  - python -m build
   - twine check dist/*
   dependencies: []
   artifacts:

@@ -15,6 +15,81 @@ from asimov.ledger import YAMLLedger
 from asimov.testing import AsimovTestCase
 
 
+class EventTests(AsimovTestCase):
+    """
+    Tests to ensure that event-related blueprints are handled correctly.
+    """
+    def test_event_update(self):
+        apply_page(
+            f"{self.cwd}/tests/test_data/test_event.yaml",
+            event="S000000",
+            ledger=self.ledger,
+        )
+        apply_page(
+            f"{self.cwd}/tests/test_data/test_analysis_S000000.yaml",
+            event="S000000",
+            ledger=self.ledger
+            )
+        apply_page(
+            f"{self.cwd}/tests/test_data/test_event_update.yaml",
+            event="S000000",
+            ledger=self.ledger,
+            update_page=True
+        )
+        event = self.ledger.events["S000000"]
+        self.assertEqual(event['productions'][0]['event time'], 900)
+        self.assertEqual(event['event time'], 909)
+        self.assertEqual(event['priors']['luminosity distance']['maximum'], 1010)
+        self.assertEqual(event['priors']['mass ratio']['maximum'], 1.0)
+
+    def test_event_history(self):
+        apply_page(
+            f"{self.cwd}/tests/test_data/test_event.yaml",
+            event="S000000",
+            ledger=self.ledger,
+        )
+        apply_page(
+            f"{self.cwd}/tests/test_data/test_analysis_S000000.yaml",
+            event="S000000",
+            ledger=self.ledger
+            )
+        apply_page(
+            f"{self.cwd}/tests/test_data/test_event_update.yaml",
+            event="S000000",
+            ledger=self.ledger,
+            update_page=True
+        )
+        event = self.ledger.events["S000000"]
+        self.assertTrue("version-1" in self.ledger.data.get("history", {}).get("S000000", {}))
+        history = self.ledger.data['history']['S000000']
+        self.assertEqual(history['version-1']['event time'],
+                         900)
+        self.assertEqual(history['version-1']['priors']['luminosity distance']['maximum'], 1000)
+        self.assertTrue("date changed" in history['version-1'])
+        
+    def test_event_update_not_applied_without_flag(self):
+        apply_page(
+            f"{self.cwd}/tests/test_data/test_event.yaml",
+            event="S000000",
+            ledger=self.ledger,
+        )
+        apply_page(
+            f"{self.cwd}/tests/test_data/test_analysis_S000000.yaml",
+            event="S000000",
+            ledger=self.ledger,
+            )
+        apply_page(
+            f"{self.cwd}/tests/test_data/test_event_update.yaml",
+            event="S000000",
+            ledger=self.ledger,
+        )
+        event = self.ledger.events["S000000"]
+        self.assertFalse("event time" in event['productions'][0])
+        self.assertEqual(event['event time'], 900)
+        self.assertEqual(event['priors']['luminosity distance']['maximum'], 1000)
+        self.assertEqual(event['priors']['mass ratio']['maximum'], 1.0)
+
+        
 class DetcharTests(AsimovTestCase):
     """Tests to ensure that various detector characterisation related
     data are handled correctly.
