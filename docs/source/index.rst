@@ -189,8 +189,9 @@ Tutorials
 
    tutorials/analysing-gw150914
    tutorials/adding-a-pipeline
-   ligo-cookbook/remixing-analyses
+   tutorials/remixing-analyses
    
+
 Python API
 ----------
 
