@@ -94,7 +94,7 @@ class ReviewMessage:
 
         self.message = message
 
-        if status:
+        if status is not None:
             if status.upper() in STATES:
                 self.status = status.upper()
             else:
