@@ -51,6 +51,7 @@ test-python-39:
     - pip install coverage
     - pip install unittest-xml-reporting
     - pip install .
+    - pip install bilby-pipe
     - coverage run -m xmlrunner discover tests/ -o junit-reports
     - coverage report
     - coverage xml
@@ -73,6 +74,7 @@ test-python-310:
     - git config --global user.name "Your Name"
     - pip install coverage
     - pip install .
+    - pip install bilby-pipe
     - python -m unittest discover tests/
 
 test-python-311:
@@ -84,6 +86,7 @@ test-python-311:
     - git config --global user.name "Your Name"
     - pip install coverage
     - pip install .
+    - pip install bilby-pipe
     - python -m unittest discover tests/
 
 test-python-312:
@@ -95,6 +98,7 @@ test-python-312:
     - git config --global user.name "Your Name"
     - pip install coverage
     - pip install .
+    - pip install bilby-pipe
     - python -m unittest discover tests/
 
 test-python-313:
@@ -106,6 +110,7 @@ test-python-313:
     - git config --global user.name "Your Name"
     - pip install coverage
     - pip install .
+    - pip install bilby-pipe
     - python -m unittest discover tests/
 
 # Build docs for multiple code versions
@@ -135,7 +140,21 @@ wheel-310:
   artifacts:
     expire_in: 3h
     paths:
-      - dist
+    - dist
+
+#   stage: test
+include:
+- template: Security/SAST.gitlab-ci.yml
+
+include:
+  - template: Security/Dependency-Scanning.gitlab-ci.yml
+
+include:
+  - template: Code-Quality.gitlab-ci.yml
+
+
+include:
+- template: Security/Secret-Detection.gitlab-ci.yml
 
 deploy:wheel:
   stage: deploy
