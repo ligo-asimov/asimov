@@ -1,15 +1,20 @@
 """Bilby Pipeline specification."""
 
+import configparser
 import glob
 import os
 import re
+import shutil
 import subprocess
-import configparser
-
 import time
 
-from .. import config
-from ..pipeline import Pipeline, PipelineException, PipelineLogger, PESummaryPipeline
+from asimov import config
+from asimov.pipeline import (
+    PESummaryPipeline,
+    Pipeline,
+    PipelineException,
+    PipelineLogger,
+)
 
 
 class Bilby(Pipeline):
@@ -25,12 +30,12 @@ class Bilby(Pipeline):
         Defaults to "C01_offline".
     """
 
-    name = "Bilby"
+    name = "bilby"
     STATUS = {"wait", "stuck", "stopped", "running", "finished"}
 
     def __init__(self, production, category=None):
         super(Bilby, self).__init__(production, category)
-        self.logger.info("Using the bilby pipeline")
+        self.logger.info("Using the bilby pipeline (asimov implementation)")
 
         if not production.pipeline.lower() == "bilby":
             raise PipelineException
@@ -125,8 +130,21 @@ class Bilby(Pipeline):
         else:
             job_label = self.production.name
 
+        default_executable = os.path.join(
+            config.get("pipelines", "environment"), "bin", "bilby_pipe"
+        )
+        executable = self.production.meta.get("executable", default_executable)
+        if (executable := shutil.which(executable)) is not None:
+            pass
+        elif (executable := shutil.which("bilby_pipe")) is not None:
+            pass
+        else:
+            raise PipelineException(
+                "Cannot find bilby_pipe executable",
+                production=self.production.name,
+            )
         command = [
-            os.path.join(config.get("pipelines", "environment"), "bin", "bilby_pipe"),
+            executable,
             ini,
             "--label",
             job_label,
@@ -220,7 +238,6 @@ class Bilby(Pipeline):
             if dryrun:
                 print(" ".join(command))
             else:
-
                 # with set_directory(self.production.rundir):
                 self.logger.info(f"Working in {os.getcwd()}")
 
