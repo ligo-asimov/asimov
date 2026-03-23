@@ -1,3 +1,38 @@
+0.5.12 (unreleased)
+===================
+
+This is a bug-fix release, back-porting fixes from v0.7, which does not introduce any new backwards-incompatible features.
+It fixes a bug where the ledger could be written to the wrong location when the working directory changed during a monitor run, ensures that failures in post-monitor hooks are logged rather than silently swallowed, and corrects ``asimov apply --update`` to robustly handle productions stored with null or variably-structured metadata.
+
+Breaking changes
+----------------
+
+This release is not believed to introduce any backwards-incompatible changes.
+
+Merges
+------
+
++ `ligo!179 <https://git.ligo.org/asimov/asimov/-/merge_requests/179>`_: Back-ports fixes from v0.7 to stabilise ledger path handling, improve post-monitor hook error reporting, and fix ``asimov apply --update`` for productions with null or variable metadata structures.
+
+0.5.11
+======
+
+This is a bug-fix release which does not introduce any new backwards-incompatible features.
+It fixes several issues with the PESummary post-processing pipeline, improves the robustness of bilby executable discovery, and fixes a crash in the review CLI when adding notes without a status.
+
+Breaking changes
+----------------
+
+This release is not believed to introduce any backwards-incompatible changes.
+
+Merges
+------
+
++ `ligo!173 <https://git.ligo.org/asimov/asimov/-/merge_requests/173>`_: Fixes several bugs in the PESummary pipeline: corrects iteration over keyword arguments (was unpacking tuples instead of calling ``.items()``), adds support for user-defined ``environment variables`` in the submit description, adds ``HOME`` to the ``getenv`` list, and adds the missing ``Queue`` statement to the generated submit file.
++ `ligo!172 <https://git.ligo.org/asimov/asimov/-/merge_requests/172>`_: Backports bilby configuration improvements: executable discovery now falls back gracefully from the configured environment path to ``shutil.which("bilby_pipe")`` before raising a clear error; normalises the pipeline ``name`` attribute to lowercase ``"bilby"``.
++ `ligo!170 <https://git.ligo.org/asimov/asimov/-/merge_requests/170>`_: Fixes a crash in ``asimov review add`` when no status is provided, and allows status-free notes to be added to an analysis.
++ `ligo!168 <https://git.ligo.org/asimov/asimov/-/merge_requests/168>`_: Adds SAST, dependency scanning, and secret detection CI templates to the GitLab CI configuration.
+
 0.5.10
 ======
 
