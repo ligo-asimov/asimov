@@ -1,5 +1,20 @@
-0.5.12 (unreleased)
-===================
+0.5.13
+======
+
+This release adds support for suppressing multiple frequency bands in the BayesWave PSD output, while remaining fully backwards compatible with the existing single-range configuration format.
+
+Breaking changes
+----------------
+
+This release is not believed to introduce any backwards-incompatible changes.
+
+Merges
+------
+
++ `ligo!182 <https://git.ligo.org/asimov/asimov/-/merge_requests/182>`_: Adds support for specifying multiple PSD suppression notches per interferometer in the BayesWave pipeline. The ``quality.supress`` ledger key now accepts either a single ``{lower, upper}`` mapping (existing format, unchanged) or a list of such mappings for multi-notch suppression. All notches are applied in a single read/write/commit cycle, so the number of git commits is unchanged. Documentation updated for both the pipeline reference and the cookbook.
+
+0.5.12
+======
 
 This is a bug-fix release, back-porting fixes from v0.7, which does not introduce any new backwards-incompatible features.
 It fixes a bug where the ledger could be written to the wrong location when the working directory changed during a monitor run, ensures that failures in post-monitor hooks are logged rather than silently swallowed, and corrects ``asimov apply --update`` to robustly handle productions stored with null or variably-structured metadata.

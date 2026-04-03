@@ -271,11 +271,10 @@ class BayesWave(Pipeline):
         if "supress" in self.production.meta["quality"]:
             for ifo in self.production.meta["quality"]["supress"]:
                 if ifo in self.production.meta["interferometers"]:
-                    self.supress_psd(
-                        ifo,
-                        self.production.meta["quality"]["supress"][ifo]["lower"],
-                        self.production.meta["quality"]["supress"][ifo]["upper"],
-                    )
+                    ranges = self.production.meta["quality"]["supress"][ifo]
+                    if isinstance(ranges, dict):
+                        ranges = [ranges]
+                    self.supress_psd(ifo, ranges)
 
         self.production.meta.update(self.collect_assets())
 
@@ -476,14 +475,31 @@ class BayesWave(Pipeline):
 
         return outputs
 
-    def supress_psd(self, ifo, fmin, fmax):
+    def supress_psd(self, ifo, ranges):
         """
         Suppress portions of a PSD.
+
+        Applies one or more frequency-range notches to the PSD for a given
+        interferometer, writing and committing the result once.
+
         Author: Carl-Johan Haster - August 2020
-        (Updated for asimov by Daniel Williams - November 2020
+        (Updated for asimov by Daniel Williams - November 2020)
+        (Multi-range support added April 2026)
+
+        Parameters
+        ----------
+        ifo : str
+            The interferometer name (e.g. ``"H1"``).
+        ranges : list of dict
+            Each dict must have ``"lower"`` and ``"upper"`` keys specifying
+            the frequency band (in Hz) to suppress.  A single dict is also
+            accepted for backwards compatibility.
         """
+        if isinstance(ranges, dict):
+            ranges = [ranges]
+
         store = Store(root=config.get("storage", "directory"))
-        sample_rate = self.production.meta["quality"]["sample-rate"]
+        sample_rate = self.production.meta["likelihood"]["sample rate"]
         orig_PSD_file = np.genfromtxt(
             os.path.join(
                 self.production.event.repository.directory,
@@ -495,20 +511,19 @@ class BayesWave(Pipeline):
         )
 
         self.logger.info("PSD supression has been set")
-        self.logger.info(
-            f"{ifo}-psd.dat will be supressed between {fmin}-Hz and {fmax}-Hz"
-        )
 
         freq = orig_PSD_file[:, 0]
         PSD = orig_PSD_file[:, 1]
 
-        suppression_region = np.logical_and(
-            np.greater_equal(freq, fmin), np.less_equal(freq, fmax)
-        )
-
-        # Suppress the PSD in this region
-
-        PSD[suppression_region] = 1.0
+        for r in ranges:
+            fmin, fmax = r["lower"], r["upper"]
+            self.logger.info(
+                f"{ifo}-psd.dat will be supressed between {fmin}-Hz and {fmax}-Hz"
+            )
+            suppression_region = np.logical_and(
+                np.greater_equal(freq, fmin), np.less_equal(freq, fmax)
+            )
+            PSD[suppression_region] = 1.0
 
         new_PSD = np.vstack([freq, PSD]).T
 
@@ -519,9 +534,10 @@ class BayesWave(Pipeline):
             self.category, "psds", str(sample_rate), f"{ifo}-psd.dat"
         )
 
-        self.logger.info(
-            f"{ifo}-psd.dat has been supressed between {fmin}-Hz and {fmax}-Hz"
-        )
+        for r in ranges:
+            self.logger.info(
+                f"{ifo}-psd.dat has been supressed between {r['lower']}-Hz and {r['upper']}-Hz"
+            )
 
         try:
             self.production.event.repository.add_file(
