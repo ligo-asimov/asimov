@@ -4,6 +4,7 @@ import configparser
 import glob
 import os
 import re
+import shutil
 import subprocess
 from shutil import copyfile, copytree
 
@@ -128,12 +129,22 @@ class BayesWave(Pipeline):
 
         gps_time = self.production.get_meta("event time")
 
-        pipe_cmd = os.path.join(
+        default_executable = os.path.join(
             config.get("pipelines", "environment"), "bin", "bayeswave_pipe"
         )
+        executable = self.production.meta.get("executable", default_executable)
+        if (executable := shutil.which(executable)) is not None:
+            pass
+        elif (executable := shutil.which("bayeswave_pipe")) is not None:
+            pass
+        else:
+            raise PipelineException(
+                "Cannot find bayeswave_pipe executable",
+                production=self.production.name,
+            )
 
         command = [
-            pipe_cmd,
+            executable,
             # "-l", f"{gps_file}",
             f"--trigger-time={gps_time}",
         ]
@@ -152,10 +163,10 @@ class BayesWave(Pipeline):
                 command += ["--transfer-files"]
 
                 if "copy frames" not in self.production.meta["scheduler"]:
-                    command += ["--osg-deploy"]
+                    command += ["--igwn-pool"]
                 if "copy frames" in self.production.meta["scheduler"]:
                     if not self.production.meta["scheduler"]["copy frames"]:
-                        command += ["--osg-deploy"]
+                        command += ["--igwn-pool"]
 
         command += [
             "-r",
