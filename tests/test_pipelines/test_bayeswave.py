@@ -258,13 +258,13 @@ class BayeswaveSupressionTests(unittest.TestCase):
             with tempfile.TemporaryDirectory() as work_dir:
                 freqs = np.linspace(10, 200, 191)
                 values = np.full_like(freqs, 1e-46)
-                self._write_psd(repo_dir, "H1", 4096, freqs, values)
+                psd_file = self._write_psd(repo_dir, "H1", 4096, freqs, values)
 
                 pipeline = self._make_pipeline(repo_dir)
                 pipeline.production.event.repository.add_file = Mock()
 
                 with set_directory(work_dir):
-                    pipeline.supress_psd("H1", [{"lower": 59.0, "upper": 61.0}])
+                    pipeline.supress_psd("H1", [{"lower": 59.0, "upper": 61.0}], psd_file)
 
                 saved = self._read_saved_psd(work_dir, "H1")
                 in_band = (saved[:, 0] >= 59.0) & (saved[:, 0] <= 61.0)
@@ -286,13 +286,13 @@ class BayeswaveSupressionTests(unittest.TestCase):
             with tempfile.TemporaryDirectory() as work_dir:
                 freqs = np.array([10.0, 30.0, 60.0, 90.0, 120.0])
                 values = np.array([1e-46, 2e-46, 3e-46, 4e-46, 5e-46])
-                self._write_psd(repo_dir, "L1", 4096, freqs, values)
+                psd_file = self._write_psd(repo_dir, "L1", 4096, freqs, values)
 
                 pipeline = self._make_pipeline(repo_dir)
                 pipeline.production.event.repository.add_file = Mock()
 
                 with set_directory(work_dir):
-                    pipeline.supress_psd("L1", [{"lower": 55.0, "upper": 65.0}])
+                    pipeline.supress_psd("L1", [{"lower": 55.0, "upper": 65.0}], psd_file)
 
                 saved = self._read_saved_psd(work_dir, "L1")
                 psd = saved[:, 1]
@@ -314,7 +314,7 @@ class BayeswaveSupressionTests(unittest.TestCase):
             with tempfile.TemporaryDirectory() as work_dir:
                 freqs = np.array([10.0, 30.0, 60.0, 90.0, 120.0])
                 values = np.array([1e-46, 2e-46, 3e-46, 4e-46, 5e-46])
-                self._write_psd(repo_dir, "H1", 4096, freqs, values)
+                psd_file = self._write_psd(repo_dir, "H1", 4096, freqs, values)
 
                 pipeline = self._make_pipeline(repo_dir)
                 mock_add_file = Mock()
@@ -324,7 +324,7 @@ class BayeswaveSupressionTests(unittest.TestCase):
                     pipeline.supress_psd("H1", [
                         {"lower": 55.0, "upper": 65.0},
                         {"lower": 115.0, "upper": 125.0},
-                    ])
+                    ], psd_file)
 
                 saved = self._read_saved_psd(work_dir, "H1")
                 psd = saved[:, 1]
@@ -349,14 +349,14 @@ class BayeswaveSupressionTests(unittest.TestCase):
             with tempfile.TemporaryDirectory() as work_dir:
                 freqs = np.array([10.0, 60.0, 120.0])
                 values = np.array([1e-46, 3e-46, 5e-46])
-                self._write_psd(repo_dir, "H1", 4096, freqs, values)
+                psd_file = self._write_psd(repo_dir, "H1", 4096, freqs, values)
 
                 pipeline = self._make_pipeline(repo_dir)
                 pipeline.production.event.repository.add_file = Mock()
 
                 with set_directory(work_dir):
                     # Passing a dict directly (backwards-compat path)
-                    pipeline.supress_psd("H1", {"lower": 55.0, "upper": 65.0})
+                    pipeline.supress_psd("H1", {"lower": 55.0, "upper": 65.0}, psd_file)
 
                 saved = self._read_saved_psd(work_dir, "H1")
                 psd = saved[:, 1]
@@ -376,7 +376,7 @@ class BayeswaveSupressionTests(unittest.TestCase):
             with tempfile.TemporaryDirectory() as work_dir:
                 freqs = np.array([10.0, 60.0, 120.0])
                 values = np.array([1e-46, 3e-46, 5e-46])
-                self._write_psd(repo_dir, "H1", 4096, freqs, values)
+                psd_file = self._write_psd(repo_dir, "H1", 4096, freqs, values)
 
                 pipeline = self._make_pipeline(repo_dir)
                 pipeline.production.event.repository.add_file = Mock()
@@ -391,7 +391,7 @@ class BayeswaveSupressionTests(unittest.TestCase):
                         if isinstance(ranges, dict):
                             ranges = [ranges]
                         with set_directory(work_dir):
-                            pipeline.supress_psd(ifo, ranges)
+                            pipeline.supress_psd(ifo, ranges, psd_file)
 
                 saved = self._read_saved_psd(work_dir, "H1")
                 self.assertAlmostEqual(saved[1, 1], 1.0)
@@ -408,7 +408,7 @@ class BayeswaveSupressionTests(unittest.TestCase):
             with tempfile.TemporaryDirectory() as work_dir:
                 freqs = np.linspace(10, 200, 191)
                 values = np.full_like(freqs, 1e-46)
-                self._write_psd(repo_dir, "H1", 4096, freqs, values)
+                psd_file = self._write_psd(repo_dir, "H1", 4096, freqs, values)
 
                 pipeline = self._make_pipeline(repo_dir)
                 pipeline.production.event.repository.add_file = Mock()
@@ -418,6 +418,6 @@ class BayeswaveSupressionTests(unittest.TestCase):
                         {"lower": 59.0, "upper": 61.0},
                         {"lower": 119.0, "upper": 121.0},
                         {"lower": 179.0, "upper": 181.0},
-                    ])
+                    ], psd_file)
 
                 mock_store.add_file.assert_called_once()
